@@ -3,7 +3,7 @@ The infer_onnx package provides classes for ONNX-based inference.
 """
 
 # Import classes from new unified module
-from .yolo_models import (
+from .infer_models import (
     YoloOnnx, 
     RTDETROnnx, 
     RFDETROnnx, 

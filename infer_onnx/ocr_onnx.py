@@ -2,7 +2,7 @@ import onnxruntime
 import numpy as np
 import logging
 
-from .utils import preload_onnx_libraries, get_best_available_providers
+from .infer_utils import preload_onnx_libraries, get_best_available_providers
 
 class ColorLayerONNX:
     """

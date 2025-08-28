@@ -17,7 +17,7 @@ def initialize_models(args):
     """
     # Initialize the detector based on model type
     try:
-        from infer_onnx.yolo_models import create_detector
+        from infer_onnx.infer_models import create_detector
         detector = create_detector(
             model_type=args.model_type,
             onnx_path=args.model_path,

@@ -18,7 +18,10 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Any, Optional, Callable
 from pathlib import Path
 
-from .utils import get_model_info
+# Polygraphy懒加载导入
+from polygraphy.backend.onnxrt import SessionFromOnnx, OnnxrtRunner
+
+from .infer_utils import get_model_info
 from utils.image_processing import preprocess_image, preprocess_image_ultralytics
 from utils.nms import non_max_suppression
 from utils.detection_metrics import evaluate_detection, print_metrics
@@ -104,9 +107,10 @@ def scale_boxes(img1_shape: Tuple[int, int], boxes: np.ndarray, img0_shape: Tupl
 
 
 class BaseOnnx(ABC):
-    """ONNX模型推理基类"""
+    """ONNX模型推理基类 - 使用Polygraphy懒加载"""
     
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), conf_thres: float = 0.5):
+    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), 
+                 conf_thres: float = 0.5, providers: Optional[List[str]] = None):
         """
         初始化ONNX模型推理器
         
@@ -114,24 +118,89 @@ class BaseOnnx(ABC):
             onnx_path (str): ONNX模型文件路径
             input_shape (Tuple[int, int]): 输入图像尺寸 (height, width)
             conf_thres (float): 置信度阈值
+            providers (Optional[List[str]]): ONNX Runtime执行提供程序
         """
         self.onnx_path = onnx_path
         self.conf_thres = conf_thres
+        self.input_shape = input_shape
+        self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         
-        # 使用统一的get_model_info函数获取所有模型信息，只创建一次session
-        model_info = get_model_info(self.onnx_path, input_shape)
-        if model_info is None:
-            raise RuntimeError(f"无法加载模型: {self.onnx_path}")
+        # 创建Polygraphy懒加载器
+        self._session_loader = SessionFromOnnx(self.onnx_path, providers=self.providers)
+        self._runner = None
+        self._is_initialized = False
         
-        # 从model_info中获取所有信息
-        self.session = model_info['session']
-        self.input_name = model_info['input_name']
-        self.output_names = model_info['output_names']
-        self.input_shape = model_info['input_shape']
-        self.class_names = model_info['class_names']
+        # 延迟初始化的属性
+        self.input_name = None
+        self.output_names = None
+        self._class_names = None
         
-        # 记录输出形状信息
-        logging.info(f"模型输出形状: {model_info['output_shape']}")
+        logging.info(f"创建懒加载ONNX推理器: {self.onnx_path}")
+    
+    @property
+    def class_names(self) -> Dict[int, str]:
+        """懒加载的类别名称属性"""
+        if not self._is_initialized:
+            self._ensure_initialized()
+        return self._class_names or {}
+    
+    def _ensure_initialized(self):
+        """确保模型已初始化（懒加载）"""
+        if not self._is_initialized:
+            # 创建Polygraphy运行器
+            self._runner = OnnxrtRunner(self._session_loader)
+            
+            # 激活运行器以获取元数据
+            with self._runner:
+                # 获取输入输出信息
+                input_metadata = self._runner.get_input_metadata()
+                self.input_name = list(input_metadata.keys())[0]
+                
+                # 通过临时会话获取输出名称
+                session = self._session_loader()
+                self.output_names = [output.name for output in session.get_outputs()]
+                
+                # 获取类别名称（如果存在配置文件）
+                self._class_names = self._load_class_names()
+                
+                logging.info(f"模型已初始化 - 输入: {self.input_name}, 输出: {self.output_names}")
+            
+            self._is_initialized = True
+    
+    def _load_class_names(self) -> Dict[int, str]:
+        """使用get_model_info加载类别名称（包括ONNX metadata和配置文件）"""
+        try:
+            # 使用get_model_info获取模型信息，包括从metadata和配置文件的类别名称
+            model_info = get_model_info(self.onnx_path, self.input_shape)
+            if model_info and model_info.get('class_names'):
+                logging.info("从get_model_info获取到类别名称")
+                return model_info['class_names']
+        except Exception as e:
+            logging.warning(f"get_model_info获取类别名称失败: {e}")
+        
+        # 回退到原始方法：从配置文件加载
+        model_dir = Path(self.onnx_path).parent
+        config_files = ['det_config.yaml', 'classes.yaml']
+        
+        for config_file in config_files:
+            config_path = model_dir / config_file
+            if config_path.exists():
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f)
+                        if 'names' in config:
+                            names = config['names']
+                            if isinstance(names, list):
+                                logging.info(f"从配置文件 {config_file} 加载类别名称")
+                                return {i: name for i, name in enumerate(names)}
+                            elif isinstance(names, dict):
+                                logging.info(f"从配置文件 {config_file} 加载类别名称")
+                                return names
+                except Exception as e:
+                    logging.warning(f"无法加载配置文件 {config_path}: {e}")
+        
+        logging.warning("未找到类别名称，返回空字典")
+        return {}
     
     
     @abstractmethod
@@ -141,7 +210,7 @@ class BaseOnnx(ABC):
     
     def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Tuple[List[np.ndarray], tuple]:
         """
-        对图像进行推理
+        对图像进行推理（使用Polygraphy懒加载）
         
         Args:
             image (np.ndarray): 输入图像，BGR格式
@@ -151,6 +220,9 @@ class BaseOnnx(ABC):
         Returns:
             Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
         """
+        # 确保模型已初始化
+        self._ensure_initialized()
+        
         # 预处理
         preprocess_result = self._preprocess(image)
         if len(preprocess_result) == 3:
@@ -161,17 +233,24 @@ class BaseOnnx(ABC):
             # 新版本返回值 (input_tensor, scale, original_shape, ratio_pad)
             input_tensor, scale, original_shape, ratio_pad = preprocess_result
         
-        # 检查模型期望的batch维度并调整输入
-        model_input_shape = self.session.get_inputs()[0].shape
-        expected_batch_size = model_input_shape[0] if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0 else 1
-        
-        if expected_batch_size > 1 and input_tensor.shape[0] == 1:
-            # 如果模型期望batch>1，但输入是batch=1，则复制输入以满足要求
-            input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
-            logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
-        
-        # 推理
-        outputs = self.session.run(self.output_names, {self.input_name: input_tensor})
+        # 使用Polygraphy运行器进行推理
+        with self._runner:
+            # 获取输入元数据来检查batch维度
+            input_metadata = self._runner.get_input_metadata()
+            input_shape = input_metadata[self.input_name].shape
+            expected_batch_size = input_shape[0] if isinstance(input_shape[0], int) and input_shape[0] > 0 else 1
+            
+            if expected_batch_size > 1 and input_tensor.shape[0] == 1:
+                # 如果模型期望batch>1，但输入是batch=1，则复制输入以满足要求
+                input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
+                logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
+            
+            # 构造feed_dict并执行推理
+            feed_dict = {self.input_name: input_tensor}
+            outputs_dict = self._runner.infer(feed_dict)
+            
+            # 将字典转换为列表格式以保持兼容性
+            outputs = [outputs_dict[name] for name in self.output_names]
         
         # 后处理 - 根据子类不同传递不同参数
         effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
@@ -205,7 +284,7 @@ class YoloOnnx(BaseOnnx):
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), 
                  conf_thres: float = 0.5, iou_thres: float = 0.5, 
                  multi_label: bool = True, use_ultralytics_preprocess: bool = True,
-                 has_objectness: bool = False):
+                 has_objectness: bool = False, providers: Optional[List[str]] = None):
         """
         初始化YOLO检测器
         
@@ -217,34 +296,14 @@ class YoloOnnx(BaseOnnx):
             multi_label (bool): 是否允许多标签检测，默认True
             use_ultralytics_preprocess (bool): 是否使用Ultralytics兼容的预处理
             has_objectness (bool): 模型是否有objectness分支，默认False（适应现代YOLO）
+            providers (Optional[List[str]]): ONNX Runtime执行提供程序
         """
-        super().__init__(onnx_path, input_shape, conf_thres)
+        super().__init__(onnx_path, input_shape, conf_thres, providers)
         self.iou_thres = iou_thres
         self.multi_label = multi_label
         self.use_ultralytics_preprocess = use_ultralytics_preprocess
         self.has_objectness = has_objectness
-        self.model_type = self._detect_model_type()  # 自动检测模型类型
-    
-    def _detect_model_type(self) -> str:
-        """
-        自动检测YOLO模型类型
-        
-        Returns:
-            str: 模型类型 "yolo"
-        """
-        # 验证输出形状来确定模型类型
-        dummy_input = np.random.randn(1, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
-        outputs = self.session.run(None, {self.input_name: dummy_input})
-        output_shape = outputs[0].shape
-        
-        # YOLO模型通常输出 [batch, num_anchors, 4 + 1 + num_classes] 或 [batch, num_anchors, 4 + num_classes]
-        if len(output_shape) == 3:
-            num_features = output_shape[2]
-            if num_features > 5:  # 至少有bbox(4) + objectness(1) 或 bbox(4) + classes(>=1)
-                logging.info(f"检测到YOLO模型，输出形状: {output_shape}")
-                return "yolo"
-        
-        return "yolo"  # 默认返回yolo
+        # YoloOnnx类固定使用yolo模型类型
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple, Optional[tuple]]:
         """
@@ -315,14 +374,13 @@ class YoloOnnx(BaseOnnx):
             # 已经是像素坐标，无需转换
             pass
         
-        # NMS后处理，传递multi_label、model_type和objectness信息
+        # NMS后处理，传递multi_label和objectness信息
         effective_iou_thres = iou_thres if iou_thres is not None else self.iou_thres
         detections = non_max_suppression(
             prediction, 
             conf_thres=conf_thres, 
             iou_thres=effective_iou_thres,
             multi_label=self.multi_label,
-            model_type=self.model_type,
             has_objectness=self.has_objectness
         )
         
@@ -377,7 +435,8 @@ class RTDETROnnx(YoloOnnx):
     """
     
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), 
-                 conf_thres: float = 0.001, iou_thres: float = 0.5):
+                 conf_thres: float = 0.001, iou_thres: float = 0.5, 
+                 providers: Optional[List[str]] = None):
         """
         初始化RT-DETR检测器
         
@@ -386,12 +445,12 @@ class RTDETROnnx(YoloOnnx):
             input_shape (Tuple[int, int]): 输入图像尺寸
             conf_thres (float): 置信度阈值，默认0.001
             iou_thres (float): IoU阈值，RT-DETR不使用，保持接口统一
+            providers (Optional[List[str]]): ONNX Runtime执行提供程序
         """
         # 调用BaseOnnx初始化，跳过YoloOnnx的iou_thres设置
-        BaseOnnx.__init__(self, onnx_path, input_shape, conf_thres)
+        BaseOnnx.__init__(self, onnx_path, input_shape, conf_thres, providers)
         
-        # RT-DETR输出格式验证已在BaseOnnx的get_model_info中完成
-        # 这里可以添加额外的RT-DETR特定验证逻辑
+        # RT-DETR输出格式验证延迟到模型初始化时进行
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
         """
@@ -506,7 +565,8 @@ class RFDETROnnx(BaseOnnx):
     """
     
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (576, 576), 
-                 conf_thres: float = 0.001, iou_thres: float = 0.5):
+                 conf_thres: float = 0.001, iou_thres: float = 0.5,
+                 providers: Optional[List[str]] = None):
         """
         初始化RF-DETR检测器
         
@@ -515,28 +575,39 @@ class RFDETROnnx(BaseOnnx):
             input_shape (Tuple[int, int]): 输入图像尺寸，默认576x576
             conf_thres (float): 置信度阈值
             iou_thres (float): IoU阈值，RF-DETR不使用，保持接口统一
+            providers (Optional[List[str]]): ONNX Runtime执行提供程序
         """
-        super().__init__(onnx_path, input_shape, conf_thres)
+        super().__init__(onnx_path, input_shape, conf_thres, providers)
         
-        # 验证RF-DETR输出格式
-        # 检查模型期望的batch维度
-        model_input_shape = self.session.get_inputs()[0].shape
-        expected_batch_size = model_input_shape[0] if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0 else 1
+        # RF-DETR输出格式验证延迟到模型初始化时进行
+    
+    def _validate_rf_detr_format(self):
+        """验证RF-DETR输出格式（懒加载兼容）"""
+        self._ensure_initialized()
         
-        dummy_input = np.random.randn(expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
-        outputs = self.session.run(None, {self.input_name: dummy_input})
-        
-        if len(outputs) != 2:
-            raise ValueError(f"RF-DETR模型应该有2个输出（pred_boxes, pred_logits），但实际有{len(outputs)}个")
-        
-        pred_boxes_shape, pred_logits_shape = outputs[0].shape, outputs[1].shape
-        logging.info(f"RF-DETR输出格式 - pred_boxes: {pred_boxes_shape}, pred_logits: {pred_logits_shape}")
-        
-        if len(pred_boxes_shape) != 3 or pred_boxes_shape[2] != 4:
-            logging.warning(f"警告: pred_boxes形状 {pred_boxes_shape} 可能不符合标准RF-DETR格式")
-        
-        if len(pred_logits_shape) != 3 or pred_logits_shape[1] != pred_boxes_shape[1]:
-            logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
+        with self._runner:
+            # 检查模型期望的batch维度
+            input_metadata = self._runner.get_input_metadata()
+            input_shape = input_metadata[self.input_name].shape
+            expected_batch_size = input_shape[0] if isinstance(input_shape[0], int) and input_shape[0] > 0 else 1
+            
+            dummy_input = np.random.randn(expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
+            
+            feed_dict = {self.input_name: dummy_input}
+            outputs_dict = self._runner.infer(feed_dict)
+            outputs = [outputs_dict[name] for name in self.output_names]
+            
+            if len(outputs) != 2:
+                raise ValueError(f"RF-DETR模型应该有2个输出（pred_boxes, pred_logits），但实际有{len(outputs)}个")
+            
+            pred_boxes_shape, pred_logits_shape = outputs[0].shape, outputs[1].shape
+            logging.info(f"RF-DETR输出格式 - pred_boxes: {pred_boxes_shape}, pred_logits: {pred_logits_shape}")
+            
+            if len(pred_boxes_shape) != 3 or pred_boxes_shape[2] != 4:
+                logging.warning(f"警告: pred_boxes形状 {pred_boxes_shape} 可能不符合标准RF-DETR格式")
+            
+            if len(pred_logits_shape) != 3 or pred_logits_shape[1] != pred_boxes_shape[1]:
+                logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
         """
@@ -594,6 +665,12 @@ class RFDETROnnx(BaseOnnx):
         Returns:
             List[np.ndarray]: 后处理后的检测结果
         """
+        # 首次调用时验证RF-DETR格式
+        try:
+            self._validate_rf_detr_format()
+        except Exception as e:
+            logging.warning(f"RF-DETR格式验证失败: {e}")
+        
         # 根据实际输出形状确定pred_logits和pred_boxes
         # 输出0: (4, 300, 4) - 应该是pred_boxes
         # 输出1: (4, 300, 15) - 应该是pred_logits
@@ -671,12 +748,12 @@ class RFDETROnnx(BaseOnnx):
 
 def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseOnnx:
     """
-    工厂函数：根据模型类型创建相应的检测器
+    工厂函数：根据模型类型创建相应的检测器（支持Polygraphy懒加载）
     
     Args:
         model_type (str): 模型类型，支持 'yolo', 'rtdetr', 'rfdetr'
         onnx_path (str): ONNX模型路径
-        **kwargs: 其他参数
+        **kwargs: 其他参数，包括providers等
         
     Returns:
         BaseOnnx: 相应的检测器实例
