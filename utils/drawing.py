@@ -49,7 +49,7 @@ def draw_detections(image, detections, class_names, colors, plate_results=None, 
             draw.text((x1, label_y_pos), label, fill=box_color, font=font)
             
             # 绘制OCR结果 - 只对车牌类别的检测框绘制OCR信息
-            if (class_names[class_id] == 'plate' and plate_results and
+            if (class_id < len(class_names) and class_names[class_id] == 'plate' and plate_results and
                 j < len(plate_results) and plate_results[j] is not None):
                 plate_info = plate_results[j]
                 

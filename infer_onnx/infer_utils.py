@@ -3,7 +3,7 @@ import threading
 import onnxruntime
 import json
 import numpy as np
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 # Use a lock to ensure thread-safety for the one-time initialization
 _preload_lock = threading.Lock()
@@ -234,3 +234,82 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
     except Exception as e:
         logging.error(f"获取模型信息失败: {e}")
         return None
+
+
+def xywh2xyxy(x: np.ndarray) -> np.ndarray:
+    """
+    Convert bounding box coordinates from (x, y, width, height) format to (x1, y1, x2, y2) format.
+    
+    Source: ultralytics/utils/ops.py::xywh2xyxy
+    原函数路径: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/utils/ops.py
+    
+    Args:
+        x (np.ndarray): Input bounding box coordinates in (x, y, width, height) format.
+        
+    Returns:
+        np.ndarray: Bounding box coordinates in (x1, y1, x2, y2) format.
+    """
+    assert x.shape[-1] == 4, f"input shape last dimension expected 4 but input shape is {x.shape}"
+    y = np.empty_like(x)  # faster than copy
+    xy = x[..., :2]  # centers
+    wh = x[..., 2:] / 2  # half width-height
+    y[..., :2] = xy - wh  # top left xy
+    y[..., 2:] = xy + wh  # bottom right xy
+    return y
+
+
+def clip_boxes(boxes: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
+    """
+    Clip bounding boxes to image boundaries.
+    
+    Source: ultralytics/utils/ops.py::clip_boxes
+    
+    Args:
+        boxes (np.ndarray): Bounding boxes to clip.
+        shape (tuple): Image shape as (height, width).
+        
+    Returns:
+        np.ndarray: Clipped bounding boxes.
+    """
+    boxes = boxes.copy()
+    boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, shape[1])  # x1, x2
+    boxes[..., [1, 3]] = boxes[..., [1, 3]].clip(0, shape[0])  # y1, y2
+    return boxes
+
+
+def scale_boxes(img1_shape: Tuple[int, int], boxes: np.ndarray, img0_shape: Tuple[int, int], 
+                ratio_pad: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None, 
+                padding: bool = True) -> np.ndarray:
+    """
+    Rescale bounding boxes from one image shape to another.
+    
+    Source: ultralytics/utils/ops.py::scale_boxes
+    原函数路径: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/utils/ops.py
+    
+    Args:
+        img1_shape (tuple): Shape of the source image (height, width).
+        boxes (np.ndarray): Bounding boxes to rescale in format (N, 4).
+        img0_shape (tuple): Shape of the target image (height, width).
+        ratio_pad (tuple, optional): Tuple of ((ratio_w, ratio_h), (pad_w, pad_h)) for scaling.
+        padding (bool): Whether boxes are based on YOLO-style augmented images with padding.
+        
+    Returns:
+        np.ndarray: Rescaled bounding boxes in the same format as input.
+    """
+    if ratio_pad is None:  # calculate from img0_shape
+        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain  = old / new
+        pad = (
+            round((img1_shape[1] - img0_shape[1] * gain) / 2 - 0.1),
+            round((img1_shape[0] - img0_shape[0] * gain) / 2 - 0.1),
+        )  # wh padding
+    else:
+        gain = ratio_pad[0][0]  # use provided ratio
+        pad = ratio_pad[1]
+
+    if padding:
+        boxes[..., 0] -= pad[0]  # x padding
+        boxes[..., 1] -= pad[1]  # y padding
+        boxes[..., 2] -= pad[0]  # x padding
+        boxes[..., 3] -= pad[1]  # y padding
+    boxes[..., :4] /= gain
+    return clip_boxes(boxes, img0_shape)
