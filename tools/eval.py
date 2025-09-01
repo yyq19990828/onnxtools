@@ -1,6 +1,14 @@
 import argparse
-from infer_onnx import DatasetEvaluator, create_detector
+import sys
+from pathlib import Path
+
+# 添加项目路径到系统路径
+project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
+sys.path.insert(0, str(project_root))
+from infer_onnx import create_detector
+from infer_onnx import DatasetEvaluator
 from utils.logging_config import setup_logger
+
 
 def main():
     parser = argparse.ArgumentParser(description='评估ONNX模型在数据集上的性能')
