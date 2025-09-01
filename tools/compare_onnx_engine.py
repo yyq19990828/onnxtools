@@ -177,11 +177,15 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
         traceback.print_exc()
         return None, None
 
-def visualize_compare_results(test_images, run_results, class_names, colors, detector=None, model_name="default"):
+def visualize_compare_results(test_images, run_results, class_names, colors, detector=None, engine_path=None):
     """可视化 compare_engine 的结果，支持多张图片"""
     try:
-        # 创建带模型名称的输出目录
-        output_dir = f"{RUN}/{model_name}"
+        # 创建带引擎文件名的输出目录
+        if engine_path:
+            engine_name = Path(engine_path).stem  # 获取不带后缀的引擎文件名
+        else:
+            engine_name = "default"
+        output_dir = f"{RUN}/{engine_name}"
         os.makedirs(output_dir, exist_ok=True)
         
         # 确保 test_images 是列表
@@ -539,11 +543,10 @@ def test_rtdetr_compare_engine(args):
             )
         
         # 获取compare_engine的结果进行后处理和画图
-        model_basename = Path(args.model_path).stem  # 获取不带后缀的文件名
         if run_results:
             logging.info("对比较结果进行后处理和可视化...")
             logging.info(f"run_results 键: {list(run_results.keys())}")
-            visualize_compare_results(test_images, run_results, class_names, colors, detector, model_basename)
+            visualize_compare_results(test_images, run_results, class_names, colors, detector, engine_path)
         else:
             logging.info("使用检测器进行单独推理和可视化...")
             for idx, test_img in enumerate(test_images):
@@ -551,8 +554,9 @@ def test_rtdetr_compare_engine(args):
                 if detections and len(detections[0]) > 0:
                     result_img = draw_detections(test_img.copy(), detections, class_names, colors)
                     
-                    # 保存结果
-                    output_dir = f"{RUN}/{model_basename}"
+                    # 保存结果 - 使用引擎文件名
+                    engine_name = Path(engine_path).stem
+                    output_dir = f"{RUN}/{engine_name}"
                     os.makedirs(output_dir, exist_ok=True)
                     output_path = f"{output_dir}/test_detection_result_{idx + 1:03d}.jpg"
                     cv2.imwrite(output_path, result_img)
