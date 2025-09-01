@@ -14,6 +14,7 @@ from .infer_models import (
 )
 from .ocr_onnx import ColorLayerONNX, OCRONNX
 from .eval_coco import DatasetEvaluator
+RUN = "runs"
 
 # This makes `from infer_onnx import *` behave nicely, exporting only these names.
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     'ColorLayerONNX', 
     'OCRONNX',
     'create_detector',
-    'DatasetEvaluator'
+    'DatasetEvaluator',
+    'RUN'
 ]

@@ -7,9 +7,11 @@
 
 import numpy as np
 import cv2
+import logging
 from pathlib import Path
 from typing import List, Union, Optional, Dict, Any, Tuple, TYPE_CHECKING
 from collections import OrderedDict
+import glob
 
 from polygraphy.comparator.data_loader import DataLoader
 from polygraphy.logger import G_LOGGER
@@ -57,16 +59,16 @@ class CustomEngineDataLoader(DataLoader):
         self.detector_class = detector_class
         self.input_shape = input_shape
         self.input_name = input_name
-        self.image_paths = image_paths or ['data/sample.jpg']
+        self.image_paths = self._process_image_paths(image_paths or [''])
         self.images = images or []
         self.preprocess_kwargs = preprocess_kwargs or {}
         self._cached_images = {}  # 缓存加载的图像
         
         # 确定数据来源
-        if self.image_paths:
+        if self.image_paths and len(self.image_paths) > 0:
             self.data_source = "paths"
             self.data_length = len(self.image_paths)
-        elif self.images:
+        elif self.images and len(self.images) > 0:
             self.data_source = "arrays"
             self.data_length = len(self.images)
         else:
@@ -74,6 +76,52 @@ class CustomEngineDataLoader(DataLoader):
             self.data_length = iterations
         
         G_LOGGER.info(f"CustomEngineDataLoader 初始化: 检测器={detector_class.__name__}, 数据源={self.data_source}, 数据长度={self.data_length}")
+    
+    def _process_image_paths(self, paths: List[Union[str, Path]]) -> List[Path]:
+        """
+        处理输入路径列表，支持文件夹路径和具体图片路径
+        
+        Args:
+            paths: 输入路径列表，可以是文件夹或具体图片路径
+            
+        Returns:
+            List[Path]: 处理后的图片文件路径列表
+        """
+        processed_paths = []
+        supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
+        
+        for path in paths:
+            path = Path(path)
+            
+            if path.is_file():
+                # 如果是文件，检查是否是支持的图片格式
+                if path.suffix.lower() in supported_extensions:
+                    processed_paths.append(path)
+                else:
+                    G_LOGGER.warning(f"跳过不支持的文件格式: {path}")
+            elif path.is_dir():
+                # 如果是文件夹，扫描其中的图片文件
+                found_images = []
+                for ext in supported_extensions:
+                    pattern = str(path / f"*{ext}")
+                    found_images.extend(glob.glob(pattern))
+                    pattern = str(path / f"*{ext.upper()}")
+                    found_images.extend(glob.glob(pattern))
+                
+                if found_images:
+                    # 排序确保一致性
+                    found_images.sort()
+                    processed_paths.extend([Path(img) for img in found_images])
+                    G_LOGGER.info(f"从文件夹 {path} 中找到 {len(found_images)} 张图片")
+                else:
+                    G_LOGGER.warning(f"文件夹 {path} 中未找到支持的图片文件")
+            else:
+                G_LOGGER.warning(f"路径不存在: {path}")
+        
+        if not processed_paths:
+            G_LOGGER.warning("未找到任何有效的图片文件，将使用合成数据")
+        
+        return processed_paths
     
     def _load_image(self, index: int) -> np.ndarray:
         """
@@ -141,6 +189,13 @@ class CustomEngineDataLoader(DataLoader):
             else:
                 input_tensor, _, _, _ = preprocess_result
             
+            # 检测模型期望的batch size并调整输入张量
+            expected_batch_size = self._get_expected_batch_size()
+            if expected_batch_size > 1 and input_tensor.shape[0] == 1:
+                # 重复数据以匹配期望的batch size
+                input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
+                logging.debug(f"数据加载器：调整输入batch维度从1到{expected_batch_size}")
+            
             # 构造输出字典
             feed_dict = OrderedDict()
             feed_dict[self.input_name] = input_tensor
@@ -150,6 +205,38 @@ class CustomEngineDataLoader(DataLoader):
     def __len__(self) -> int:
         """返回数据加载器长度"""
         return self.iterations
+    
+    def _get_expected_batch_size(self) -> int:
+        """
+        获取模型期望的batch size
+        
+        Returns:
+            int: 期望的batch size
+        """
+        try:
+            # 检查是否有已缓存的batch size信息
+            if hasattr(self, '_cached_batch_size'):
+                return self._cached_batch_size
+                
+            # 尝试通过检测器类的静态方法获取batch size信息
+            if hasattr(self.detector_class, '_get_batch_size_from_onnx'):
+                batch_size = self.detector_class._get_batch_size_from_onnx()
+                self._cached_batch_size = batch_size
+                return batch_size
+                
+            # 对于RFDETR模型，已知batch size是4
+            if self.detector_class.__name__ == 'RFDETROnnx':
+                self._cached_batch_size = 4
+                logging.debug(f"数据加载器使用RFDETR已知batch size: 4")
+                return 4
+                
+            # 默认情况
+            self._cached_batch_size = 1
+            return 1
+            
+        except Exception as e:
+            logging.debug(f"无法检测期望batch size，使用默认值1: {e}")
+            return 1
 
 
 def create_engine_dataloader(

@@ -41,7 +41,8 @@ class BaseOnnx(ABC):
         """
         self.onnx_path = onnx_path
         self.conf_thres = conf_thres
-        self.input_shape = input_shape
+        self._requested_input_shape = input_shape  # 用户请求的输入形状
+        self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         
         # 创建Polygraphy懒加载器
@@ -53,6 +54,8 @@ class BaseOnnx(ABC):
         self.input_name = None
         self.output_names = None
         self._class_names = None
+
+        self.engine_dataloader = None  # 用于引擎比较的数据加载器
         
         logging.info(f"创建懒加载ONNX推理器: {self.onnx_path}")
     
@@ -78,6 +81,18 @@ class BaseOnnx(ABC):
                 # 通过临时会话获取输出名称
                 session = self._session_loader()
                 self.output_names = [output.name for output in session.get_outputs()]
+                
+                # 获取实际输入形状
+                input_metadata = self._runner.get_input_metadata()
+                input_shape_from_model = input_metadata[self.input_name].shape
+                if (len(input_shape_from_model) >= 4 and 
+                    isinstance(input_shape_from_model[2], int) and input_shape_from_model[2] > 0 and
+                    isinstance(input_shape_from_model[3], int) and input_shape_from_model[3] > 0):
+                    self.input_shape = (input_shape_from_model[2], input_shape_from_model[3])
+                    logging.info(f"从ONNX模型读取到固定输入形状: {self.input_shape}")
+                else:
+                    self.input_shape = self._requested_input_shape
+                    logging.info(f"使用用户指定的输入形状: {self.input_shape}")
                 
                 # 获取类别名称（如果存在配置文件）
                 self._class_names = self._load_class_names()
@@ -197,16 +212,22 @@ class BaseOnnx(ABC):
         """预处理图像（静态方法）"""
         return preprocess_image(image, input_shape)
     
-    @property
-    def engine_dataloader(self):
+    def create_engine_dataloader(self, **kwargs):
         """
-        为引擎比较创建适配的数据加载器
+        为引擎比较创建适配的数据加载器，并自动赋值给engine_dataloader属性
+        
+        Args:
+            image_paths: 图片路径列表，可以是文件夹路径或具体图片路径
+            iterations: 迭代次数
         
         Returns:
             CustomEngineDataLoader: 使用静态预处理方法的自定义数据加载器
         """
         from .engine_dataloader import create_dataloader_from_detector
-        return create_dataloader_from_detector(self)
+        dataloader = create_dataloader_from_detector(self, **kwargs)
+        # 直接赋值给私有属性，这样外部脚本调用后就会自动设置好
+        self.engine_dataloader = dataloader
+        return dataloader
     
     def compare_engine(
         self, 
@@ -220,7 +241,7 @@ class BaseOnnx(ABC):
         
         Args:
             engine_path (Optional[str]): TensorRT引擎文件路径。如果为None，则从ONNX构建引擎
-            save_engine (bool): 当从ONNX构建引擎时，是否保存引擎文件，默认False
+            save_engine (bool): 当从ONNX构建引擎时，是否保存引擎文件(fp32)，默认False
             rtol (float): 相对容差，默认1e-3
             atol (float): 绝对容差，默认1e-3
             
@@ -252,6 +273,10 @@ class BaseOnnx(ABC):
             trt_runner = TrtRunner(build_engine)
         
         # 运行推理比较，使用适配的数据加载器
+        # 如果没有设置自定义数据加载器，则创建默认的
+        # if self.engine_dataloader is None:
+        #     self.create_engine_dataloader()  # 这会自动设置self.engine_dataloader
+        
         run_results = Comparator.run([onnx_runner, trt_runner], data_loader=self.engine_dataloader)
         
         # 比较精度
