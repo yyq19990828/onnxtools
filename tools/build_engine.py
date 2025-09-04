@@ -26,8 +26,10 @@ from polygraphy.backend.trt import EngineBytesFromNetwork, EngineFromBytes, Engi
 from polygraphy.backend.common import InvokeFromScript
 from polygraphy.comparator import Comparator
 
-# 启用RTX加速，规避TensorRT 8.6.1兼容性问题
-config.USE_TENSORRT_RTX = True
+# 注意：USE_TENSORRT_RTX 的设置策略：
+# - 构建引擎时设置为 False（默认），以支持精度标志（fp16, int8等）
+# - 比较时设置为 True，以规避TensorRT 8.6.1兼容性问题
+# config.USE_TENSORRT_RTX 将根据操作动态设置
 
 # 添加项目路径到系统路径
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
@@ -216,6 +218,10 @@ def main():
     if not skip_build:
         print(f"精度对比: {'是' if compare_enabled else '否'}")
         
+        # 构建引擎时确保 USE_TENSORRT_RTX = False 以支持精度标志
+        config.USE_TENSORRT_RTX = False
+        print(f"构建阶段: 设置 USE_TENSORRT_RTX = {config.USE_TENSORRT_RTX}")
+        
         # 构建TensorRT引擎配置
         print("配置优化的TensorRT构建参数...")
         create_config = CreateConfig(
@@ -284,6 +290,9 @@ def main():
     
     # 如果需要比较，运行对比测试
     if compare_enabled and saved_engine_for_comparison is not None:
+        # 比较阶段设置 USE_TENSORRT_RTX = True 规避兼容性问题
+        config.USE_TENSORRT_RTX = True
+        print(f"比较阶段: 设置 USE_TENSORRT_RTX = {config.USE_TENSORRT_RTX}")
         # 获取比较参数
         compare_args = {
             'rtol': args.rtol,
