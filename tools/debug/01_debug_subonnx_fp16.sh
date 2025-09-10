@@ -30,9 +30,9 @@ if [ -z "$model_basename" ]; then
 fi
 
 RUN="runs"
-model_dir="models"
+model_dir="models_op17"
 onnx_model="${model_dir}/${model_basename}.onnx"
-debug_dir="DEBUG/${model_basename}"
+debug_dir="DEBUG/FP16/${model_basename}"
 
 # 创建DEBUG目录
 mkdir -p "${debug_dir}"
@@ -42,14 +42,18 @@ inputs_file="${debug_dir}/inputs.json"
 golden_file="${debug_dir}/layerwise_golden.json"
 combined_file="${debug_dir}/layerwise_inputs.json"
 replay_file="${debug_dir}/polygraphy_debug_replay.json"
+folded_onnx="${debug_dir}/folded.onnx"
+
+# 步骤0: 优化ONNX模型
+polygraphy surgeon sanitize ${onnx_model} -o ${folded_onnx} --fold-constants 
 
 # 步骤1: 生成ONNX Runtime的中间结果作为FP32的参考值
 if [ -f "$inputs_file" ] && [ -f "$golden_file" ]; then
     echo "✓ Step 1: Skipping ONNX Runtime inference (files already exist)"
 else
     echo "→ Step 1: Generating ONNX Runtime intermediate results..."
-    polygraphy run ${onnx_model} --onnxrt \
-        --save-inputs "$inputs_file" \
+    polygraphy run ${folded_onnx} --onnxrt \
+        --data-loader-script tools/debug/data_loader.py --save-inputs "$inputs_file" \
         --onnx-outputs mark all --save-outputs "$golden_file"
 fi
 
@@ -64,9 +68,10 @@ fi
 # 步骤3: 逐层调试
 echo "→ Step 3: Running bisect debug reduce..."
 
-debug_reduce_cmd="polygraphy debug reduce ${onnx_model} \
+debug_reduce_cmd="polygraphy debug reduce ${folded_onnx} \
             -o \"${debug_dir}/${model_basename}_reduced.onnx\" \
             --mode=bisect \
+            --show-output \
             --load-inputs \"$combined_file\" \
             --save-debug-replay \"$replay_file\""
 
@@ -78,11 +83,14 @@ fi
 
 debug_reduce_cmd="$debug_reduce_cmd --check polygraphy run polygraphy_debug.onnx \
                     --trt \
-                    --fp16 \
-                    --precision-constraints obey \
-                    --trt-network-postprocess-script tools/network_postprocess.py \
+                        --fp16 \
+                        --precision-constraints obey \
+                        --trt-network-postprocess-script tools/network_postprocess.py \
                     --load-inputs \"$combined_file\" \
-                    --load-outputs \"$golden_file\""
+                    --load-outputs \"$golden_file\"
+                    --check-error-stat quantile \
+                    --atol 1e-2 --rtol 1e-2 \
+                    --error-quantile 0.95"
 
 eval $debug_reduce_cmd
 

@@ -32,7 +32,7 @@ fi
 
 RUN="runs"
 model_dir="models"
-debug_dir="DEBUG/${model_basename}"
+debug_dir="DEBUG/FP32/${model_basename}"
 reduced_onnx_model="${debug_dir}/${model_basename}_reduced.onnx"
 
 # 检查step 1的输出文件是否存在
