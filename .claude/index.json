@@ -1,0 +1,178 @@
+{
+  "timestamp": "2025-09-15T20:01:23+08:00",
+  "project_name": "onnx_vehicle_plate_recognition",
+  "project_description": "基于ONNX模型的车辆和车牌识别系统",
+  "scan_coverage": {
+    "total_estimated_files": 280,
+    "scanned_files": 156,
+    "coverage_percentage": 55.7,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "modules": {
+    "root": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition",
+      "type": "project_root",
+      "entry_files": ["main.py"],
+      "config_files": ["requirements.txt", "pyproject.toml", "run.sh"],
+      "documentation": ["CLAUDE.md", "README.md"],
+      "status": "active"
+    },
+    "infer_onnx": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/infer_onnx",
+      "type": "core_module",
+      "entry_files": ["__init__.py", "infer_models.py"],
+      "interface_files": [
+        "base_onnx.py",
+        "yolo_onnx.py",
+        "rtdetr_onnx.py",
+        "rfdetr_onnx.py",
+        "ocr_onnx.py"
+      ],
+      "key_dependencies": ["onnxruntime-gpu", "numpy", "opencv-python"],
+      "data_models": ["BaseOnnx", "DetectionResult", "OCRResult"],
+      "test_coverage": "pending",
+      "documentation": ["CLAUDE.md"],
+      "status": "active"
+    },
+    "utils": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/utils",
+      "type": "utility_module",
+      "entry_files": ["__init__.py", "pipeline.py"],
+      "interface_files": [
+        "drawing.py",
+        "image_processing.py",
+        "ocr_image_processing.py",
+        "ocr_post_processing.py"
+      ],
+      "key_dependencies": ["opencv-python", "numpy", "colorlog"],
+      "data_models": ["ProcessingPipeline", "DrawingConfig"],
+      "test_coverage": "pending",
+      "documentation": ["CLAUDE.md"],
+      "status": "active"
+    },
+    "tools": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/tools",
+      "type": "development_tools",
+      "entry_files": ["eval.py", "build_engine.py"],
+      "interface_files": [
+        "compare_onnx_engine.py",
+        "draw_engine.py",
+        "layer_statistics.py"
+      ],
+      "key_dependencies": ["tensorrt", "polygraphy", "matplotlib"],
+      "data_models": ["EvaluationMetrics", "BenchmarkResult"],
+      "test_coverage": "pending",
+      "documentation": ["CLAUDE.md"],
+      "status": "active"
+    },
+    "models": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/models",
+      "type": "asset_storage",
+      "entry_files": ["det_config.yaml", "plate.yaml"],
+      "interface_files": [],
+      "key_dependencies": ["yaml"],
+      "data_models": ["DetectionConfig", "OCRConfig"],
+      "important_paths": [
+        "*.onnx",
+        "*.engine",
+        "det_config.yaml",
+        "plate.yaml"
+      ],
+      "test_coverage": "pending",
+      "documentation": ["CLAUDE.md"],
+      "status": "active"
+    },
+    "mcp_vehicle_detection": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/mcp_vehicle_detection",
+      "type": "service_module",
+      "entry_files": ["server.py", "main.py"],
+      "interface_files": ["quick_test.py"],
+      "key_dependencies": ["mcp", "anyio", "pydantic"],
+      "data_models": ["DetectionRequest", "DetectionResponse"],
+      "test_coverage": "pending",
+      "documentation": ["CLAUDE.md"],
+      "status": "active"
+    },
+    "third_party": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/third_party",
+      "type": "external_libraries",
+      "entry_files": ["various"],
+      "submodules": ["ultralytics", "Polygraphy", "rfdetr", "trt-engine-explorer"],
+      "status": "stable"
+    },
+    "docs": {
+      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/docs",
+      "type": "documentation",
+      "entry_files": ["evaluation_guide.md"],
+      "submodules": ["polygraphy使用指南"],
+      "status": "maintained"
+    }
+  },
+  "ignore_patterns": [
+    "__pycache__/**",
+    "*.py[cod]",
+    "*.log",
+    ".ipynb_checkpoints/",
+    "venv/**",
+    ".vscode/",
+    "*.onnx",
+    "*.engine",
+    "data/*.mp4",
+    "runs/",
+    "third_party/**"
+  ],
+  "language_distribution": {
+    "python": 85,
+    "yaml": 8,
+    "shell": 4,
+    "markdown": 3
+  },
+  "architecture_patterns": [
+    "factory_pattern",
+    "strategy_pattern",
+    "pipeline_pattern",
+    "mcp_protocol"
+  ],
+  "gaps_and_recommendations": {
+    "missing_tests": [
+      "infer_onnx unit tests",
+      "utils module tests",
+      "end-to-end integration tests"
+    ],
+    "missing_documentation": [
+      "API reference documentation",
+      "deployment guide",
+      "performance tuning guide"
+    ],
+    "optimization_opportunities": [
+      "TensorRT engine auto-building",
+      "model caching and warm-up",
+      "batch processing optimization"
+    ],
+    "next_priority_scans": [
+      "third_party/ultralytics core modules",
+      "third_party/Polygraphy integration points",
+      "mcp_vehicle_detection/third-party detailed analysis"
+    ]
+  },
+  "scan_statistics": {
+    "files_by_type": {
+      "python": 156,
+      "yaml": 23,
+      "shell": 12,
+      "markdown": 89
+    },
+    "largest_modules": [
+      {"name": "third_party", "file_count": 180},
+      {"name": "infer_onnx", "file_count": 10},
+      {"name": "utils", "file_count": 9},
+      {"name": "tools", "file_count": 7}
+    ],
+    "complexity_indicators": {
+      "model_architectures": 3,
+      "configuration_files": 5,
+      "integration_points": 4
+    }
+  }
+}
