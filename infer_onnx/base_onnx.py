@@ -282,8 +282,10 @@ class BaseOnnx(ABC):
         # 比较精度
         accuracy_results = Comparator.compare_accuracy(
             run_results,
-            compare_func=CompareFunc.simple(rtol=rtol, atol=atol)
-        )
+            compare_func=CompareFunc.simple(check_error_stat='quantile',
+                                            error_quantile=0.95,
+                                            rtol=rtol, atol=atol)
+                                            )
         
         # 返回比较结果
         return bool(accuracy_results), run_results

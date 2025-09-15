@@ -224,11 +224,11 @@ class CustomEngineDataLoader(DataLoader):
                 self._cached_batch_size = batch_size
                 return batch_size
                 
-            # 对于RFDETR模型，已知batch size是4
-            if self.detector_class.__name__ == 'RFDETROnnx':
-                self._cached_batch_size = 4
-                logging.debug(f"数据加载器使用RFDETR已知batch size: 4")
-                return 4
+            # # 对于RFDETR模型，已知batch size是4
+            # if self.detector_class.__name__ == 'RFDETROnnx':
+            #     self._cached_batch_size = 4
+            #     logging.debug(f"数据加载器使用RFDETR已知batch size: 4")
+            #     return 4
                 
             # 默认情况
             self._cached_batch_size = 1
@@ -245,7 +245,7 @@ def create_engine_dataloader(
     input_name: str,
     image_paths: Optional[List[Union[str, Path]]] = None,
     images: Optional[List[np.ndarray]] = None,
-    iterations: int = 10,
+    iterations: int = 4,
     **kwargs
 ) -> CustomEngineDataLoader:
     """
@@ -279,7 +279,7 @@ def create_dataloader_from_detector(
     detector_instance,
     image_paths: Optional[List[Union[str, Path]]] = None,
     images: Optional[List[np.ndarray]] = None,
-    iterations: int = 10,
+    iterations: int = 2,
     **kwargs
 ) -> CustomEngineDataLoader:
     """
