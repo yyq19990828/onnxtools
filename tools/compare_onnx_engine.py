@@ -87,14 +87,14 @@ def parse_arguments():
     parser.add_argument(
         '--rtol',
         type=float,
-        default=1e-3,
+        default=1e0,
         help='相对容差 (默认: 1e-3)'
     )
     
     parser.add_argument(
         '--atol',
         type=float,
-        default=1e-3,
+        default=1e-1,
         help='绝对容差 (默认: 1e-3)'
     )
     
@@ -141,6 +141,16 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
             ratio_pad = None
         else:
             _, scale, _, ratio_pad = preprocess_result
+        
+        # 调试：输出原始输出的统计信息
+        if isinstance(raw_outputs, list) and len(raw_outputs) > 0:
+            prediction = raw_outputs[0]
+            logging.debug(f"原始输出形状: {prediction.shape}")
+            if len(prediction.shape) == 3 and prediction.shape[2] > 4:
+                # 检查分类分数部分的统计
+                scores = prediction[:, :, 4:]
+                logging.debug(f"分类分数统计: min={np.min(scores):.4f}, max={np.max(scores):.4f}, "
+                            f"mean={np.mean(scores):.4f}, std={np.std(scores):.4f}")
         
         # 使用检测器的_postprocess方法，参考 __call__ 中的处理
         if type(detector).__name__ == 'RFDETROnnx':

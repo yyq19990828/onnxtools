@@ -74,6 +74,29 @@ def _get_layer_operation_type(layer: 'trt.ILayer') -> str:
         except (AttributeError, TypeError):
             pass
     
+    # Reduce层的具体操作检测
+    elif layer_type == trt.LayerType.REDUCE:
+        try:
+            reduce_op = layer.get_reduce_operation()
+            if reduce_op == trt.ReduceOperation.MAX:
+                return "reduce_max"
+            elif reduce_op == trt.ReduceOperation.MIN:
+                return "reduce_min"
+            elif reduce_op == trt.ReduceOperation.SUM:
+                return "reduce_sum"
+            elif reduce_op == trt.ReduceOperation.AVG:
+                return "reduce_avg"
+            elif reduce_op == trt.ReduceOperation.PROD:
+                return "reduce_prod"
+        except (AttributeError, TypeError):
+            pass
+            
+        # 通过名称推断
+        if any(name in layer_name for name in ['reducemax', 'reduce_max']):
+            return "reduce_max"
+        elif any(name in layer_name for name in ['reducemin', 'reduce_min']):
+            return "reduce_min"
+    
     return str(layer_type).split('.')[-1].lower()
 
 
@@ -95,6 +118,7 @@ def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_n
     critical_operations = {
         trt.LayerType.SOFTMAX: "softmax数值敏感",
         trt.LayerType.NORMALIZATION: "normalization精度要求高",
+        trt.LayerType.TOPK: "topk排序算子精度敏感",
         # trt.LayerType.REDUCE: "reduction操作累积误差",  # 暂时注释，太多了
     }
     
@@ -102,8 +126,17 @@ def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_n
         return True, critical_operations[layer.type]
     
     # 特定操作类型需要FP32
-    if operation_type in ["sigmoid_activation", "exp_unary", "log_unary", "div_elementwise"]:
+    if operation_type in ["sigmoid_activation", "exp_unary", "log_unary", "div_elementwise", "reduce_max"]:
         return True, f"{operation_type}数值不稳定"
+    
+    # 特定路径下的节点强制使用FP32
+    critical_path_patterns = [
+        '/model.28/enc_score_head/',  # RTDETR encoder score head路径
+    ]
+    
+    for pattern in critical_path_patterns:
+        if pattern in layer_name:
+            return True, f"关键路径节点: {pattern}"
     
     # 暂时注释掉attention层的FP32设置
     # attention_patterns = ['attention', 'attn', 'self_attn', 'cross_attn']
@@ -137,7 +170,10 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
     fp32_stats: Dict[str, List[str]] = {
         'softmax': [],
         'normalization': [],
+        'topk': [],
+        'reduce': [],  # reduce操作(包含reducemax)
         'sigmoid': [],
+        'critical_path': [],  # 关键路径节点
         'attention': [],
         'detection': [],
         'numerical_unstable': [],
@@ -184,10 +220,16 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
                     
                     # 分类统计
                     layer_type = layer.type
-                    if layer_type == trt.LayerType.SOFTMAX:
+                    if '关键路径节点' in reason:
+                        fp32_stats['critical_path'].append(layer_name)
+                    elif layer_type == trt.LayerType.SOFTMAX:
                         fp32_stats['softmax'].append(layer_name)
                     elif layer_type == trt.LayerType.NORMALIZATION:
                         fp32_stats['normalization'].append(layer_name)
+                    elif layer_type == trt.LayerType.TOPK:
+                        fp32_stats['topk'].append(layer_name)
+                    elif 'reduce' in operation_type:
+                        fp32_stats['reduce'].append(layer_name)
                     elif 'sigmoid' in operation_type:
                         fp32_stats['sigmoid'].append(layer_name)
                     # elif 'attention' in reason:

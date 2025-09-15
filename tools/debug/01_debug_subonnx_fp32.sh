@@ -3,7 +3,8 @@
 
 # 参数解析
 CONTINUE_MODE=false
-model_basename=""
+onnx_model=""
+input_size=640  # 默认尺寸
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -11,31 +12,79 @@ while [[ $# -gt 0 ]]; do
             CONTINUE_MODE=true
             shift
             ;;
+        --size|-s)
+            input_size="$2"
+            shift 2
+            ;;
         -*)
             echo "Unknown option $1"
             exit 1
             ;;
         *)
-            model_basename="$1"
+            onnx_model="$1"
             shift
             ;;
     esac
 done
 
-if [ -z "$model_basename" ]; then
-    echo "Usage: $0 [--continue] <model_basename>"
-    echo "Example: $0 yolov8s_640"
-    echo "Example: $0 --continue yolov8s_640  # Continue from previous debug session"
+if [ -z "$onnx_model" ]; then
+    echo "Usage: $0 [OPTIONS] <onnx_model_path>"
+    echo ""
+    echo "Options:"
+    echo "  --continue        Continue from previous debug session"
+    echo "  --size, -s SIZE   Input size for model (default: 640)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 models/yolov8s_640.onnx"
+    echo "  $0 --size 1280 models/yolov8s_1280.onnx"
+    echo "  $0 --continue models/yolov8s_640.onnx"
     exit 1
 fi
 
+# 自动解析模型路径
+model_dir=$(dirname "$onnx_model")
+model_filename=$(basename "$onnx_model")
+model_basename="${model_filename%.onnx}"
+
+# 验证模型文件是否存在
+if [ ! -f "$onnx_model" ]; then
+    echo "Error: ONNX model not found: $onnx_model"
+    exit 1
+fi
+
+echo "Model info:"
+echo "  - Path: $onnx_model"
+echo "  - Directory: $model_dir"
+echo "  - Basename: $model_basename"
+echo "  - Input size: ${input_size}x${input_size}"
+
 RUN="runs"
-model_dir="models"
-onnx_model="${model_dir}/${model_basename}.onnx"
-debug_dir="DEBUG/FP32/${model_basename}"
+debug_dir="DEBUG/FP32/${model_dir}/${model_basename}"
 
 # 创建DEBUG目录
 mkdir -p "${debug_dir}"
+
+# 生成数据加载器函数
+generate_data_loader() {
+    local size=$1
+    local template_file="tools/debug/data_loader.py.template"
+    local output_file="${debug_dir}/data_loader.py"
+    
+    # 确保模板文件存在
+    if [ ! -f "$template_file" ]; then
+        echo "Error: Template file not found: $template_file"
+        exit 1
+    fi
+    
+    # 使用 sed 替换占位符
+    sed "s/{{INPUT_SIZE}}/$size/g" "$template_file" > "$output_file"
+    
+    echo "✓ Generated data_loader.py with input size: ${size}x${size}"
+}
+
+# 生成自定义数据加载器
+echo "→ Generating custom data loader..."
+generate_data_loader $input_size
 
 # 检查中间文件是否已存在，智能跳过已完成的步骤
 inputs_file="${debug_dir}/inputs.json"
@@ -53,7 +102,7 @@ if [ -f "$inputs_file" ] && [ -f "$golden_file" ]; then
 else
     echo "→ Step 1: Generating ONNX Runtime intermediate results..."
     polygraphy run ${folded_onnx} --onnxrt \
-        --data-loader-script tools/debug/data_loader.py --save-inputs "$inputs_file" \
+        --data-loader-script "${debug_dir}/data_loader.py" --save-inputs "$inputs_file" \
         --onnx-outputs mark all --save-outputs "$golden_file"
 fi
 

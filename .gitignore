@@ -52,5 +52,6 @@ data/*.jpg
 
 runs/
 run.sh
+DEBUG/
 
 third_party/
