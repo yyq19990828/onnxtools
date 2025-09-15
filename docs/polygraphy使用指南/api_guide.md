@@ -1154,3 +1154,476 @@ def two_stage_debugging(model_path, total_items):
    - 集成检查命令和工件管理
 
 这些 API 提供了与 CLI 调试命令完全相同的功能，同时允许更细粒度的控制和自定义扩展。
+
+## CLI `CompareFunc` 比较函数类详解
+
+### 概述
+
+`CompareFunc` 类是 Polygraphy 比较器系统的核心组件，提供了多种不同的比较策略用于评估两个 `IterationResult` 对象的差异。每种比较方法针对不同的使用场景和精度要求，从传统的数值误差比较到先进的感知相似性评估。
+
+### 核心架构
+
+```python
+from polygraphy.comparator.compare import (
+    CompareFunc, 
+    OutputCompareResult, 
+    DistanceMetricsResult, 
+    QualityMetricsResult, 
+    PerceptualMetricsResult
+)
+from polygraphy.comparator import Comparator
+```
+
+### 比较结果类型
+
+#### 1. OutputCompareResult - 传统数值比较结果
+
+```python
+class OutputCompareResult:
+    """传统数值比较的结果，包含多种统计误差指标"""
+    
+    def __init__(self, passed, max_absdiff, max_reldiff, mean_absdiff, 
+                 mean_reldiff, median_absdiff, median_reldiff, 
+                 quantile_absdiff, quantile_reldiff):
+        self.passed = passed                    # 是否通过比较
+        self.max_absdiff = max_absdiff         # 最大绝对误差
+        self.max_reldiff = max_reldiff         # 最大相对误差
+        self.mean_absdiff = mean_absdiff       # 平均绝对误差
+        self.mean_reldiff = mean_reldiff       # 平均相对误差
+        self.median_absdiff = median_absdiff   # 中位数绝对误差
+        self.median_reldiff = median_reldiff   # 中位数相对误差
+        self.quantile_absdiff = quantile_absdiff  # 分位数绝对误差
+        self.quantile_reldiff = quantile_reldiff  # 分位数相对误差
+
+# 使用示例
+def analyze_compare_results(compare_result):
+    """分析比较结果中的统计信息"""
+    if isinstance(compare_result, OutputCompareResult):
+        print(f"通过状态: {compare_result.passed}")
+        print(f"最大误差: abs={compare_result.max_absdiff:.6f}, rel={compare_result.max_reldiff:.6f}")
+        print(f"平均误差: abs={compare_result.mean_absdiff:.6f}, rel={compare_result.mean_reldiff:.6f}")
+        print(f"中位数误差: abs={compare_result.median_absdiff:.6f}, rel={compare_result.median_reldiff:.6f}")
+```
+
+#### 2. DistanceMetricsResult - 距离度量比较结果
+
+```python
+class DistanceMetricsResult:
+    """基于距离度量的比较结果"""
+    
+    def __init__(self, passed, l2_norm, cosine_similarity):
+        self.passed = passed                           # 是否通过比较
+        self.l2_norm = l2_norm                        # L2范数（欧几里得距离）
+        self.cosine_similarity = cosine_similarity     # 余弦相似度
+
+# 使用示例
+def analyze_distance_results(distance_result):
+    """分析距离度量结果"""
+    if isinstance(distance_result, DistanceMetricsResult):
+        print(f"通过状态: {distance_result.passed}")
+        print(f"L2范数: {distance_result.l2_norm:.6f}")
+        print(f"余弦相似度: {distance_result.cosine_similarity:.6f}")
+```
+
+#### 3. QualityMetricsResult - 质量度量比较结果
+
+```python
+class QualityMetricsResult:
+    """基于质量度量的比较结果"""
+    
+    def __init__(self, passed, psnr=None, snr=None):
+        self.passed = passed    # 是否通过比较
+        self.psnr = psnr       # 峰值信噪比(Peak Signal-to-Noise Ratio)
+        self.snr = snr         # 信噪比(Signal-to-Noise Ratio)
+
+# 使用示例
+def analyze_quality_results(quality_result):
+    """分析质量度量结果"""
+    if isinstance(quality_result, QualityMetricsResult):
+        print(f"通过状态: {quality_result.passed}")
+        if quality_result.psnr is not None:
+            print(f"PSNR: {quality_result.psnr:.2f} dB")
+        if quality_result.snr is not None:
+            print(f"SNR: {quality_result.snr:.2f} dB")
+```
+
+#### 4. PerceptualMetricsResult - 感知度量比较结果
+
+```python
+class PerceptualMetricsResult:
+    """基于感知度量的比较结果"""
+    
+    def __init__(self, passed, lpips=None):
+        self.passed = passed    # 是否通过比较
+        self.lpips = lpips     # LPIPS(Learned Perceptual Image Patch Similarity)
+
+# 使用示例
+def analyze_perceptual_results(perceptual_result):
+    """分析感知度量结果"""
+    if isinstance(perceptual_result, PerceptualMetricsResult):
+        print(f"通过状态: {perceptual_result.passed}")
+        if perceptual_result.lpips is not None:
+            print(f"LPIPS: {perceptual_result.lpips:.6f}")
+```
+
+### 比较函数详解
+
+#### 1. CompareFunc.simple() - 传统数值比较
+
+**功能**: 基于绝对误差和相对误差的传统数值比较，是最常用的比较方法。
+
+**核心参数**:
+
+```python
+def create_simple_comparator():
+    """创建传统数值比较器"""
+    
+    # 基础配置
+    simple_compare = CompareFunc.simple(
+        check_shapes=True,           # 严格检查形状匹配
+        rtol=1e-5,                  # 相对容忍度 (1%)
+        atol=1e-5,                  # 绝对容忍度
+        fail_fast=False,            # 不在首次失败时停止
+        check_error_stat="elemwise", # 错误统计类型
+        error_quantile=0.99,        # 分位数设置
+        infinities_compare_equal=False,  # 无穷大值处理
+        
+        # 可视化选项 (实验性)
+        save_heatmaps=None,         # 保存热图路径
+        show_heatmaps=False,        # 显示热图
+        save_error_metrics_plot=None,  # 保存误差图路径
+        show_error_metrics_plot=False  # 显示误差图
+    )
+    return simple_compare
+
+# 错误统计类型详解
+ERROR_STAT_TYPES = {
+    "elemwise": "逐元素检查 - 检查每个元素是否超出容忍度",
+    "max": "最大值检查 - 检查最大绝对/相对误差，最严格",
+    "mean": "均值检查 - 检查平均绝对/相对误差",
+    "median": "中位数检查 - 检查中位数绝对/相对误差", 
+    "quantile": "分位数检查 - 检查指定分位数的误差"
+}
+```
+
+**按输出自定义配置**:
+
+```python
+def create_per_output_comparator():
+    """为不同输出创建个性化比较配置"""
+    
+    # 为不同输出设置不同的容忍度
+    per_output_rtol = {
+        "detection_boxes": 1e-3,     # 检测框相对宽松
+        "detection_scores": 1e-5,    # 分数需要精确
+        "feature_maps": 1e-4,        # 特征图中等精度
+        "": 1e-5                     # 默认值（空字符串键）
+    }
+    
+    per_output_atol = {
+        "detection_boxes": 1e-3,
+        "detection_scores": 1e-6,
+        "feature_maps": 1e-4,
+        "": 1e-5
+    }
+    
+    per_output_error_stat = {
+        "detection_boxes": "mean",      # 检测框使用均值检查
+        "detection_scores": "max",      # 分数使用最严格检查
+        "feature_maps": "quantile",     # 特征图使用分位数检查
+        "": "elemwise"                  # 默认逐元素检查
+    }
+    
+    simple_compare = CompareFunc.simple(
+        rtol=per_output_rtol,
+        atol=per_output_atol,
+        check_error_stat=per_output_error_stat,
+        error_quantile=0.95  # 分位数设置为95%
+    )
+    return simple_compare
+```
+
+**高级可视化功能**:
+
+```python
+def create_visual_comparator(output_dir="comparison_results"):
+    """创建带可视化功能的比较器"""
+    
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+    
+    visual_compare = CompareFunc.simple(
+        rtol=1e-4,
+        atol=1e-4,
+        
+        # 启用可视化功能
+        save_heatmaps=os.path.join(output_dir, "heatmaps"),
+        show_heatmaps=True,
+        save_error_metrics_plot=os.path.join(output_dir, "error_plots"),
+        show_error_metrics_plot=True
+    )
+    return visual_compare
+```
+
+#### 2. CompareFunc.indices() - 索引比较
+
+**功能**: 专门用于比较索引类输出（如Top-K操作的结果），支持索引容忍度。
+
+```python
+def create_indices_comparator():
+    """创建索引比较器"""
+    
+    # 基础索引比较
+    indices_compare = CompareFunc.indices(
+        index_tolerance=0,    # 索引必须完全匹配
+        fail_fast=False
+    )
+    
+    # 宽松索引比较 - 允许一定位置偏差
+    tolerant_indices_compare = CompareFunc.indices(
+        index_tolerance=2,    # 允许索引相差最多2个位置
+        fail_fast=False
+    )
+    
+    return indices_compare, tolerant_indices_compare
+
+# 索引容忍度示例
+def demonstrate_index_tolerance():
+    """演示索引容忍度的工作原理"""
+    
+    # 示例输出
+    output0 = [0, 1, 2, 3, 4]  # 基准输出
+    output1 = [1, 0, 2, 4, 3]  # 待比较输出
+    
+    tolerance_examples = {
+        0: "完全匹配 - 失败(0和1位置互换)",
+        1: "容忍度1 - 通过(0和1只相差1位)",
+        2: "容忍度2 - 通过(3和4相差1位，在容忍范围内)"
+    }
+    
+    return tolerance_examples
+```
+
+#### 3. CompareFunc.distance_metrics() - 距离度量比较
+
+**功能**: 使用L2范数和余弦相似度等距离度量来比较输出。
+
+```python
+def create_distance_comparator():
+    """创建距离度量比较器"""
+    
+    distance_compare = CompareFunc.distance_metrics(
+        l2_tolerance=1e-5,                    # L2范数容忍度
+        cosine_similarity_threshold=0.997,    # 余弦相似度阈值
+        check_shapes=True,
+        fail_fast=False
+    )
+    return distance_compare
+
+# 距离度量原理
+def understand_distance_metrics():
+    """理解距离度量的工作原理"""
+    
+    concepts = {
+        "L2范数": {
+            "定义": "欧几里得距离，计算两个向量之间的直线距离",
+            "公式": "√(Σ(a_i - b_i)²)",
+            "特点": "对大的差异敏感，适合检测显著变化",
+            "典型值": "越小越好，0表示完全相同"
+        },
+        
+        "余弦相似度": {
+            "定义": "度量两个向量方向的相似性",
+            "公式": "(A·B) / (||A|| × ||B||)",
+            "范围": "[-1, 1]，1表示完全相同方向",
+            "特点": "不受向量长度影响，只关注方向",
+            "用途": "适合特征向量、嵌入向量比较"
+        }
+    }
+    return concepts
+```
+
+#### 4. CompareFunc.quality_metrics() - 质量度量比较
+
+**功能**: 使用PSNR和SNR等质量度量来比较输出，特别适合图像和信号处理。
+
+```python
+def create_quality_comparator():
+    """创建质量度量比较器"""
+    
+    quality_compare = CompareFunc.quality_metrics(
+        psnr_tolerance=30.0,    # PSNR最小值(dB)，高于30dB认为质量良好
+        snr_tolerance=20.0,     # SNR最小值(dB)
+        check_shapes=True,
+        fail_fast=False
+    )
+    return quality_compare
+
+# 质量度量概念
+def understand_quality_metrics():
+    """理解质量度量的概念和应用"""
+    
+    metrics_info = {
+        "PSNR": {
+            "全名": "Peak Signal-to-Noise Ratio - 峰值信噪比",
+            "单位": "dB (分贝)",
+            "计算": "20*log10(MAX) - 10*log10(MSE)",
+            "典型值": {
+                "> 40 dB": "优秀质量",
+                "30-40 dB": "良好质量", 
+                "20-30 dB": "可接受质量",
+                "< 20 dB": "质量较差"
+            },
+            "应用": "图像质量评估、视频编码质量评估"
+        },
+        
+        "SNR": {
+            "全名": "Signal-to-Noise Ratio - 信噪比", 
+            "单位": "dB (分贝)",
+            "计算": "10*log10(信号功率/噪声功率)",
+            "特点": "值越高，信号质量越好",
+            "应用": "音频质量评估、通信质量评估"
+        }
+    }
+    return metrics_info
+```
+
+#### 5. CompareFunc.perceptual_metrics() - 感知度量比较
+
+**功能**: 使用LPIPS等感知度量来比较输出，更符合人类视觉感知。
+
+```python
+def create_perceptual_comparator():
+    """创建感知度量比较器"""
+    
+    perceptual_compare = CompareFunc.perceptual_metrics(
+        lpips_threshold=0.1,    # LPIPS阈值，越小越相似
+        check_shapes=True,
+        fail_fast=False
+    )
+    return perceptual_compare
+
+# 感知度量概念
+def understand_perceptual_metrics():
+    """理解感知度量的概念"""
+    
+    lpips_info = {
+        "LPIPS": {
+            "全名": "Learned Perceptual Image Patch Similarity",
+            "特点": "基于深度学习的感知相似性度量",
+            "优势": "更符合人类视觉感知，比传统度量更准确",
+            "范围": "[0, +∞)，0表示完全相同",
+            "典型阈值": {
+                "< 0.1": "非常相似",
+                "0.1 - 0.3": "较相似", 
+                "0.3 - 0.6": "中等相似",
+                "> 0.6": "差异较大"
+            },
+            "依赖": "需要安装 torch 和 lpips 包"
+        }
+    }
+    return lpips_info
+```
+
+### 综合应用示例
+
+#### 完整的比较分析流程
+
+```python
+def comprehensive_model_comparison(runner1, runner2, test_inputs):
+    """执行全面的模型比较分析"""
+    
+    from polygraphy.comparator import Comparator
+    
+    # 1. 基础数值比较
+    print("=== 基础数值比较 ===")
+    simple_compare = CompareFunc.simple(rtol=1e-5, atol=1e-5)
+    comparator1 = Comparator([runner1, runner2], compare_func=simple_compare)
+    
+    results1 = comparator1.run(test_inputs)
+    accuracy1 = comparator1.compare_accuracy(results1)
+    
+    # 2. 距离度量比较
+    print("=== 距离度量比较 ===")
+    distance_compare = CompareFunc.distance_metrics()
+    comparator2 = Comparator([runner1, runner2], compare_func=distance_compare)
+    
+    results2 = comparator2.run(test_inputs)
+    accuracy2 = comparator2.compare_accuracy(results2)
+    
+    # 3. 质量度量比较 (适用于图像输出)
+    print("=== 质量度量比较 ===")
+    quality_compare = CompareFunc.quality_metrics(psnr_tolerance=25.0)
+    comparator3 = Comparator([runner1, runner2], compare_func=quality_compare)
+    
+    results3 = comparator3.run(test_inputs)
+    accuracy3 = comparator3.compare_accuracy(results3)
+    
+    # 整合结果分析
+    analysis_result = {
+        "simple": analyze_results(accuracy1),
+        "distance": analyze_results(accuracy2), 
+        "quality": analyze_results(accuracy3)
+    }
+    
+    return analysis_result
+
+def analyze_results(accuracy_results):
+    """分析比较结果"""
+    passed_count = 0
+    total_count = 0
+    
+    for output_name, result in accuracy_results.items():
+        if isinstance(result, dict):  # 多次迭代结果
+            for iter_result in result.values():
+                if isinstance(iter_result, dict):  # 多个输出
+                    for out_result in iter_result.values():
+                        total_count += 1
+                        if out_result:
+                            passed_count += 1
+                else:
+                    total_count += 1
+                    if iter_result:
+                        passed_count += 1
+        else:
+            total_count += 1
+            if result:
+                passed_count += 1
+    
+    return {
+        "passed": passed_count,
+        "total": total_count,
+        "pass_rate": passed_count / total_count if total_count > 0 else 0
+    }
+```
+
+### 总结
+
+**CompareFunc 类核心特性**:
+
+1. **多种比较策略**:
+   - `simple()`: 传统数值比较，基于绝对/相对误差
+   - `indices()`: 索引比较，支持位置容忍度  
+   - `distance_metrics()`: 距离度量比较，L2范数+余弦相似度
+   - `quality_metrics()`: 质量度量比较，PSNR+SNR
+   - `perceptual_metrics()`: 感知度量比较，LPIPS
+
+2. **灵活的配置选项**:
+   - 按输出名称个性化配置
+   - 多种误差统计方式
+   - 可视化和分析功能
+   - 形状检查和快速失败选项
+
+3. **丰富的结果类型**:
+   - `OutputCompareResult`: 详细数值统计
+   - `DistanceMetricsResult`: 距离度量信息
+   - `QualityMetricsResult`: 质量指标信息  
+   - `PerceptualMetricsResult`: 感知相似性信息
+
+4. **适用场景**:
+   - 模型验证和回归测试
+   - 精度分析和误差诊断
+   - 不同推理后端比较
+   - 模型优化效果评估
+
+这些比较函数为 Polygraphy 提供了强大而灵活的模型输出比较能力，能够适应从基本数值验证到高级感知相似性分析的各种需求。
