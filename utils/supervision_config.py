@@ -5,7 +5,7 @@ from typing import Optional
 from .font_utils import get_fallback_font_path
 
 
-def create_box_annotator(thickness: int = 3,
+def create_box_annotator(thickness: int = 1,
                         color_palette: Optional[sv.ColorPalette] = None) -> sv.BoxAnnotator:
     """
     Create BoxAnnotator with optimized settings for vehicle detection.
@@ -45,7 +45,7 @@ def create_rich_label_annotator(font_path: Optional[str] = None,
 
     return sv.RichLabelAnnotator(
         color=color_palette or sv.ColorPalette.DEFAULT,
-        text_color=sv.Color.WHITE,
+        text_color=sv.Color.BLACK,
         font_path=valid_font_path,
         font_size=font_size,
         text_padding=text_padding,
