@@ -3,3 +3,7 @@ opencv-contrib-python
 numpy
 pyyaml
 colorlog
+supervision>=0.16.0
+pytest>=7.0.0
+pytest-benchmark
+Pillow
