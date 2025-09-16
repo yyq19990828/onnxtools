@@ -2,6 +2,12 @@
 
 ## 变更日志 (Changelog)
 
+**2025-09-15 当前** - 正在进行supervision库可视化集成
+- 分支: `001-supervision-plate-box`
+- 状态: Phase 1设计阶段
+- 目标: 使用supervision库替换utils/drawing.py自定义可视化功能
+- 进展: 完成技术调研，正在设计API合约和数据模型
+
 **2025-09-15 20:01:23 CST** - 初始化AI上下文架构，生成项目结构图和模块索引
 
 ---
@@ -82,6 +88,7 @@ graph TD
 - Python >= 3.10
 - CUDA支持的GPU（推荐）
 - TensorRT 8.6.x（可选，用于加速）
+- supervision库（用于增强可视化，正在集成中）
 
 ### 安装依赖
 ```bash
