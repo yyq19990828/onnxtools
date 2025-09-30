@@ -1,178 +1,359 @@
 {
-  "timestamp": "2025-09-15T20:01:23+08:00",
-  "project_name": "onnx_vehicle_plate_recognition",
-  "project_description": "基于ONNX模型的车辆和车牌识别系统",
+  "timestamp": "2025-09-30T11:05:14+08:00",
+  "project_root": "/home/tyjt/桌面/onnx_vehicle_plate_recognition",
+  "project_name": "ONNX车辆牌照识别系统",
   "scan_coverage": {
-    "total_estimated_files": 280,
-    "scanned_files": 156,
-    "coverage_percentage": 55.7,
-    "truncated": false,
-    "truncation_reason": null
+    "estimated_total_files": 150,
+    "scanned_files": 120,
+    "coverage_percentage": 80.0,
+    "truncated": false
   },
-  "modules": {
-    "root": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition",
-      "type": "project_root",
-      "entry_files": ["main.py"],
-      "config_files": ["requirements.txt", "pyproject.toml", "run.sh"],
-      "documentation": ["CLAUDE.md", "README.md"],
-      "status": "active"
-    },
-    "infer_onnx": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/infer_onnx",
-      "type": "core_module",
-      "entry_files": ["__init__.py", "infer_models.py"],
-      "interface_files": [
-        "base_onnx.py",
-        "yolo_onnx.py",
-        "rtdetr_onnx.py",
-        "rfdetr_onnx.py",
-        "ocr_onnx.py"
-      ],
-      "key_dependencies": ["onnxruntime-gpu", "numpy", "opencv-python"],
-      "data_models": ["BaseOnnx", "DetectionResult", "OCRResult"],
-      "test_coverage": "pending",
-      "documentation": ["CLAUDE.md"],
-      "status": "active"
-    },
-    "utils": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/utils",
-      "type": "utility_module",
-      "entry_files": ["__init__.py", "pipeline.py"],
-      "interface_files": [
-        "drawing.py",
-        "image_processing.py",
-        "ocr_image_processing.py",
-        "ocr_post_processing.py"
-      ],
-      "key_dependencies": ["opencv-python", "numpy", "colorlog"],
-      "data_models": ["ProcessingPipeline", "DrawingConfig"],
-      "test_coverage": "pending",
-      "documentation": ["CLAUDE.md"],
-      "status": "active"
-    },
-    "tools": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/tools",
-      "type": "development_tools",
-      "entry_files": ["eval.py", "build_engine.py"],
-      "interface_files": [
-        "compare_onnx_engine.py",
-        "draw_engine.py",
-        "layer_statistics.py"
-      ],
-      "key_dependencies": ["tensorrt", "polygraphy", "matplotlib"],
-      "data_models": ["EvaluationMetrics", "BenchmarkResult"],
-      "test_coverage": "pending",
-      "documentation": ["CLAUDE.md"],
-      "status": "active"
-    },
-    "models": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/models",
-      "type": "asset_storage",
-      "entry_files": ["det_config.yaml", "plate.yaml"],
-      "interface_files": [],
-      "key_dependencies": ["yaml"],
-      "data_models": ["DetectionConfig", "OCRConfig"],
-      "important_paths": [
-        "*.onnx",
-        "*.engine",
-        "det_config.yaml",
-        "plate.yaml"
-      ],
-      "test_coverage": "pending",
-      "documentation": ["CLAUDE.md"],
-      "status": "active"
-    },
-    "mcp_vehicle_detection": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/mcp_vehicle_detection",
-      "type": "service_module",
-      "entry_files": ["server.py", "main.py"],
-      "interface_files": ["quick_test.py"],
-      "key_dependencies": ["mcp", "anyio", "pydantic"],
-      "data_models": ["DetectionRequest", "DetectionResponse"],
-      "test_coverage": "pending",
-      "documentation": ["CLAUDE.md"],
-      "status": "active"
-    },
-    "third_party": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/third_party",
-      "type": "external_libraries",
-      "entry_files": ["various"],
-      "submodules": ["ultralytics", "Polygraphy", "rfdetr", "trt-engine-explorer"],
-      "status": "stable"
-    },
-    "docs": {
-      "path": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/docs",
-      "type": "documentation",
-      "entry_files": ["evaluation_guide.md"],
-      "submodules": ["polygraphy使用指南"],
-      "status": "maintained"
+  "ignore_rules": {
+    "from_gitignore": [
+      "__pycache__/",
+      "*.py[cod]",
+      "*.pyo",
+      "*.pyd",
+      "*.pdb",
+      "*.egg-info/",
+      "*.eggs/",
+      "*.log",
+      ".ipynb_checkpoints/",
+      "venv/",
+      "env/",
+      "ENV/",
+      ".venv/",
+      ".env/",
+      ".vscode/",
+      "*.onnx",
+      "*.pth",
+      "*.pt",
+      "*.h5",
+      "*.ckpt",
+      "*.pb",
+      "*.tflite",
+      "*.weights",
+      "*.yaml",
+      "*.engine",
+      "*.plan",
+      "*.trt",
+      ".DS_Store",
+      "Thumbs.db",
+      "data/*.mp4",
+      "data/*.avi",
+      "data/*.mov",
+      "data/*.mkv",
+      "data/*.flv",
+      "data/*.webm",
+      "data/*.mp3",
+      "data/*.wav",
+      "data/*.jpg",
+      "runs/",
+      "run.sh",
+      "DEBUG/",
+      "third_party/"
+    ],
+    "default_patterns": [
+      "node_modules/**",
+      ".git/**",
+      ".github/**",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "__pycache__/**",
+      "*.lock",
+      "*.log",
+      "*.bin",
+      "*.pdf",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.mp4",
+      "*.zip",
+      "*.tar",
+      "*.gz"
+    ],
+    "ignored_directories_summary": {
+      "third_party": "第三方库（Ultralytics, Polygraphy, RF-DETR, TRT Engine Explorer）",
+      "runs": "运行结果和评估输出",
+      "DEBUG": "调试和开发临时文件",
+      "__pycache__": "Python缓存文件",
+      ".vscode": "编辑器配置",
+      ".ipynb_checkpoints": "Jupyter笔记本检查点"
     }
   },
-  "ignore_patterns": [
-    "__pycache__/**",
-    "*.py[cod]",
-    "*.log",
-    ".ipynb_checkpoints/",
-    "venv/**",
-    ".vscode/",
-    "*.onnx",
-    "*.engine",
-    "data/*.mp4",
-    "runs/",
-    "third_party/**"
-  ],
-  "language_distribution": {
-    "python": 85,
-    "yaml": 8,
-    "shell": 4,
-    "markdown": 3
-  },
-  "architecture_patterns": [
-    "factory_pattern",
-    "strategy_pattern",
-    "pipeline_pattern",
-    "mcp_protocol"
-  ],
-  "gaps_and_recommendations": {
-    "missing_tests": [
-      "infer_onnx unit tests",
-      "utils module tests",
-      "end-to-end integration tests"
-    ],
-    "missing_documentation": [
-      "API reference documentation",
-      "deployment guide",
-      "performance tuning guide"
-    ],
-    "optimization_opportunities": [
-      "TensorRT engine auto-building",
-      "model caching and warm-up",
-      "batch processing optimization"
-    ],
-    "next_priority_scans": [
-      "third_party/ultralytics core modules",
-      "third_party/Polygraphy integration points",
-      "mcp_vehicle_detection/third-party detailed analysis"
-    ]
-  },
-  "scan_statistics": {
-    "files_by_type": {
-      "python": 156,
-      "yaml": 23,
-      "shell": 12,
-      "markdown": 89
+  "modules": [
+    {
+      "path": "infer_onnx",
+      "name": "推理引擎模块",
+      "language": "Python",
+      "status": "active",
+      "entry_points": [
+        "infer_onnx/__init__.py",
+        "infer_onnx/infer_models.py::create_detector()"
+      ],
+      "key_files": [
+        "infer_onnx/base_onnx.py",
+        "infer_onnx/yolo_onnx.py",
+        "infer_onnx/rtdetr_onnx.py",
+        "infer_onnx/rfdetr_onnx.py",
+        "infer_onnx/ocr_onnx.py",
+        "infer_onnx/infer_models.py",
+        "infer_onnx/eval_coco.py",
+        "infer_onnx/infer_utils.py",
+        "infer_onnx/engine_dataloader.py"
+      ],
+      "interfaces": [
+        "create_detector(model_type, onnx_path, conf_thres, iou_thres)",
+        "BaseOnnx.__call__(image)",
+        "ColorLayerONNX(model_path)",
+        "OCRONNX(model_path)"
+      ],
+      "dependencies": {
+        "onnxruntime-gpu": "1.22.0",
+        "numpy": "2.2.6+",
+        "opencv-python": "4.12.0+",
+        "polygraphy": "0.49.26+"
+      },
+      "tests": [],
+      "documentation": "infer_onnx/CLAUDE.md"
     },
-    "largest_modules": [
-      {"name": "third_party", "file_count": 180},
-      {"name": "infer_onnx", "file_count": 10},
-      {"name": "utils", "file_count": 9},
-      {"name": "tools", "file_count": 7}
-    ],
-    "complexity_indicators": {
-      "model_architectures": 3,
-      "configuration_files": 5,
-      "integration_points": 4
+    {
+      "path": "utils",
+      "name": "工具模块",
+      "language": "Python",
+      "status": "active",
+      "entry_points": [
+        "utils/__init__.py",
+        "utils/pipeline.py::initialize_models()",
+        "utils/pipeline.py::process_frame()"
+      ],
+      "key_files": [
+        "utils/pipeline.py",
+        "utils/image_processing.py",
+        "utils/ocr_image_processing.py",
+        "utils/ocr_post_processing.py",
+        "utils/logging_config.py",
+        "utils/nms.py",
+        "utils/output_transforms.py",
+        "utils/detection_metrics.py"
+      ],
+      "interfaces": [
+        "initialize_models(args)",
+        "process_frame(frame, detector, color_classifier, ocr_model, ...)",
+        "preprocess_image(image, target_size)",
+        "draw_detections(image, boxes, scores, class_ids, ...)"
+      ],
+      "dependencies": {
+        "opencv-python": "4.12.0+",
+        "numpy": "2.2.6+",
+        "pillow": "11.3.0+",
+        "colorlog": "6.9.0+"
+      },
+      "tests": [],
+      "documentation": "utils/CLAUDE.md"
+    },
+    {
+      "path": "tools",
+      "name": "调试工具模块",
+      "language": "Python",
+      "status": "active",
+      "entry_points": [
+        "tools/eval.py",
+        "tools/build_engine.py",
+        "tools/compare_onnx_engine.py"
+      ],
+      "key_files": [
+        "tools/eval.py",
+        "tools/build_engine.py",
+        "tools/compare_onnx_engine.py",
+        "tools/draw_engine.py",
+        "tools/layer_statistics.py",
+        "tools/tensor_selector.py",
+        "tools/network_postprocess.py",
+        "tools/debug/"
+      ],
+      "interfaces": [
+        "eval.py: 模型评估命令行工具",
+        "build_engine.py: TensorRT引擎构建工具",
+        "compare_onnx_engine.py: 性能对比工具"
+      ],
+      "dependencies": {
+        "tensorrt": "8.6.1.post1",
+        "polygraphy": "0.49.26+",
+        "matplotlib": "3.10.6+"
+      },
+      "tests": [],
+      "documentation": "tools/CLAUDE.md"
+    },
+    {
+      "path": "models",
+      "name": "模型资源模块",
+      "language": "Configuration",
+      "status": "active",
+      "entry_points": [],
+      "key_files": [
+        "models/det_config.yaml",
+        "models/plate.yaml",
+        "models/rtdetr-2024080100.onnx",
+        "models/rfdetr-20250811.onnx",
+        "models/yolo11n.onnx",
+        "models/ocr.onnx",
+        "models/color_layer.onnx"
+      ],
+      "interfaces": [
+        "det_config.yaml: 检测类别和颜色配置",
+        "plate.yaml: OCR字典和颜色层级配置"
+      ],
+      "dependencies": {},
+      "tests": [],
+      "documentation": "models/CLAUDE.md"
+    },
+    {
+      "path": "mcp_vehicle_detection",
+      "name": "MCP服务模块",
+      "language": "Python",
+      "status": "active",
+      "entry_points": [
+        "mcp_vehicle_detection/server.py",
+        "mcp_vehicle_detection/main.py"
+      ],
+      "key_files": [
+        "mcp_vehicle_detection/server.py",
+        "mcp_vehicle_detection/main.py",
+        "mcp_vehicle_detection/quick_test.py",
+        "mcp_vehicle_detection/config.yaml",
+        "mcp_vehicle_detection/models/",
+        "mcp_vehicle_detection/services/",
+        "mcp_vehicle_detection/mcp_utils/"
+      ],
+      "interfaces": [
+        "MCP服务器: 车辆检测服务API",
+        "detect_vehicle: 单图像检测",
+        "detect_batch: 批量检测"
+      ],
+      "dependencies": {
+        "mcp": "latest",
+        "anyio": "latest",
+        "pydantic": "latest"
+      },
+      "tests": [
+        "mcp_vehicle_detection/quick_test.py"
+      ],
+      "documentation": "mcp_vehicle_detection/CLAUDE.md"
+    },
+    {
+      "path": "tests",
+      "name": "测试体系模块",
+      "language": "Python",
+      "status": "active",
+      "entry_points": [
+        "tests/conftest.py"
+      ],
+      "key_files": [
+        "tests/conftest.py",
+        "tests/integration/test_pipeline_integration.py",
+        "tests/integration/test_ocr_integration.py",
+        "tests/integration/test_supervision_only.py",
+        "tests/integration/test_basic_drawing.py",
+        "tests/contract/test_convert_detections_contract.py",
+        "tests/contract/test_draw_detections_contract.py",
+        "tests/contract/test_benchmark_contract.py"
+      ],
+      "interfaces": [
+        "pytest fixtures: 测试数据和配置",
+        "集成测试: 端到端流程验证",
+        "合约测试: API接口验证",
+        "性能测试: 基准测试"
+      ],
+      "dependencies": {
+        "pytest": "7.0.0+",
+        "pytest-benchmark": "latest"
+      },
+      "tests": [
+        "tests/integration/",
+        "tests/contract/"
+      ],
+      "documentation": "tests/CLAUDE.md"
+    },
+    {
+      "path": "specs",
+      "name": "功能规范模块",
+      "language": "Markdown",
+      "status": "active",
+      "entry_points": [],
+      "key_files": [
+        "specs/001-supervision-plate-box/spec.md",
+        "specs/001-supervision-plate-box/plan.md",
+        "specs/001-supervision-plate-box/tasks.md",
+        "specs/001-supervision-plate-box/contracts/drawing_api.yaml",
+        "specs/002-delete-old-draw/spec.md",
+        "specs/002-delete-old-draw/plan.md"
+      ],
+      "interfaces": [
+        "规范文档: 功能设计和实施计划",
+        "API合约: 接口定义和验证",
+        "任务清单: 进度跟踪"
+      ],
+      "dependencies": {},
+      "tests": [],
+      "documentation": "specs/CLAUDE.md"
+    },
+    {
+      "path": "docs",
+      "name": "项目文档模块",
+      "language": "Markdown",
+      "status": "active",
+      "entry_points": [],
+      "key_files": [
+        "docs/evaluation_guide.md",
+        "docs/polygraphy使用指南/README.md",
+        "docs/polygraphy使用指南/run.md",
+        "docs/polygraphy使用指南/debug.md",
+        "docs/polygraphy使用指南/how-to/"
+      ],
+      "interfaces": [
+        "评估指南: 模型评估流程",
+        "Polygraphy指南: 调试工具文档"
+      ],
+      "dependencies": {},
+      "tests": [],
+      "documentation": "docs/CLAUDE.md"
     }
+  ],
+  "coverage_gaps": [
+    {
+      "area": "单元测试",
+      "description": "缺少infer_onnx和utils模块的单元测试",
+      "priority": "medium",
+      "recommended_action": "在tests/unit/目录添加单元测试"
+    },
+    {
+      "area": "性能测试",
+      "description": "缺少系统性的性能基准测试",
+      "priority": "medium",
+      "recommended_action": "在tests/performance/目录添加基准测试"
+    },
+    {
+      "area": "第三方库文档",
+      "description": "third_party模块文档覆盖不完整",
+      "priority": "low",
+      "recommended_action": "完善第三方库使用指南"
+    }
+  ],
+  "next_steps": [
+    "扩展单元测试覆盖率（优先级：中）",
+    "完成specs/001-supervision-plate-box规范实施（优先级：高）",
+    "添加性能基准测试（优先级：中）",
+    "完善MCP服务文档和示例（优先级：低）"
+  ],
+  "statistics": {
+    "total_python_files": 100,
+    "total_onnx_models": 10,
+    "total_yaml_configs": 5,
+    "total_markdown_docs": 50,
+    "total_test_files": 7,
+    "total_spec_files": 10
   }
 }
