@@ -1,0 +1,54 @@
+# Visualization Presets for Supervision Annotators
+# 5 predefined scenarios for different use cases
+
+presets:
+  standard:
+    name: "标准检测模式"
+    description: "默认边框+标签，适用于通用检测场景"
+    annotators:
+      - type: box_corner
+        thickness: 2
+      - type: rich_label
+        font_size: 25
+
+  lightweight:
+    name: "简洁轻量模式"
+    description: "点标记+简单标签，最小视觉干扰"
+    annotators:
+      - type: dot
+        radius: 5
+        position: CENTER
+      - type: rich_label
+        font_size: 14
+
+  privacy:
+    name: "隐私保护模式"
+    description: "边框+车牌模糊，保护敏感信息"
+    annotators:
+      - type: box
+        thickness: 2
+      - type: blur
+        kernel_size: 15
+
+  debug:
+    name: "调试分析模式"
+    description: "圆角框+置信度条+详细标签，展示所有信息"
+    annotators:
+      - type: round_box
+        thickness: 3
+        roundness: 0.3
+      - type: percentage_bar
+        height: 16
+        width: 80
+      - type: rich_label
+        font_size: 18
+
+  high_contrast:
+    name: "高对比展示模式"
+    description: "区域填充+背景变暗，突出检测对象"
+    annotators:
+      - type: color
+        opacity: 0.3
+      - type: background_overlay
+        opacity: 0.5
+        color: black

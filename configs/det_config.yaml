@@ -1,0 +1,34 @@
+class_names:
+  - car
+  - truck
+  - heavy_truck
+  - van
+  - bus
+  - bicycle
+  - cyclist
+  - tricycle
+  - trolley
+  - pedestrain
+  - cone
+  - animal
+  - other
+  - plate
+  - motorcycle
+
+visual_colors:
+  - "#FF3838" # 鲜红
+  - "#FF9D97" # 珊瑚粉
+  - "#FF701F" # 亮橙
+  - "#FFB21D" # 鲜黄
+  - "#CFD231" # 酸橙绿
+  - "#48F90A" # 亮绿
+  - "#92CC17" # 鳄梨绿
+  - "#3DDB86" # 海沫绿
+  - "#1A9334" # 森林绿
+  - "#00D4BB" # 青绿
+  - "#2C99A8" # 蓝绿
+  - "#00C2FF" # 天蓝
+  - "#344593" # 深蓝
+  - "#6473FF" # 靛蓝
+  - "#8763DE" # 紫罗兰
+  - "#FF00FF" # 紫红
