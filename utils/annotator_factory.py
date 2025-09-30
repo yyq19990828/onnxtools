@@ -108,12 +108,27 @@ class AnnotatorFactory:
 
     @staticmethod
     def _create_rich_label(config: Dict[str, Any]) -> sv.RichLabelAnnotator:
-        """Create RichLabelAnnotator."""
+        """Create RichLabelAnnotator with font validation."""
+        # Get font path with validation
+        font_path = config.get('font_path', None)
+        if font_path:
+            # Validate the provided font path
+            import os
+            if not os.path.exists(font_path) or not os.path.isfile(font_path):
+                logger.warning(f"Font path not found or invalid: {font_path}. Using fallback font.")
+                font_path = get_fallback_font_path()
+                if not font_path:
+                    logger.error("No valid font path found. Text rendering may fail.")
+                    # Try to use a minimal fallback
+                    font_path = None
+        else:
+            font_path = get_fallback_font_path()
+
         return sv.RichLabelAnnotator(
-            text_color= sv.Color.BLACK,
+            text_color=sv.Color.BLACK,
             color=config.get('color_palette', sv.ColorPalette.DEFAULT),
             color_lookup=config.get('color_lookup', sv.ColorLookup.CLASS),
-            font_path=config.get('font_path', get_fallback_font_path()),
+            font_path=font_path,
             font_size=config.get('font_size', 25),
             smart_position=True
         )
@@ -194,10 +209,71 @@ class AnnotatorFactory:
 
     @staticmethod
     def _create_background_overlay(config: Dict[str, Any]) -> sv.BackgroundOverlayAnnotator:
-        """Create BackgroundOverlayAnnotator."""
+        """Create BackgroundOverlayAnnotator with robust color handling."""
         color = config.get('color', sv.Color.BLACK)
+
+        # Handle different color formats
         if isinstance(color, str):
-            color = sv.Color.from_hex(color) if color.startswith('#') else sv.Color.BLACK
+            color_lower = color.lower().strip()
+
+            # Named colors
+            color_map = {
+                'black': sv.Color.BLACK,
+                'white': sv.Color.WHITE,
+                'red': sv.Color.RED,
+                'green': sv.Color.GREEN,
+                'blue': sv.Color.BLUE,
+            }
+
+            if color_lower in color_map:
+                color = color_map[color_lower]
+            elif color_lower.startswith('#'):
+                # Hex color - validate format
+                try:
+                    # Remove # and validate hex format
+                    hex_value = color_lower[1:]
+                    if len(hex_value) in [3, 6]:
+                        # Short form #RGB or full form #RRGGBB
+                        if len(hex_value) == 3:
+                            # Convert #RGB to #RRGGBB
+                            hex_value = ''.join([c*2 for c in hex_value])
+                        color = sv.Color.from_hex(f'#{hex_value}')
+                    else:
+                        logger.warning(f"Invalid hex color format: {color}. Using default black.")
+                        color = sv.Color.BLACK
+                except Exception as e:
+                    logger.warning(f"Error parsing hex color {color}: {e}. Using default black.")
+                    color = sv.Color.BLACK
+            elif color_lower.startswith('rgb'):
+                # RGB format like rgb(255,0,0) or rgba(255,0,0,1)
+                try:
+                    import re
+                    numbers = re.findall(r'\d+', color_lower)
+                    if len(numbers) >= 3:
+                        r, g, b = int(numbers[0]), int(numbers[1]), int(numbers[2])
+                        # Create sv.Color from RGB values
+                        color = sv.Color(r=min(255, max(0, r)),
+                                       g=min(255, max(0, g)),
+                                       b=min(255, max(0, b)))
+                    else:
+                        logger.warning(f"Invalid RGB color format: {color}. Using default black.")
+                        color = sv.Color.BLACK
+                except Exception as e:
+                    logger.warning(f"Error parsing RGB color {color}: {e}. Using default black.")
+                    color = sv.Color.BLACK
+            else:
+                logger.warning(f"Unknown color format: {color}. Using default black.")
+                color = sv.Color.BLACK
+        elif isinstance(color, (list, tuple)) and len(color) >= 3:
+            # Handle RGB tuple/list
+            try:
+                r, g, b = color[:3]
+                color = sv.Color(r=min(255, max(0, int(r))),
+                               g=min(255, max(0, int(g))),
+                               b=min(255, max(0, int(b))))
+            except Exception as e:
+                logger.warning(f"Error converting color tuple {color}: {e}. Using default black.")
+                color = sv.Color.BLACK
 
         return sv.BackgroundOverlayAnnotator(
             color=color,
@@ -259,6 +335,8 @@ class AnnotatorPipeline:
         """Initialize empty pipeline."""
         self.annotators: List[sv.annotators.base.BaseAnnotator] = []
         self.types: List[AnnotatorType] = []
+        self._scene_cache: Optional[Tuple[int, np.ndarray]] = None
+        self._conflict_set: Optional[set] = None
 
     def add(
         self,
@@ -274,14 +352,28 @@ class AnnotatorPipeline:
 
         Returns:
             self for method chaining
+
+        Raises:
+            ValueError: If adding annotator would create conflicts
         """
         if isinstance(annotator, AnnotatorType):
+            # Check for mutually exclusive annotators before adding
+            if not self._allow_annotator(annotator):
+                conflicting = self._get_conflicts(annotator)
+                raise ValueError(
+                    f"Cannot add {annotator.value}: conflicts with existing annotators "
+                    f"{[t.value for t in conflicting]}. These annotators are mutually exclusive."
+                )
+
             # Create annotator from type and config
             if config is None:
                 config = {}
             annotator_instance = AnnotatorFactory.create(annotator, config)
             self.annotators.append(annotator_instance)
             self.types.append(annotator)
+
+            # Invalidate conflict cache
+            self._conflict_set = None
         else:
             # Use provided annotator instance
             self.annotators.append(annotator)
@@ -293,7 +385,8 @@ class AnnotatorPipeline:
     def annotate(
         self,
         scene: np.ndarray,
-        detections: sv.Detections
+        detections: sv.Detections,
+        use_cache: bool = True
     ) -> np.ndarray:
         """
         Apply all annotators in order.
@@ -301,18 +394,87 @@ class AnnotatorPipeline:
         Args:
             scene: Input image (numpy array)
             detections: Detections to annotate
+            use_cache: Whether to use cached scene copy for repeated calls
 
         Returns:
             Annotated image (copy)
         """
-        # Create copy to avoid modifying original
-        result = scene.copy()
+        # Use cached copy if available and requested
+        if use_cache and self._scene_cache is not None:
+            scene_id = id(scene)
+            if self._scene_cache[0] == scene_id:
+                result = self._scene_cache[1].copy()
+            else:
+                # Cache miss - create new copy and cache it
+                result = scene.copy()
+                self._scene_cache = (scene_id, result.copy())
+        else:
+            # Create copy without caching
+            result = scene.copy()
+            if use_cache:
+                self._scene_cache = (id(scene), result.copy())
 
         # Apply each annotator sequentially
         for annotator in self.annotators:
             result = annotator.annotate(result, detections)
 
         return result
+
+    def reset(self) -> 'AnnotatorPipeline':
+        """
+        Clear all annotators from the pipeline.
+
+        Returns:
+            self for method chaining
+        """
+        self.annotators.clear()
+        self.types.clear()
+        self._scene_cache = None
+        self._conflict_set = None
+        logger.debug("Pipeline reset - all annotators removed")
+        return self
+
+    def _allow_annotator(self, new_type: AnnotatorType) -> bool:
+        """
+        Check if annotator can be added without conflicts.
+
+        Args:
+            new_type: AnnotatorType to check
+
+        Returns:
+            True if annotator can be added
+        """
+        conflicts = self._get_conflicts(new_type)
+        return len(conflicts) == 0
+
+    def _get_conflicts(self, new_type: AnnotatorType) -> List[AnnotatorType]:
+        """
+        Get list of existing annotators that conflict with the new type.
+
+        Args:
+            new_type: AnnotatorType to check
+
+        Returns:
+            List of conflicting AnnotatorTypes
+        """
+        if self._conflict_set is None:
+            self._rebuild_conflict_cache()
+
+        conflicts = []
+        for existing_type in self.types:
+            if (new_type, existing_type) in self._conflict_set or \
+               (existing_type, new_type) in self._conflict_set:
+                conflicts.append(existing_type)
+
+        return conflicts
+
+    def _rebuild_conflict_cache(self):
+        """Rebuild the conflict set cache for O(1) lookups."""
+        self._conflict_set = set()
+        for pair in CONFLICTING_PAIRS:
+            self._conflict_set.add(pair)
+            # Add reverse pair for bidirectional conflict checking
+            self._conflict_set.add((pair[1], pair[0]))
 
     def check_conflicts(self) -> List[str]:
         """
@@ -321,18 +483,28 @@ class AnnotatorPipeline:
         Returns:
             List of warning messages
         """
-        warnings = []
+        if self._conflict_set is None:
+            self._rebuild_conflict_cache()
 
-        # Check all pairs
+        warnings = []
+        checked_pairs = set()
+
+        # Use set-based lookup for O(n²) → O(n²) with O(1) lookups
         for i, type_a in enumerate(self.types):
             for type_b in self.types[i + 1:]:
-                if (type_a, type_b) in CONFLICTING_PAIRS or \
-                   (type_b, type_a) in CONFLICTING_PAIRS:
-                    warning_msg = (
-                        f"Potential conflict: {type_a.value} + {type_b.value}. "
-                        f"Visual effects may overlap or interfere."
-                    )
-                    warnings.append(warning_msg)
-                    logger.warning(warning_msg)
+                # Create canonical pair to avoid duplicates
+                pair = (type_a, type_b) if type_a.value < type_b.value else (type_b, type_a)
+
+                if pair not in checked_pairs:
+                    checked_pairs.add(pair)
+
+                    # O(1) lookup in conflict set
+                    if pair in self._conflict_set or (pair[1], pair[0]) in self._conflict_set:
+                        warning_msg = (
+                            f"Potential conflict: {type_a.value} + {type_b.value}. "
+                            f"Visual effects may overlap or interfere."
+                        )
+                        warnings.append(warning_msg)
+                        logger.warning(warning_msg)
 
         return warnings

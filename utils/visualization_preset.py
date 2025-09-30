@@ -7,6 +7,7 @@ This module provides predefined annotator combinations for common use cases.
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
+from functools import lru_cache
 import yaml
 import supervision as sv
 
@@ -122,3 +123,47 @@ class VisualizationPreset:
             pipeline.add(ann_type, config)
 
         return pipeline
+
+
+@lru_cache(maxsize=32)
+def load_preset_cached(preset_name: str, preset_file: str = "configs/visualization_presets.yaml") -> VisualizationPreset:
+    """
+    Load preset from YAML file with caching.
+
+    This is a cached version of VisualizationPreset.from_yaml() that avoids
+    repeated YAML parsing for the same presets.
+
+    Args:
+        preset_name: Name of the preset to load
+        preset_file: Path to YAML file
+
+    Returns:
+        Cached VisualizationPreset instance
+
+    Raises:
+        ValueError: Unknown preset name
+        FileNotFoundError: YAML file not found
+    """
+    return VisualizationPreset.from_yaml(preset_name, preset_file)
+
+
+def create_preset_pipeline(preset_name: str, preset_file: str = "configs/visualization_presets.yaml") -> AnnotatorPipeline:
+    """
+    Create AnnotatorPipeline from preset with caching.
+
+    This convenience function combines preset loading and pipeline creation
+    with automatic caching to improve performance for repeated calls.
+
+    Args:
+        preset_name: Name of the preset to use
+        preset_file: Path to YAML file
+
+    Returns:
+        Configured AnnotatorPipeline instance
+
+    Example:
+        >>> pipeline = create_preset_pipeline(Presets.DEBUG)
+        >>> annotated = pipeline.annotate(image, detections)
+    """
+    preset = load_preset_cached(preset_name, preset_file)
+    return preset.create_pipeline()
