@@ -22,7 +22,7 @@ class TestBenchmarkContract:
             pytest.fail("benchmark_drawing_performance function must be implemented")
 
     def test_benchmark_function_signature(self):
-        """Contract: benchmark_drawing_performance must have correct signature."""
+        """Contract: benchmark_drawing_performance must have correct signature (supervision-only)."""
         try:
             import inspect
             from utils.drawing import benchmark_drawing_performance
@@ -30,17 +30,19 @@ class TestBenchmarkContract:
             sig = inspect.signature(benchmark_drawing_performance)
             params = list(sig.parameters.keys())
 
-            expected_params = ['image', 'detections_data', 'iterations']
+            # Updated signature: added target_ms parameter, removed PIL comparison
+            expected_params = ['image', 'detections_data', 'iterations', 'target_ms']
             assert params == expected_params, f"Expected {expected_params}, got {params}"
 
-            # Check default value for iterations
+            # Check default values
             assert sig.parameters['iterations'].default == 100, "iterations default must be 100"
+            assert sig.parameters['target_ms'].default == 10.0, "target_ms default must be 10.0"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
 
     def test_benchmark_return_format(self, sample_image, sample_detections):
-        """Contract: benchmark function must return performance metrics in correct format."""
+        """Contract: benchmark function must return performance metrics (supervision-only format)."""
         try:
             from utils.drawing import benchmark_drawing_performance
 
@@ -49,20 +51,17 @@ class TestBenchmarkContract:
             # Check return type
             assert isinstance(result, dict), "Must return dictionary"
 
-            # Check required keys
-            required_keys = ['pil_avg_time', 'supervision_avg_time', 'improvement_ratio']
+            # Check required keys (supervision-only, no PIL comparison)
+            required_keys = ['avg_time_ms', 'target_met']
             for key in required_keys:
                 assert key in result, f"Missing required key: {key}"
 
             # Check value types
-            assert isinstance(result['pil_avg_time'], (int, float)), "pil_avg_time must be numeric"
-            assert isinstance(result['supervision_avg_time'], (int, float)), "supervision_avg_time must be numeric"
-            assert isinstance(result['improvement_ratio'], (int, float)), "improvement_ratio must be numeric"
+            assert isinstance(result['avg_time_ms'], (int, float)), "avg_time_ms must be numeric"
+            assert isinstance(result['target_met'], bool), "target_met must be boolean"
 
             # Check value ranges
-            assert result['pil_avg_time'] > 0, "pil_avg_time must be positive"
-            assert result['supervision_avg_time'] > 0, "supervision_avg_time must be positive"
-            assert result['improvement_ratio'] > 0, "improvement_ratio must be positive"
+            assert result['avg_time_ms'] > 0, "avg_time_ms must be positive"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
@@ -94,42 +93,45 @@ class TestBenchmarkContract:
                 detections_list.append([x1, y1, x2, y2, 0.9, i % 2])
             large_detections.append(detections_list)
 
+            target_time = benchmark_config["target_time_ms"]
             result = benchmark_drawing_performance(
                 sample_image, large_detections,
-                iterations=benchmark_config["iterations"]
+                iterations=benchmark_config["iterations"],
+                target_ms=target_time
             )
 
             # Check performance target
-            target_time = benchmark_config["target_time_ms"]
-            actual_time = result["supervision_avg_time"]
+            actual_time = result["avg_time_ms"]
+            target_met = result["target_met"]
 
             assert actual_time < target_time, \
                 f"Performance target not met: {actual_time:.2f}ms > {target_time}ms"
+            assert target_met is True, "target_met should be True when target is met"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
 
-    def test_benchmark_improvement_validation(self, sample_image, sample_detections):
-        """Contract: supervision implementation should show improvement over PIL."""
+    def test_benchmark_supervision_performance(self, sample_image, sample_detections):
+        """Contract: supervision implementation must be performant (<10ms target)."""
         try:
             from utils.drawing import benchmark_drawing_performance
 
-            result = benchmark_drawing_performance(sample_image, sample_detections, iterations=50)
+            result = benchmark_drawing_performance(sample_image, sample_detections, iterations=50, target_ms=10.0)
 
-            # Check improvement ratio makes sense
-            improvement_ratio = result["improvement_ratio"]
-            assert improvement_ratio >= 1.0, \
-                f"Supervision should be faster than PIL: ratio={improvement_ratio:.2f}"
+            # Check supervision performance is acceptable
+            avg_time = result["avg_time_ms"]
+            assert avg_time < 10.0, \
+                f"Supervision performance below target: {avg_time:.2f}ms > 10.0ms"
 
-            # Expected improvement should be significant (at least 1.5x)
-            assert improvement_ratio >= 1.5, \
-                f"Performance improvement insufficient: {improvement_ratio:.2f}x (target: ≥1.5x)"
+            # Check target_met flag is consistent
+            target_met = result["target_met"]
+            assert target_met is True, "target_met should be True when performance meets target"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
 
     def test_benchmark_consistency(self, sample_image, sample_detections):
-        """Contract: benchmark results should be consistent across runs."""
+        """Contract: benchmark results should be consistent across runs (supervision-only)."""
         try:
             from utils.drawing import benchmark_drawing_performance
 
@@ -140,19 +142,13 @@ class TestBenchmarkContract:
                 results.append(result)
 
             # Check consistency (within 50% variance)
-            supervision_times = [r["supervision_avg_time"] for r in results]
-            pil_times = [r["pil_avg_time"] for r in results]
+            supervision_times = [r["avg_time_ms"] for r in results]
 
             supervision_std = np.std(supervision_times)
             supervision_mean = np.mean(supervision_times)
             supervision_cv = supervision_std / supervision_mean if supervision_mean > 0 else 0
 
-            pil_std = np.std(pil_times)
-            pil_mean = np.mean(pil_times)
-            pil_cv = pil_std / pil_mean if pil_mean > 0 else 0
-
             assert supervision_cv < 0.5, f"Supervision timing too inconsistent: CV={supervision_cv:.2f}"
-            assert pil_cv < 0.5, f"PIL timing too inconsistent: CV={pil_cv:.2f}"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
@@ -183,7 +179,7 @@ class TestBenchmarkContract:
             result = benchmark_drawing_performance(large_image, sample_detections, iterations=5)
 
             assert isinstance(result, dict), "Must handle large images"
-            assert result["supervision_avg_time"] > 0, "Must process large images"
+            assert result["avg_time_ms"] > 0, "Must process large images"
 
         except ImportError:
             pytest.fail("benchmark_drawing_performance function must be implemented")
