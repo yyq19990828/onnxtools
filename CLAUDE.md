@@ -2,6 +2,18 @@
 
 ## 变更日志 (Changelog)
 
+**2025-09-30 17:30:00 CST** - 完成Supervision Annotators扩展集成 (003-add-more-annotators)
+- 新增13种annotator类型支持：RoundBox, BoxCorner, Circle, Triangle, Ellipse, Dot, Color, BackgroundOverlay, Halo, PercentageBar, Blur, Pixelate
+- 实现AnnotatorFactory统一工厂模式和AnnotatorPipeline组合管道
+- 创建5种预设场景：standard, lightweight, privacy, debug, high_contrast
+- 完成性能基准测试：12种annotator通过测试（最快75μs，最慢1.5ms）
+- 扩展supervision_config.py添加get_default_annotator_config()便捷函数
+- 新增文件：
+  - `utils/annotator_factory.py` - Annotator工厂和管道类
+  - `utils/visualization_preset.py` - 可视化预设加载器
+  - `tests/performance/test_annotator_benchmark.py` - 性能基准测试
+  - `specs/003-add-more-annotators/performance_report.md` - 性能分析报告
+
 **2025-09-30 11:05:14 CST** - 完整初始化AI上下文架构
 - 全面扫描项目结构，识别8个主要模块
 - 生成完整的模块结构图和索引
@@ -28,7 +40,7 @@
 该项目采用模块化设计，分为推理引擎、工具集、第三方库、MCP集成和测试规范五个主要层次：
 
 - **核心推理引擎** (`infer_onnx/`): 多模型架构支持（YOLO、RT-DETR、RF-DETR），基于Polygraphy懒加载
-- **工具与实用程序** (`utils/`): 图像处理、模型评估、可视化工具
+- **工具与实用程序** (`utils/`): 图像处理、模型评估、可视化工具、13种supervision annotators集成
 - **调试和优化工具** (`tools/`): TensorRT引擎构建、性能评估、精度调试
 - **模型资源管理** (`models/`): ONNX模型文件、配置文件、TensorRT引擎
 - **MCP服务扩展** (`mcp_vehicle_detection/`): 模型上下文协议标准化服务接口
@@ -65,6 +77,9 @@ graph TD
     C --> C4["logging_config.py - 日志配置"];
     C --> C5["detection_metrics.py - 检测指标"];
     C --> C6["nms.py - 非极大值抑制"];
+    C --> C7["annotator_factory.py - Annotator工厂和管道"];
+    C --> C8["visualization_preset.py - 可视化预设"];
+    C --> C9["supervision_config.py - Supervision配置"];
 
     D --> D1["eval.py - 模型评估"];
     D --> D2["build_engine.py - TensorRT构建"];
