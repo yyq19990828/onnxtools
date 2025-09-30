@@ -15,13 +15,13 @@
 3. Generate tasks by category:
    → Setup: dependencies, linting
    → Tests: 3 contract tests, 13 integration tests, performance tests
-   → Core: enums, 13 config classes, Factory, Pipeline, presets
+   → Core: enums, Factory, Pipeline, presets (配置类改用字典模式)
    → Polish: docs, cleanup
 4. Apply task rules:
    → Different files = [P] for parallel
    → Tests before implementation (TDD)
-5. Numbered tasks: T001-T030
-6. SUCCESS: 30 tasks ready for execution
+5. Numbered tasks: T001-T030 (其中T006-T007已跳过，设计变更)
+6. SUCCESS: 28/30 tasks executed (2 skipped by design decision)
 ```
 
 ## Format: `[ID] [P?] Description`
@@ -158,50 +158,58 @@ class AnnotatorType(Enum):
 
 ---
 
-### T006 [X] [P] 实现BaseAnnotatorConfig和配置类(1-7)
-**File**: `utils/annotator_configs.py`
-**Description**:
-实现配置基类和前7个annotator配置类：
-- `BaseAnnotatorConfig` (dataclass with color_palette, color_lookup)
-- `RoundBoxAnnotatorConfig` (thickness, roundness)
-- `BoxCornerAnnotatorConfig` (thickness, corner_length)
-- `CircleAnnotatorConfig` (thickness)
-- `TriangleAnnotatorConfig` (base, height, position, outline)
-- `EllipseAnnotatorConfig` (thickness, start_angle, end_angle)
-- `DotAnnotatorConfig` (radius, position, outline)
-- `ColorAnnotatorConfig` (opacity)
+### T006 [SKIPPED] [P] 实现BaseAnnotatorConfig和配置类(1-7)
+**Status**: ❌ **设计变更 - 不实现**
+**File**: `utils/annotator_configs.py` (未创建)
+**Original Description**:
+实现配置基类和前7个annotator配置类（略）
 
-参考research.md中的默认参数值
+**Design Decision**:
+采用**字典配置模式**替代dataclass配置类，理由：
+1. ✅ **简洁性**：所有100+测试/代码使用`Dict[str, Any]`
+2. ✅ **灵活性**：无需为13种annotator定义13个配置类
+3. ✅ **Python惯用**：符合`**kwargs`和supervision库的设计风格
+4. ✅ **可维护性**：减少13个配置类的维护负担
 
-**Acceptance**:
-- 所有配置类使用`@dataclass`
-- 包含合理的默认值
-- 继承BaseAnnotatorConfig（除特殊情况）
+**Actual Implementation**:
+- 使用字典直接传递配置参数
+- Factory自动处理字典到annotator参数的映射
+- 类型提示使用字符串引用：`Union[Dict[str, Any], 'BaseAnnotatorConfig']`
+
+**Example**:
+```python
+# 实际使用方式（字典配置）
+config = {'thickness': 2, 'roundness': 0.3}
+annotator = AnnotatorFactory.create(AnnotatorType.ROUND_BOX, config)
+
+# 或直接传递
+pipeline.add(AnnotatorType.ROUND_BOX, {'thickness': 2, 'roundness': 0.3})
+```
 
 ---
 
-### T007 [X] [P] 实现配置类(8-13)和特殊配置
-**File**: `utils/annotator_configs.py` (同T006文件，但独立任务便于并行)
-**Description**:
-实现剩余6个annotator配置类：
-- `BackgroundOverlayAnnotatorConfig` (color, opacity, force_box)
-- `HaloAnnotatorConfig` (opacity, kernel_size)
-- `PercentageBarAnnotatorConfig` (height, width, border, position)
-- `BlurAnnotatorConfig` (kernel_size)
-- `PixelateAnnotatorConfig` (pixel_size)
+### T007 [SKIPPED] [P] 实现配置类(8-13)和特殊配置
+**Status**: ❌ **设计变更 - 不实现**
+**File**: `utils/annotator_configs.py` (未创建)
+**Original Description**:
+实现剩余6个annotator配置类和ConfigType联合（略）
 
-以及配置类型联合：
+**Design Decision**:
+同T006，采用字典配置模式。无需创建配置类或ConfigType联合类型。
+
+**Actual Implementation**:
+所有配置通过字典传递，Factory内部自动验证和转换：
 ```python
-ConfigType = Union[
-    BaseAnnotatorConfig,
-    RoundBoxAnnotatorConfig,
-    ...
-]
+# Factory内部实现 (annotator_factory.py:72-75)
+if hasattr(config, '__dict__'):
+    config_dict = {k: v for k, v in config.__dict__.items() if not k.startswith('_')}
+else:
+    config_dict = dict(config) if config else {}  # 字典模式
 ```
 
-**Acceptance**:
-- 所有13种config类完整
-- 类型联合定义正确
+**Impact on Dependencies**:
+- T008-T015: ✅ 不受影响，Factory已实现字典配置模式
+- T016-T028: ✅ 所有测试使用字典配置，正常工作
 
 ---
 
@@ -621,17 +629,22 @@ def test_round_box_performance(benchmark, test_image, test_detections):
 
 ### 关键依赖链
 ```
-Setup (T001) → Tests (T002-T004) → Models (T005-T007) → Factory (T008-T009)
-                                                              ↓
+Setup (T001) → Tests (T002-T004) → Models (T005) → Factory (T008-T009)
+                                        ↓
+                                   [T006-T007 SKIPPED]
+                                        ↓
 Factory → Pipeline (T010-T012) → Config (T013-T015) → Integration (T016-T025)
                                                               ↓
                                     Performance (T026-T028) → Docs (T029-T030)
 ```
 
+**Note**: T006和T007已跳过（设计变更），不影响依赖链
+
 ### 详细依赖
 - **T002-T004** (Tests): 无依赖，可立即开始（TDD）
-- **T005-T007** (Models): 无依赖，可与Tests并行
-- **T008** (Factory): 依赖T005-T007
+- **T005** (AnnotatorType Enum): 无依赖，可与Tests并行
+- **T006-T007** (Config Classes): ❌ **SKIPPED** - 采用字典配置模式
+- **T008** (Factory): 依赖T005（不依赖T006/T007）
 - **T009**: 依赖T008
 - **T010-T012** (Pipeline): 依赖T008
 - **T013**: 无依赖（独立YAML文件）
@@ -657,11 +670,11 @@ Task: "Contract test Pipeline in tests/contract/test_annotator_pipeline_contract
 Task: "Implement AnnotatorType enum in utils/annotator_factory.py"
 ```
 
-### Wave 2: Config Classes (可并行)
+### Wave 2: Config Classes (已跳过)
 ```bash
-# 配置类可并行开发（同文件但不同部分）
-Task: "Implement config classes 1-7 in utils/annotator_configs.py"
-Task: "Implement config classes 8-13 in utils/annotator_configs.py"
+# T006-T007已跳过 - 采用字典配置模式
+# 无需创建utils/annotator_configs.py
+# 直接进入Factory和Pipeline实现
 ```
 
 ### Wave 3: Integration Tests (可并行)
@@ -719,5 +732,6 @@ Task: "Integration test Geometric in tests/integration/test_geometric_annotators
 ---
 
 **Generated**: 2025-09-30
-**Ready for execution**: ✅ All 30 tasks validated and ordered
-**Next command**: Begin with T001 or parallel execute T002-T004 + T005
+**Last Updated**: 2025-09-30 (T006/T007设计变更)
+**Execution Status**: ✅ 28/30 tasks completed (T006/T007 skipped by design)
+**Design Decision**: 采用字典配置模式，无需创建13个配置类

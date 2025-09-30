@@ -195,7 +195,43 @@ python main.py --model-path models/yolo11n.onnx \
     --model-type yolo \
     --input 0 \
     --output-mode show
+
+# 使用新的annotator可视化（预设场景）
+python main.py --model-path models/rtdetr.onnx \
+    --model-type rtdetr \
+    --input data/sample.jpg \
+    --output-mode show \
+    --annotator-preset debug
+
+# 自定义annotator组合
+python main.py --model-path models/rtdetr.onnx \
+    --model-type rtdetr \
+    --input data/sample.jpg \
+    --output-mode show \
+    --annotator-types round_box percentage_bar rich_label \
+    --box-thickness 3 \
+    --roundness 0.4
 ```
+
+### Annotator可视化选项
+
+项目支持13种annotator类型和5种预设场景：
+
+**预设场景**：
+- `standard` - 标准检测模式（默认边框+标签）
+- `lightweight` - 轻量级模式（点标记+简单标签）
+- `privacy` - 隐私保护模式（边框+车牌模糊）
+- `debug` - 调试模式（圆角框+置信度条+详细标签）
+- `high_contrast` - 高对比度模式（区域填充+背景变暗）
+
+**Annotator类型**：
+- 边框类: `box`, `round_box`, `box_corner`
+- 几何标记: `circle`, `triangle`, `ellipse`, `dot`
+- 填充类: `color`, `background_overlay`
+- 特效类: `halo`, `percentage_bar`
+- 隐私保护: `blur`, `pixelate`
+
+详细使用说明请参考 [`docs/annotator_usage.md`](docs/annotator_usage.md)
 
 ### 模型评估
 ```bash

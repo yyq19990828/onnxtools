@@ -11,6 +11,83 @@ from utils import (
     draw_detections
 )
 
+# Import new annotator functionality (optional)
+try:
+    from utils.annotator_factory import AnnotatorFactory, AnnotatorType, AnnotatorPipeline
+    from utils.visualization_preset import VisualizationPreset, Presets
+    from utils.supervision_converter import convert_to_supervision_detections
+    import supervision as sv
+    ANNOTATOR_AVAILABLE = True
+except ImportError:
+    ANNOTATOR_AVAILABLE = False
+    logging.warning("Annotator functionality not available. Using legacy drawing.")
+
+def create_annotator_pipeline(args):
+    """
+    Create annotator pipeline based on command line arguments.
+
+    Args:
+        args: Command line arguments containing annotator configuration
+
+    Returns:
+        AnnotatorPipeline or None if annotators not available/configured
+    """
+    if not ANNOTATOR_AVAILABLE:
+        return None
+
+    # Use preset if specified
+    if hasattr(args, 'annotator_preset') and args.annotator_preset:
+        try:
+            preset = VisualizationPreset.from_yaml(args.annotator_preset)
+            pipeline = preset.create_pipeline()
+            logging.info(f"Using annotator preset: {args.annotator_preset}")
+            return pipeline
+        except Exception as e:
+            logging.warning(f"Failed to load preset '{args.annotator_preset}': {e}")
+            return None
+
+    # Use custom annotator types if specified
+    if hasattr(args, 'annotator_types') and args.annotator_types:
+        pipeline = AnnotatorPipeline()
+        for ann_type_str in args.annotator_types:
+            try:
+                ann_type = AnnotatorType(ann_type_str)
+
+                # Build config based on annotator type and args
+                if ann_type == AnnotatorType.ROUND_BOX:
+                    config = {
+                        'thickness': args.box_thickness if hasattr(args, 'box_thickness') else 2,
+                        'roundness': args.roundness if hasattr(args, 'roundness') else 0.3
+                    }
+                elif ann_type == AnnotatorType.BLUR:
+                    config = {
+                        'kernel_size': args.blur_kernel_size if hasattr(args, 'blur_kernel_size') else 15
+                    }
+                elif ann_type in [AnnotatorType.BOX, AnnotatorType.BOX_CORNER]:
+                    config = {
+                        'thickness': args.box_thickness if hasattr(args, 'box_thickness') else 2
+                    }
+                else:
+                    config = {}
+
+                pipeline.add(ann_type, config)
+                logging.debug(f"Added annotator: {ann_type.value}")
+            except ValueError:
+                logging.warning(f"Unknown annotator type: {ann_type_str}")
+
+        # Check for conflicts
+        warnings = pipeline.check_conflicts()
+        if warnings:
+            for warning in warnings:
+                logging.warning(warning)
+
+        logging.info(f"Using custom annotators: {args.annotator_types}")
+        return pipeline
+
+    # No annotator configuration specified
+    return None
+
+
 def initialize_models(args):
     """
     Initialize all the models required for the pipeline.
@@ -34,11 +111,11 @@ def initialize_models(args):
     color_layer_model_path = getattr(args, "color_layer_model", "models/color_layer.onnx")
     ocr_model_path = getattr(args, "ocr_model", "models/ocr.onnx")
     plate_yaml_path = "models/plate.yaml"
-    
+
     with open(plate_yaml_path, "r", encoding="utf-8") as f:
         plate_yaml = yaml.safe_load(f)
         character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
-        
+
     color_layer_classifier = ColorLayerONNX(color_layer_model_path)
     ocr_model = OCRONNX(ocr_model_path)
 
@@ -55,17 +132,39 @@ def initialize_models(args):
         with open("models/det_config.yaml", "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         class_names = config["class_names"]
-    
+
     # colors始终从YAML配置文件读取
     with open("models/det_config.yaml", "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     colors = config["visual_colors"]
 
-    return detector, color_layer_classifier, ocr_model, character, class_names, colors
+    # Initialize annotator pipeline if configured
+    annotator_pipeline = None
+    if hasattr(args, 'annotator_preset') or hasattr(args, 'annotator_types'):
+        annotator_pipeline = create_annotator_pipeline(args)
+        if annotator_pipeline:
+            logging.info("Annotator pipeline initialized successfully")
 
-def process_frame(frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args):
+    return detector, color_layer_classifier, ocr_model, character, class_names, colors, annotator_pipeline
+
+
+def process_frame(frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline=None):
     """
     Process a single frame for vehicle and plate detection and recognition.
+
+    Args:
+        frame: Input image frame
+        detector: Detection model
+        color_layer_classifier: Color/layer classification model
+        ocr_model: OCR model
+        character: Character dictionary for OCR
+        class_names: List of class names
+        colors: List of colors for visualization
+        args: Command line arguments
+        annotator_pipeline: Optional pre-initialized annotator pipeline
+
+    Returns:
+        Tuple of (annotated_frame, output_data)
     """
     # 1. Object Detection
     detections, original_shape = detector(frame)
@@ -167,8 +266,22 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
                 })
 
     # 3. Draw detections
-    # Use the scaled and clipped detections for drawing, not the original detections
-    scaled_detections_for_drawing = [clipped_detections] if detections and len(detections[0]) > 0 else []
-    result_frame = draw_detections(frame.copy(), scaled_detections_for_drawing, class_names, colors, plate_results=plate_results)
+    # Use annotator pipeline if available, otherwise fall back to legacy drawing
+    if annotator_pipeline and ANNOTATOR_AVAILABLE:
+        # Use new annotator system
+        sv_detections = convert_to_supervision_detections(
+            [clipped_detections] if detections and len(detections[0]) > 0 else [],
+            class_names
+        )
+
+        if sv_detections is not None:
+            result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections)
+            logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")
+        else:
+            result_frame = frame.copy()
+    else:
+        # Fall back to legacy drawing system
+        scaled_detections_for_drawing = [clipped_detections] if detections and len(detections[0]) > 0 else []
+        result_frame = draw_detections(frame.copy(), scaled_detections_for_drawing, class_names, colors, plate_results=plate_results)
 
     return result_frame, output_data

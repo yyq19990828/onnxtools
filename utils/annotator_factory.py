@@ -13,6 +13,8 @@ import numpy as np
 import supervision as sv
 import logging
 
+from .font_utils import  get_fallback_font_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,27 +54,23 @@ class AnnotatorFactory:
     @staticmethod
     def create(
         annotator_type: AnnotatorType,
-        config: Union[Dict[str, Any], 'BaseAnnotatorConfig']
+        config: Dict[str, Any]
     ) -> sv.annotators.base.BaseAnnotator:
         """
         Create annotator instance from type and config.
 
         Args:
             annotator_type: AnnotatorType enum value
-            config: Configuration dict or config object
+            config: Configuration dictionary with annotator parameters
 
         Returns:
             Supervision annotator instance
 
         Raises:
             ValueError: Unknown annotator type
-            TypeError: Invalid configuration type
         """
-        # Convert config object to dict if needed
-        if hasattr(config, '__dict__'):
-            config_dict = {k: v for k, v in config.__dict__.items() if not k.startswith('_')}
-        else:
-            config_dict = dict(config) if config else {}
+        # Ensure config is a dict
+        config_dict = dict(config) if config else {}
 
         # Dispatch to creator based on type
         creator_map = {
@@ -104,7 +102,7 @@ class AnnotatorFactory:
         """Create BoxAnnotator."""
         return sv.BoxAnnotator(
             color=config.get('color_palette', sv.ColorPalette.DEFAULT),
-            thickness=config.get('thickness', 2),
+            thickness=config.get('thickness', 1),
             color_lookup=config.get('color_lookup', sv.ColorLookup.CLASS)
         )
 
@@ -112,10 +110,12 @@ class AnnotatorFactory:
     def _create_rich_label(config: Dict[str, Any]) -> sv.RichLabelAnnotator:
         """Create RichLabelAnnotator."""
         return sv.RichLabelAnnotator(
+            text_color= sv.Color.BLACK,
             color=config.get('color_palette', sv.ColorPalette.DEFAULT),
             color_lookup=config.get('color_lookup', sv.ColorLookup.CLASS),
-            font_path=config.get('font_path'),
-            font_size=config.get('font_size', 16)
+            font_path=config.get('font_path', get_fallback_font_path()),
+            font_size=config.get('font_size', 25),
+            smart_position=True
         )
 
     @staticmethod
@@ -222,7 +222,7 @@ class AnnotatorFactory:
             width=config.get('width', 80),
             color=config.get('color_palette', sv.ColorPalette.DEFAULT),
             border_color=config.get('border_color', sv.Color.BLACK),
-            position=config.get('position', sv.Position.TOP_LEFT),
+            position=config.get('position', sv.Position.TOP_CENTER),
             color_lookup=config.get('color_lookup', sv.ColorLookup.CLASS),
             border_thickness=config.get('border_thickness', 1)
         )
