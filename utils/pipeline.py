@@ -110,7 +110,7 @@ def initialize_models(args):
     from infer_onnx import ColorLayerONNX, OCRONNX
     color_layer_model_path = getattr(args, "color_layer_model", "models/color_layer.onnx")
     ocr_model_path = getattr(args, "ocr_model", "models/ocr.onnx")
-    plate_yaml_path = "models/plate.yaml"
+    plate_yaml_path = "configs/plate.yaml"
 
     with open(plate_yaml_path, "r", encoding="utf-8") as f:
         plate_yaml = yaml.safe_load(f)
@@ -129,7 +129,7 @@ def initialize_models(args):
     else:
         # 回退到YAML配置文件
         logging.info("ONNX模型metadata中未找到names字段，回退到YAML配置文件")
-        with open("models/det_config.yaml", "r", encoding="utf-8") as f:
+        with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         class_names = config["class_names"]
 
@@ -226,7 +226,7 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
                     color_index = int(np.argmax(preds_color))
                     layer_index = int(np.argmax(preds_layer))
 
-                    with open("models/plate.yaml", "r", encoding="utf-8") as f:
+                    with open("configs/plate.yaml", "r", encoding="utf-8") as f:
                         plate_yaml = yaml.safe_load(f)
                     color_dict = plate_yaml["color_dict"]
                     layer_dict = plate_yaml["layer_dict"]

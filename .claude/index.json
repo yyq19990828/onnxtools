@@ -194,8 +194,8 @@
       "status": "active",
       "entry_points": [],
       "key_files": [
-        "models/det_config.yaml",
-        "models/plate.yaml",
+        "configs/det_config.yaml",
+        "configs/plate.yaml",
         "models/rtdetr-2024080100.onnx",
         "models/rfdetr-20250811.onnx",
         "models/yolo11n.onnx",

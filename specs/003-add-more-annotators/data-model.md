@@ -229,7 +229,7 @@ class VisualizationPreset:
     annotators: List[Tuple[AnnotatorType, Dict[str, Any]]]
 
     @classmethod
-    def from_yaml(cls, preset_name: str, preset_file: str = "models/visualization_presets.yaml"):
+    def from_yaml(cls, preset_name: str, preset_file: str = "configs/visualization_presets.yaml"):
         """从YAML文件加载预设"""
         pass
 

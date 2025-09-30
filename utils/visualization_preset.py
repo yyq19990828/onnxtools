@@ -33,14 +33,14 @@ class VisualizationPreset:
     def from_yaml(
         cls,
         preset_name: str,
-        preset_file: str = "models/visualization_presets.yaml"
+        preset_file: str = "configs/visualization_presets.yaml"
     ) -> 'VisualizationPreset':
         """
         Load preset from YAML file.
 
         Args:
             preset_name: Name of the preset to load
-            preset_file: Path to YAML file (default: models/visualization_presets.yaml)
+            preset_file: Path to YAML file (default: configs/visualization_presets.yaml)
 
         Returns:
             VisualizationPreset instance
@@ -64,12 +64,14 @@ class VisualizationPreset:
         # Parse annotators
         annotators = []
         for ann_config in preset_data['annotators']:
-            ann_type_str = ann_config.pop('type')
+            # Create a copy to avoid modifying the original config
+            config_copy = ann_config.copy()
+            ann_type_str = config_copy.pop('type')
             ann_type = AnnotatorType(ann_type_str)
 
             # Convert position string to sv.Position enum if present
-            if 'position' in ann_config:
-                position_str = ann_config['position']
+            if 'position' in config_copy:
+                position_str = config_copy['position']
                 if isinstance(position_str, str):
                     # Map string to sv.Position enum
                     position_map = {
@@ -83,23 +85,23 @@ class VisualizationPreset:
                         'BOTTOM_CENTER': sv.Position.BOTTOM_CENTER,
                         'BOTTOM_RIGHT': sv.Position.BOTTOM_RIGHT,
                     }
-                    ann_config['position'] = position_map.get(
+                    config_copy['position'] = position_map.get(
                         position_str.upper(),
                         sv.Position.CENTER
                     )
 
             # Convert color string to sv.Color if present
-            if 'color' in ann_config:
-                color_str = ann_config['color']
+            if 'color' in config_copy:
+                color_str = config_copy['color']
                 if isinstance(color_str, str):
                     if color_str == 'black':
-                        ann_config['color'] = sv.Color.BLACK
+                        config_copy['color'] = sv.Color.BLACK
                     elif color_str == 'white':
-                        ann_config['color'] = sv.Color.WHITE
+                        config_copy['color'] = sv.Color.WHITE
                     elif color_str.startswith('#'):
-                        ann_config['color'] = sv.Color.from_hex(color_str)
+                        config_copy['color'] = sv.Color.from_hex(color_str)
 
-            annotators.append((ann_type, ann_config))
+            annotators.append((ann_type, config_copy))
 
         return cls(
             name=preset_data['name'],

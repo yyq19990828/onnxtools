@@ -222,7 +222,7 @@ pytest tests/performance/test_annotator_benchmark.py --benchmark-only
 A: 使用AnnotatorPipeline组合，但会收到冲突警告（可忽略）
 
 ### Q: 预设场景可以修改吗？
-A: 可以，直接编辑`models/visualization_presets.yaml`或创建自定义YAML
+A: 可以，直接编辑`configs/visualization_presets.yaml`或创建自定义YAML
 
 ### Q: 如何提高渲染性能？
 A: 1) 减少annotator数量; 2) 使用轻量级annotator(如DotAnnotator); 3) 降低图像分辨率

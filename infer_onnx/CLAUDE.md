@@ -55,8 +55,8 @@ evaluator = DatasetEvaluator(dataset_path, annotations_path)
 - **yaml**: 配置文件解析
 
 ### 配置文件
-- `../models/det_config.yaml`: 检测类别名称和可视化颜色
-- `../models/plate.yaml`: OCR字典和颜色/层级映射
+- `../configs/det_config.yaml`: 检测类别名称和可视化颜色
+- `../configs/plate.yaml`: OCR字典和颜色/层级映射
 
 ### 模型文件要求
 - 检测模型: 支持YOLO/RT-DETR/RF-DETR格式的ONNX文件

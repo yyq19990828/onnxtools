@@ -130,7 +130,7 @@ A: 保持宽高比避免目标变形，提高检测精度。使用padding填充�
 A: 1) 灰度转换; 2) 尺寸归一化; 3) 对比度增强; 4) 噪声去除; 5) 标准化
 
 ### Q: 如何自定义可视化颜色？
-A: 修改 `models/det_config.yaml` 中的 `visual_colors` 配置项
+A: 修改 `configs/det_config.yaml` 中的 `visual_colors` 配置项
 
 ### Q: NMS参数如何调优？
 A: 根据检测场景调整IoU阈值，密集场景降低阈值，稀疏场景提高阈值

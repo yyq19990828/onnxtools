@@ -20,13 +20,13 @@
 import yaml
 
 # 加载检测配置
-with open('models/det_config.yaml', 'r') as f:
+with open('configs/det_config.yaml', 'r') as f:
     det_config = yaml.safe_load(f)
     class_names = det_config['class_names']
     colors = det_config['visual_colors']
 
 # 加载OCR配置
-with open('models/plate.yaml', 'r') as f:
+with open('configs/plate.yaml', 'r') as f:
     plate_config = yaml.safe_load(f)
     character_dict = plate_config['ocr_dict']
     color_dict = plate_config['color_dict']

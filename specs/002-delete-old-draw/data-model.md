@@ -86,7 +86,7 @@ class_names = {0: "vehicle", 1: "plate"}
 class_names = ["vehicle", "plate"]
 ```
 
-**Source**: Loaded from `models/det_config.yaml`
+**Source**: Loaded from `configs/det_config.yaml`
 
 ### 3. Colors
 
@@ -116,7 +116,7 @@ colors = [
 ]
 ```
 
-**Source**: Configured in `models/det_config.yaml` as `visual_colors`
+**Source**: Configured in `configs/det_config.yaml` as `visual_colors`
 
 ### 4. PlateResults
 

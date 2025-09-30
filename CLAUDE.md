@@ -459,7 +459,7 @@ setup_logger(log_level='INFO')
 
 ### Q: 如何添加新的检测类别？
 **A**:
-1. 在 `models/det_config.yaml` 添加类别名称
+1. 在 `configs/det_config.yaml` 添加类别名称
 2. 在 `visual_colors` 分配对应颜色
 3. 重新训练或更新模型
 4. 更新测试用例

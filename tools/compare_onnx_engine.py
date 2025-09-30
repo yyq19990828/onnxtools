@@ -115,7 +115,7 @@ def parse_arguments():
 def load_colors_and_class_names():
     """加载类别名称和颜色配置"""
     try:
-        with open("models/det_config.yaml", "r", encoding="utf-8") as f:
+        with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         class_names = config["class_names"]
         colors = config["visual_colors"]

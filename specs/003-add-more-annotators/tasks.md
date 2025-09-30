@@ -310,7 +310,7 @@ else:
 ## Phase 3.5: Configuration & Presets
 
 ### T013 [X] [P] 创建visualization_presets.yaml配置文件
-**File**: `models/visualization_presets.yaml`
+**File**: `configs/visualization_presets.yaml`
 **Description**:
 创建YAML配置文件定义5种预设场景：
 - `standard`: BoxAnnotator + RichLabelAnnotator

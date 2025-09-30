@@ -426,7 +426,7 @@ def check_conflicts(annotator_types: List[AnnotatorType]) -> List[str]:
 ### 配置文件格式 (YAML)
 
 ```yaml
-# models/visualization_presets.yaml
+# configs/visualization_presets.yaml
 presets:
   standard:
     name: "标准检测模式"
@@ -499,7 +499,7 @@ class PresetLoader:
     """Load and manage visualization presets."""
 
     @staticmethod
-    def load(preset_file: Path = Path("models/visualization_presets.yaml")) -> Dict:
+    def load(preset_file: Path = Path("configs/visualization_presets.yaml")) -> Dict:
         """Load presets from YAML file."""
         with open(preset_file, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)['presets']
