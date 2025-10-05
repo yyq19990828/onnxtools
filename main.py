@@ -39,7 +39,7 @@ def main(args):
     models = initialize_models(args)
     if models is None:
         return
-    detector, color_layer_classifier, ocr_model, character, class_names, colors = models
+    detector, color_layer_classifier, ocr_model, character, class_names, colors, annotator_pipeline = models
 
     source_type = infer_source_type(args.input)
 
@@ -52,7 +52,7 @@ def main(args):
 
         # Process the single image
         result_img, output_data = process_frame(
-            img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args
+            img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
         )
 
         if args.output_mode == 'save':
@@ -84,7 +84,7 @@ def main(args):
                 continue
 
             result_img, output_data = process_frame(
-                img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args
+                img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
             )
 
             if args.output_mode == 'save':
@@ -181,7 +181,7 @@ def main(args):
 
                 # Process frame
                 result_frame, output_data = process_frame(
-                    frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args
+                    frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
                 )
                 last_result_frame = result_frame.copy()  # 保存检测结果
 
@@ -243,7 +243,23 @@ if __name__ == '__main__':
     parser.add_argument('--log-level', type=str, default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Set the logging level.')
     parser.add_argument('--save-frame', action='store_true', help='Save processed frames as images for video input.')
     parser.add_argument('--save-json', action='store_true', help='Save JSON results for each processed frame for video input.')
-    
+
+    # Visualization/Annotator options
+    parser.add_argument('--annotator-preset', type=str, default=None,
+                        choices=['standard', 'lightweight', 'privacy', 'debug', 'high_contrast'],
+                        help='Use predefined visualization preset. Overrides individual annotator settings.')
+    parser.add_argument('--annotator-types', type=str, nargs='+', default=None,
+                        choices=['box', 'rich_label', 'round_box', 'box_corner', 'circle', 'triangle',
+                                'ellipse', 'dot', 'color', 'background_overlay', 'halo',
+                                'percentage_bar', 'blur', 'pixelate'],
+                        help='List of annotator types to use (e.g., --annotator-types round_box rich_label)')
+    parser.add_argument('--box-thickness', type=int, default=1,
+                        help='Thickness for box/round_box annotators.')
+    parser.add_argument('--roundness', type=float, default=0.3,
+                        help='Roundness value for round_box annotator (0.0-1.0).')
+    parser.add_argument('--blur-kernel-size', type=int, default=15,
+                        help='Kernel size for blur annotator (privacy mode).')
+
     args = parser.parse_args()
     
     # Create a dummy model file if it doesn't exist, as we don't have a real one yet.

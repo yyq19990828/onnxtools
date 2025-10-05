@@ -1,8 +1,15 @@
 """Configuration classes and utilities for supervision annotators."""
 
 import supervision as sv
-from typing import Optional
+from typing import Optional, Dict, Any
 from .font_utils import get_fallback_font_path
+
+
+try:
+    from .annotator_factory import AnnotatorType
+except ImportError:
+    # Fallback if annotator_factory is not available
+    AnnotatorType = None
 
 
 def create_box_annotator(thickness: int = 1,
@@ -140,3 +147,117 @@ def get_default_vehicle_detection_config() -> tuple[BoxAnnotatorConfig, RichLabe
     )
 
     return box_config, label_config
+
+
+def get_default_annotator_config(annotator_type: 'AnnotatorType') -> Dict[str, Any]:
+    """
+    Get default configuration for each annotator type.
+
+    This function provides sensible defaults for all 13 supported annotator types,
+    optimized for vehicle detection scenarios.
+
+    Args:
+        annotator_type: AnnotatorType enum value
+
+    Returns:
+        Dictionary containing default configuration parameters
+
+    Example:
+        >>> from utils.annotator_factory import AnnotatorType
+        >>> config = get_default_annotator_config(AnnotatorType.ROUND_BOX)
+        >>> annotator = AnnotatorFactory.create(AnnotatorType.ROUND_BOX, config)
+    """
+    if AnnotatorType is None:
+        raise ImportError("AnnotatorType not available. Import annotator_factory first.")
+
+    # Default configurations for each annotator type
+    default_configs = {
+        AnnotatorType.BOX: {
+            'thickness': 2,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.RICH_LABEL: {
+            'font_path': 'SourceHanSans-VF.ttf',
+            'font_size': 16,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.ROUND_BOX: {
+            'thickness': 2,
+            'roundness': 0.3,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.BOX_CORNER: {
+            'thickness': 2,
+            'corner_length': 20,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.CIRCLE: {
+            'thickness': 2,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.TRIANGLE: {
+            'base': 20,
+            'height': 20,
+            'position': sv.Position.TOP_CENTER,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS,
+            'outline_thickness': 0,
+            'outline_color': sv.Color.BLACK
+        },
+        AnnotatorType.ELLIPSE: {
+            'thickness': 2,
+            'start_angle': 0,
+            'end_angle': 360,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.DOT: {
+            'radius': 5,
+            'position': sv.Position.CENTER,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS,
+            'outline_thickness': 0,
+            'outline_color': sv.Color.BLACK
+        },
+        AnnotatorType.COLOR: {
+            'opacity': 0.3,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.BACKGROUND_OVERLAY: {
+            'color': sv.Color.BLACK,
+            'opacity': 0.5
+        },
+        AnnotatorType.HALO: {
+            'opacity': 0.3,
+            'kernel_size': 40,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS
+        },
+        AnnotatorType.PERCENTAGE_BAR: {
+            'height': 16,
+            'width': 80,
+            'border_color': sv.Color.BLACK,
+            'position': sv.Position.TOP_LEFT,
+            'color_palette': sv.ColorPalette.DEFAULT,
+            'color_lookup': sv.ColorLookup.CLASS,
+            'border_thickness': 1
+        },
+        AnnotatorType.BLUR: {
+            'kernel_size': 15
+        },
+        AnnotatorType.PIXELATE: {
+            'pixel_size': 20
+        }
+    }
+
+    config = default_configs.get(annotator_type)
+    if config is None:
+        raise ValueError(f"No default configuration for annotator type: {annotator_type}")
+
+    return config.copy()  # Return a copy to avoid mutation
