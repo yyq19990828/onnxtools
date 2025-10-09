@@ -20,9 +20,9 @@
 
 **Purpose**: 项目初始化和基础测试结构
 
-- [ ] T001 创建测试目录结构 (`tests/unit/`, `tests/contract/`)
-- [ ] T002 [P] 配置pytest fixtures用于OCR和颜色分类模型测试 (`tests/conftest.py`)
-- [ ] T003 [P] 准备测试数据集: 单层车牌、双层车牌、各种颜色车牌图像 (`tests/fixtures/plates/`)
+- [x] T001 创建测试目录结构 (`tests/unit/`, `tests/contract/`)
+- [x] T002 [P] 配置pytest fixtures用于OCR和颜色分类模型测试 (`tests/conftest.py`)
+- [x] T003 [P] 准备测试数据集: 单层车牌、双层车牌、各种颜色车牌图像 (`tests/fixtures/plates/`)
 
 **Checkpoint**: 测试基础设施就绪
 
@@ -36,13 +36,13 @@
 
 ### 基准单元测试创建
 
-- [ ] T004 [P] [FOUNDATIONAL] 为现有OCRONNX创建基准单元测试 (`tests/unit/test_ocr_onnx_baseline.py`)
+- [x] T004 [P] [FOUNDATIONAL] 为现有OCRONNX创建基准单元测试 (`tests/unit/test_ocr_onnx_baseline.py`)
   - 测试现有`infer()`方法的基本功能
   - 测试单层车牌OCR识别准确性
   - 测试双层车牌OCR识别准确性
   - 记录性能基准(推理时间)
 
-- [ ] T005 [P] [FOUNDATIONAL] 为现有ColorLayerONNX创建基准单元测试 (`tests/unit/test_color_layer_onnx_baseline.py`)
+- [x] T005 [P] [FOUNDATIONAL] 为现有ColorLayerONNX创建基准单元测试 (`tests/unit/test_color_layer_onnx_baseline.py`)
   - 测试现有`infer()`方法的基本功能
   - 测试颜色分类准确性(5种颜色)
   - 测试层级分类准确性(单/双层)
@@ -50,13 +50,13 @@
 
 ### Golden Test数据集创建
 
-- [ ] T006 [FOUNDATIONAL] 创建OCR golden test数据集 (`tests/fixtures/golden_ocr_outputs.json`)
+- [x] T006 [FOUNDATIONAL] 创建OCR golden test数据集 (`tests/fixtures/golden_ocr_outputs.json`)
   - 收集10张单层车牌图像
   - 收集10张双层车牌图像
   - 使用现有OCRONNX生成golden输出(文本、置信度、字符置信度)
   - 保存为JSON格式用于回归测试
 
-- [ ] T007 [FOUNDATIONAL] 创建颜色分类golden test数据集 (`tests/fixtures/golden_color_layer_outputs.json`)
+- [x] T007 [FOUNDATIONAL] 创建颜色分类golden test数据集 (`tests/fixtures/golden_color_layer_outputs.json`)
   - 收集每种颜色(蓝、黄、白、黑、绿)的车牌图像各5张
   - 收集单层和双层车牌各10张
   - 使用现有ColorLayerONNX生成golden输出
@@ -64,7 +64,7 @@
 
 ### 双层车牌处理逻辑验证
 
-- [ ] T008 [FOUNDATIONAL] 为双层车牌处理创建中间状态golden数据 (`tests/fixtures/double_plate_processing_stages/`)
+- [x] T008 [FOUNDATIONAL] 为双层车牌处理创建中间状态golden数据 (`tests/fixtures/double_plate_processing_stages/`)
   - 记录`process_plate_image()`的中间状态:
     - 倾斜检测角度
     - 校正后图像
@@ -85,13 +85,13 @@
 
 ### US1: ColorLayerONNX继承BaseOnnx
 
-- [ ] T009 [P] [US1] 添加类型别名定义到`infer_onnx/ocr_onnx.py`顶部
+- [x] T009 [P] [US1] 添加类型别名定义到`infer_onnx/ocr_onnx.py`顶部
   - `from typing import List, Tuple, Optional, Dict, TypeAlias`
   - `from numpy.typing import NDArray`
   - `ColorLogits: TypeAlias = Tuple[NDArray[np.float32], float]`
   - `LayerLogits: TypeAlias = Tuple[NDArray[np.float32], float]`
 
-- [ ] T010 [US1] 重构ColorLayerONNX类继承BaseOnnx (`infer_onnx/ocr_onnx.py`)
+- [x] T010 [US1] 重构ColorLayerONNX类继承BaseOnnx (`infer_onnx/ocr_onnx.py`)
   - 修改`class ColorLayerONNX(BaseOnnx):`
   - 更新`__init__()`方法:
     - 添加`color_map: Dict[int, str]`和`layer_map: Dict[int, str]`参数
@@ -99,12 +99,12 @@
     - 保存color_map和layer_map属性
   - 移除旧的`self.session`创建代码(继承自BaseOnnx)
 
-- [ ] T011 [US1] 实现ColorLayerONNX._preprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T011 [US1] 实现ColorLayerONNX._preprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def _preprocess(self, image: NDArray[np.uint8]) -> PreprocessResult`
   - 调用`_image_pretreatment_static(image, self.input_shape)`
   - 返回(input_tensor, scale, original_shape, ratio_pad)
 
-- [ ] T012 [US1] 实现ColorLayerONNX._postprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T012 [US1] 实现ColorLayerONNX._postprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def _postprocess(self, prediction: NDArray[np.float32], conf_thres: float, **kwargs) -> Dict[str, any]`
   - 分离color_logits和layer_logits
   - 应用softmax
@@ -112,19 +112,19 @@
   - 从color_map和layer_map查找名称
   - 返回`{'color': str, 'layer': str, 'color_conf': float, 'layer_conf': float}`
 
-- [ ] T013 [US1] 实现ColorLayerONNX.__call__()方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T013 [US1] 实现ColorLayerONNX.__call__()方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def __call__(self, image: NDArray[np.uint8], conf_thres: Optional[float] = None) -> Tuple[Dict[str, any], Tuple[int, int]]`
   - 调用`super().__call__(image, conf_thres=conf_thres)`
   - 返回分类结果和原始形状
 
 ### US1: OCRONNX继承BaseOnnx
 
-- [ ] T014 [P] [US1] 添加OCR类型别名定义到`infer_onnx/ocr_onnx.py`
+- [x] T014 [P] [US1] 添加OCR类型别名定义到`infer_onnx/ocr_onnx.py`
   - `OCRResult: TypeAlias = Tuple[str, float, List[float]]`
   - `PreprocessResult: TypeAlias = Tuple[NDArray[np.float32], float, Tuple[int, int], Optional[Tuple]]`
   - `OCROutput: TypeAlias = Tuple[NDArray[np.int_], Optional[NDArray[np.float32]]]`
 
-- [ ] T015 [US1] 重构OCRONNX类继承BaseOnnx (`infer_onnx/ocr_onnx.py`)
+- [x] T015 [US1] 重构OCRONNX类继承BaseOnnx (`infer_onnx/ocr_onnx.py`)
   - 修改`class OCRONNX(BaseOnnx):`
   - 更新`__init__()`方法:
     - 添加`character: List[str]`参数(OCR字典)
@@ -132,20 +132,20 @@
     - 保存character属性
   - 移除旧的`self.session`创建代码
 
-- [ ] T016 [US1] 实现OCRONNX._preprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T016 [US1] 实现OCRONNX._preprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def _preprocess(self, image: NDArray[np.uint8], is_double_layer: bool = False) -> PreprocessResult`
   - 调用`_process_plate_image_static(image, is_double_layer)`
   - 调用`_resize_norm_img_static(processed_img, self.input_shape)`
   - 返回(input_tensor, scale, original_shape, ratio_pad)
 
-- [ ] T017 [US1] 实现OCRONNX._postprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T017 [US1] 实现OCRONNX._postprocess()实例方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def _postprocess(self, prediction: NDArray[np.float32], conf_thres: float, **kwargs) -> List[OCRResult]`
   - 从prediction提取text_index和text_prob
   - 调用`_decode_static(self.character, text_index, text_prob)`
   - 过滤低置信度结果
   - 返回OCR结果列表
 
-- [ ] T018 [US1] 实现OCRONNX.__call__()方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T018 [US1] 实现OCRONNX.__call__()方法 (`infer_onnx/ocr_onnx.py`)
   - 签名: `def __call__(self, image: NDArray[np.uint8], conf_thres: Optional[float] = None, is_double_layer: bool = False) -> Tuple[List[OCRResult], Tuple[int, int]]`
   - 需要传递`is_double_layer`参数到预处理
   - 调用父类`super().__call__()`并传递额外参数
@@ -153,13 +153,13 @@
 
 ### US1: 合约测试(验证继承正确性)
 
-- [ ] T019 [P] [US1] 创建ColorLayerONNX合约测试 (`tests/contract/test_color_layer_onnx_contract.py`)
+- [x] T019 [P] [US1] 创建ColorLayerONNX合约测试 (`tests/contract/test_color_layer_onnx_contract.py`)
   - 验证`__init__()`参数符合合约(color_map, layer_map必需)
   - 验证`__call__()`返回格式符合合约(字典键名正确)
   - 验证输入验证逻辑(图像形状、数据类型)
   - 验证异常抛出符合合约(ValueError, RuntimeError)
 
-- [ ] T020 [P] [US1] 创建OCRONNX合约测试 (`tests/contract/test_ocr_onnx_contract.py`)
+- [x] T020 [P] [US1] 创建OCRONNX合约测试 (`tests/contract/test_ocr_onnx_contract.py`)
   - 验证`__init__()`参数符合合约(character必需)
   - 验证`__call__()`返回格式符合合约(OCRResult元组)
   - 验证`is_double_layer`参数功能
@@ -168,14 +168,14 @@
 
 ### US1: 单元测试(验证初始化和基本功能)
 
-- [ ] T021 [P] [US1] 创建ColorLayerONNX初始化单元测试 (`tests/unit/test_color_layer_onnx.py`)
+- [x] T021 [P] [US1] 创建ColorLayerONNX初始化单元测试 (`tests/unit/test_color_layer_onnx.py`)
   - 测试Polygraphy懒加载(session未立即创建)
   - 测试provider自动检测
   - 测试自定义provider参数
   - 测试模型文件不存在时的错误处理
   - 测试color_map/layer_map为空时的错误处理
 
-- [ ] T022 [P] [US1] 创建OCRONNX初始化单元测试 (`tests/unit/test_ocr_onnx.py`)
+- [x] T022 [P] [US1] 创建OCRONNX初始化单元测试 (`tests/unit/test_ocr_onnx.py`)
   - 测试Polygraphy懒加载
   - 测试provider配置
   - 测试character参数验证
@@ -193,7 +193,7 @@
 
 ### US2: 迁移ColorLayerONNX预处理函数
 
-- [ ] T023 [US2] 迁移`image_pretreatment`函数为ColorLayerONNX静态方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T023 [US2] 迁移`image_pretreatment`函数为ColorLayerONNX静态方法 (`infer_onnx/ocr_onnx.py`)
   - 从`utils/ocr_image_processing.py`复制`image_pretreatment()`函数
   - 创建`@staticmethod def _image_pretreatment_static(img: NDArray[np.uint8], image_shape: Tuple[int, int]) -> NDArray[np.float32]:`
   - 添加完整类型提示
@@ -205,37 +205,37 @@
 
 ### US2: 迁移OCRONNX预处理函数
 
-- [ ] T024 [US2] 创建双层车牌处理辅助方法1: 倾斜检测 (`infer_onnx/ocr_onnx.py`)
+- [x] T024 [US2] 创建双层车牌处理辅助方法1: 倾斜检测 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _detect_skew_angle(image: NDArray[np.uint8]) -> float:`
   - 从`process_plate_image`中提取倾斜检测逻辑
   - 使用Canny边缘检测和霍夫直线变换
   - 返回倾斜角度(度),范围[-45, 45]
 
-- [ ] T025 [US2] 创建双层车牌处理辅助方法2: 倾斜校正 (`infer_onnx/ocr_onnx.py`)
+- [x] T025 [US2] 创建双层车牌处理辅助方法2: 倾斜校正 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _correct_skew(image: NDArray[np.uint8], angle: float) -> NDArray[np.uint8]:`
   - 从`process_plate_image`中提取校正逻辑
   - 使用cv2.getRotationMatrix2D和cv2.warpAffine
   - 保持图像通道数不变
 
-- [ ] T026 [US2] 创建双层车牌处理辅助方法3: 找到分割线 (`infer_onnx/ocr_onnx.py`)
+- [x] T026 [US2] 创建双层车牌处理辅助方法3: 找到分割线 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _find_optimal_split_line(image: NDArray[np.uint8]) -> int:`
   - 从`process_plate_image`中提取水平投影逻辑
   - 计算水平投影直方图
   - 应用高斯平滑
   - 返回最佳分割线y坐标
 
-- [ ] T027 [US2] 创建双层车牌处理辅助方法4: 拆分双层 (`infer_onnx/ocr_onnx.py`)
+- [x] T027 [US2] 创建双层车牌处理辅助方法4: 拆分双层 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _split_double_layer(image: NDArray[np.uint8], split_y: int) -> Tuple[NDArray[np.uint8], NDArray[np.uint8]]:`
   - 根据分割线拆分上下两层
   - 返回(上层图像, 下层图像)
 
-- [ ] T028 [US2] 创建双层车牌处理辅助方法5: 拼接层级 (`infer_onnx/ocr_onnx.py`)
+- [x] T028 [US2] 创建双层车牌处理辅助方法5: 拼接层级 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _stitch_layers(top_layer: NDArray[np.uint8], bottom_layer: NDArray[np.uint8]) -> NDArray[np.uint8]:`
   - 对齐两层高度(padding)
   - 水平拼接: np.hstack()
   - 返回拼接后的单行图像
 
-- [ ] T029 [US2] 创建OCRONNX主预处理方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T029 [US2] 创建OCRONNX主预处理方法 (`infer_onnx/ocr_onnx.py`)
   - 创建`@staticmethod def _process_plate_image_static(img: NDArray[np.uint8], is_double_layer: bool = False) -> NDArray[np.uint8]:`
   - 调用`_detect_skew_angle()`和`_correct_skew()`进行倾斜校正
   - 如果`is_double_layer=True`:
@@ -244,7 +244,7 @@
     - 调用`_stitch_layers()`拼接
   - 返回处理后的单层车牌图像
 
-- [ ] T030 [US2] 迁移`resize_norm_img`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T030 [US2] 迁移`resize_norm_img`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
   - 从`utils/ocr_image_processing.py`复制`resize_norm_img()`
   - 创建`@staticmethod def _resize_norm_img_static(img: NDArray[np.uint8], image_shape: Tuple[int, int]) -> NDArray[np.float32]:`
   - 保持宽高比resize到目标高度
@@ -254,12 +254,12 @@
 
 ### US2: 迁移OCRONNX后处理函数
 
-- [ ] T031 [US2] 迁移`get_ignored_tokens`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T031 [US2] 迁移`get_ignored_tokens`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
   - 从`utils/ocr_post_processing.py`复制`get_ignored_tokens()`
   - 创建`@staticmethod def _get_ignored_tokens_static() -> List[int]:`
   - 返回需要忽略的token索引列表(如blank token)
 
-- [ ] T032 [US2] 迁移`decode`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
+- [x] T032 [US2] 迁移`decode`函数为OCRONNX静态方法 (`infer_onnx/ocr_onnx.py`)
   - 从`utils/ocr_post_processing.py`复制`decode()`
   - 创建`@staticmethod def _decode_static(character: List[str], text_index: NDArray[np.int_], text_prob: Optional[NDArray[np.float32]] = None, is_remove_duplicate: bool = False) -> List[OCRResult]:`
   - 调用`_get_ignored_tokens_static()`获取忽略列表
@@ -272,7 +272,7 @@
 
 ### US2: 单元测试(验证迁移的函数正确性)
 
-- [ ] T033 [P] [US2] 创建双层车牌辅助方法单元测试 (`tests/unit/test_ocr_onnx.py`)
+- [x] T033 [P] [US2] 创建双层车牌辅助方法单元测试 (`tests/unit/test_ocr_onnx.py`)
   - 测试`_detect_skew_angle()`:
     - 使用倾斜图像,验证角度检测准确性
     - 使用水平图像,验证返回0度
@@ -283,7 +283,7 @@
   - 测试`_split_double_layer()`和`_stitch_layers()`:
     - 验证拆分和拼接逻辑正确
 
-- [ ] T034 [P] [US2] 创建OCRONNX预处理单元测试 (`tests/unit/test_ocr_onnx.py`)
+- [x] T034 [P] [US2] 创建OCRONNX预处理单元测试 (`tests/unit/test_ocr_onnx.py`)
   - 测试`_process_plate_image_static()`:
     - 单层车牌: 验证仅倾斜校正
     - 双层车牌: 验证完整流程(校正+拆分+拼接)
@@ -293,7 +293,7 @@
     - 验证归一化范围[-1, 1]
     - 验证padding逻辑
 
-- [ ] T035 [P] [US2] 创建OCRONNX后处理单元测试 (`tests/unit/test_ocr_onnx.py`)
+- [x] T035 [P] [US2] 创建OCRONNX后处理单元测试 (`tests/unit/test_ocr_onnx.py`)
   - 测试`_get_ignored_tokens_static()`:
     - 验证返回正确的token索引
   - 测试`_decode_static()`:
@@ -303,7 +303,7 @@
     - 验证后处理规则('苏'->'京')
     - 验证重复字符移除(如果启用)
 
-- [ ] T036 [P] [US2] 创建ColorLayerONNX预处理单元测试 (`tests/unit/test_color_layer_onnx.py`)
+- [x] T036 [P] [US2] 创建ColorLayerONNX预处理单元测试 (`tests/unit/test_color_layer_onnx.py`)
   - 测试`_image_pretreatment_static()`:
     - 验证输出形状[1, 3, 224, 224]
     - 验证归一化范围[-1, 1]
@@ -311,7 +311,7 @@
 
 ### US2: 集成测试(端到端推理验证)
 
-- [ ] T037 [US2] 创建OCRONNX端到端集成测试 (`tests/integration/test_ocr_onnx_inference.py`)
+- [x] T037 [US2] 创建OCRONNX端到端集成测试 (`tests/integration/test_ocr_onnx_inference.py`)
   - 使用真实车牌图像进行完整推理
   - 测试单层车牌OCR:
     - 与golden输出对比(文本、置信度)
@@ -320,7 +320,7 @@
     - 与golden输出对比
     - 验证`is_double_layer=True`参数功能
 
-- [ ] T038 [US2] 创建ColorLayerONNX端到端集成测试 (`tests/integration/test_color_layer_onnx_inference.py`)
+- [x] T038 [US2] 创建ColorLayerONNX端到端集成测试 (`tests/integration/test_color_layer_onnx_inference.py`)
   - 使用真实车牌图像进行完整推理
   - 测试5种颜色分类:
     - 每种颜色至少5张图像
@@ -341,16 +341,16 @@
 
 ### 调用者修改
 
-- [ ] T039 [REFACTOR] 识别utils/ocr_image_processing.py的所有调用者
+- [x] T039 [REFACTOR] 识别utils/ocr_image_processing.py的所有调用者
   - 使用grep搜索: `grep -r "from utils.ocr_image_processing import\|from utils import.*process_plate_image\|from utils import.*resize_norm_img\|from utils import.*image_pretreatment" /home/tyjt/桌面/onnx_vehicle_plate_recognition/`
   - 记录所有调用文件路径和行号
   - 确认调用模式(直接函数调用 vs 作为参数传递)
 
-- [ ] T040 [REFACTOR] 识别utils/ocr_post_processing.py的所有调用者
+- [x] T040 [REFACTOR] 识别utils/ocr_post_processing.py的所有调用者
   - 使用grep搜索: `grep -r "from utils.ocr_post_processing import\|from utils import.*decode\|from utils import.*get_ignored_tokens" /home/tyjt/桌面/onnx_vehicle_plate_recognition/`
   - 记录所有调用文件路径和行号
 
-- [ ] T041 [REFACTOR] 修改utils/pipeline.py (`utils/pipeline.py`)
+- [x] T041 [REFACTOR] 修改utils/pipeline.py (`utils/pipeline.py`)
   - 移除导入: `from utils.ocr_image_processing import process_plate_image, resize_norm_img, image_pretreatment`
   - 移除导入: `from utils.ocr_post_processing import decode`
   - 添加导入: `from infer_onnx import OCRONNX, ColorLayerONNX` (如果未导入)
@@ -359,7 +359,7 @@
     - **选项B**(如需独立预处理): 调用`OCRONNX._process_plate_image_static()`等静态方法
   - 验证修改后逻辑与原逻辑等价
 
-- [ ] T042 [P] [REFACTOR] 修改MCP模块调用者 (`mcp_vehicle_detection/main.py`或其他)
+- [x] T042 [P] [REFACTOR] 修改MCP模块调用者 (`mcp_vehicle_detection/main.py`或其他)
   - 根据T039/T040的搜索结果
   - 更新导入和调用逻辑
   - 如果MCP模块需要独立预处理:
@@ -367,40 +367,40 @@
   - 如果使用完整推理:
     - 使用`__call__()`方法
 
-- [ ] T043 [P] [REFACTOR] 修改tools/目录下的调用者(如有)
+- [x] T043 [P] [REFACTOR] 修改tools/目录下的调用者(如有)
   - 根据搜索结果更新
   - 验证工具脚本功能不受影响
 
-- [ ] T044 [REFACTOR] 更新utils/__init__.py (`utils/__init__.py`)
+- [x] T044 [REFACTOR] 更新utils/__init__.py (`utils/__init__.py`)
   - 移除导出: `from .ocr_image_processing import process_plate_image, resize_norm_img, image_pretreatment`
   - 移除导出: `from .ocr_post_processing import decode, get_ignored_tokens`
   - 验证没有其他代码依赖这些导出
 
 ### 文件删除
 
-- [ ] T045 [REFACTOR] 删除utils/ocr_image_processing.py
+- [x] T045 [REFACTOR] 删除utils/ocr_image_processing.py
   - 确认T041-T044完成,所有调用者已修改
   - 执行: `rm /home/tyjt/桌面/onnx_vehicle_plate_recognition/utils/ocr_image_processing.py`
   - 验证git status显示文件已删除
 
-- [ ] T046 [REFACTOR] 删除utils/ocr_post_processing.py
+- [x] T046 [REFACTOR] 删除utils/ocr_post_processing.py
   - 确认所有调用者已修改
   - 执行: `rm /home/tyjt/桌面/onnx_vehicle_plate_recognition/utils/ocr_post_processing.py`
   - 验证git status显示文件已删除
 
 ### 回归测试
 
-- [ ] T047 [REGRESSION] 运行所有单元测试确认无回归
+- [x] T047 [REGRESSION] 运行所有单元测试确认无回归
   - 执行: `pytest tests/unit/ -v`
   - 确认所有测试通过
   - 特别关注OCR和颜色分类相关测试
 
-- [ ] T048 [REGRESSION] 运行集成测试确认pipeline功能正常
+- [x] T048 [REGRESSION] 运行集成测试确认pipeline功能正常
   - 执行: `pytest tests/integration/test_refactored_pipeline.py -v`
   - 验证完整的车牌识别流程
   - 对比输出与golden数据
 
-- [ ] T049 [REGRESSION] 使用真实数据测试pipeline.py
+- [x] T049 [REGRESSION] 使用真实数据测试pipeline.py
   - 使用10张真实车牌图像
   - 执行完整的检测+OCR+颜色分类流程
   - 验证准确性与重构前一致

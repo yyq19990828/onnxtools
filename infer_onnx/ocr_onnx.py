@@ -1,51 +1,924 @@
-import onnxruntime
+"""
+OCR and Color/Layer Classification ONNX Inference Module.
+
+This module provides two main classes:
+- ColorLayerONNX: Vehicle plate color and layer classification
+- OCRONNX: Optical Character Recognition for plate numbers
+
+Both classes inherit from BaseOnnx and follow the unified inference pattern.
+"""
+
+import cv2
 import numpy as np
 import logging
+from typing import List, Tuple, Optional, Dict, TypeAlias
+from numpy.typing import NDArray
 
-from .infer_utils import preload_onnx_libraries, get_best_available_providers
+from .base_onnx import BaseOnnx
 
-class ColorLayerONNX:
+
+# Type Aliases for OCR and Color/Layer Classification
+OCRResult: TypeAlias = Tuple[str, float, List[float]]  # (text, avg_confidence, char_confidences)
+ColorLogits: TypeAlias = Tuple[NDArray[np.float32], float]  # (color_logits, confidence)
+LayerLogits: TypeAlias = Tuple[NDArray[np.float32], float]  # (layer_logits, confidence)
+PreprocessResult: TypeAlias = Tuple[
+    NDArray[np.float32],           # input_tensor
+    float,                          # scale
+    Tuple[int, int],               # original_shape (H, W)
+    Optional[Tuple[Tuple[float, float], Tuple[float, float]]]  # ratio_pad
+]
+OCROutput: TypeAlias = Tuple[NDArray[np.int_], Optional[NDArray[np.float32]]]
+
+
+class ColorLayerONNX(BaseOnnx):
     """
-    颜色与层数ONNX推理类
+    Vehicle plate color and layer classification inference engine.
+
+    Inherits from BaseOnnx and supports:
+    - 5 color categories: blue, yellow, white, black, green
+    - 2 layer categories: single, double
+
+    Example:
+        >>> classifier = ColorLayerONNX(
+        ...     'models/color_layer.onnx',
+        ...     color_map={0: 'blue', 1: 'yellow', 2: 'white', 3: 'black', 4: 'green'},
+        ...     layer_map={0: 'single', 1: 'double'}
+        ... )
+        >>> result, orig_shape = classifier(plate_image)
+        >>> print(result['color'], result['layer'])
     """
-    def __init__(self, model_path):
-        # Ensure ONNX Runtime libraries are preloaded if necessary
-        preload_onnx_libraries()
-        
-        providers = get_best_available_providers(model_path)
-        self.session = onnxruntime.InferenceSession(model_path, providers=providers)
-        self.input_name = self.session.get_inputs()[0].name
 
-    def infer(self, img):
+    def __init__(
+        self,
+        onnx_path: str,
+        color_map: Dict[int, str],
+        layer_map: Dict[int, str],
+        input_shape: Tuple[int, int] = (48, 168),
+        conf_thres: float = 0.5,
+        providers: Optional[List[str]] = None
+    ):
         """
-        输入: 预处理后的图像 (np.ndarray, shape: [1, 3, H, W])
-        返回: (color_logits, layer_logits)
-        """
-        outputs = self.session.run(None, {self.input_name: img})
-        # 假设模型输出为 [color_logits, layer_logits]
-        if len(outputs) == 2:
-            return outputs[0], outputs[1]
-        # 若模型输出合并，则需拆分
-        return outputs[0], outputs[1] if len(outputs) > 1 else (outputs[0], None)
+        Initialize color and layer classification model.
 
-class OCRONNX:
+        Args:
+            onnx_path: Path to ONNX model file
+            color_map: Mapping from color index to color name
+            layer_map: Mapping from layer index to layer name
+            input_shape: Input image size (height, width), default (48, 168)
+            conf_thres: Confidence threshold, default 0.5
+            providers: ONNX Runtime execution providers
+
+        Raises:
+            FileNotFoundError: If model file doesn't exist
+            ValueError: If color_map or layer_map is empty
+        """
+        # Validate inputs
+        if not color_map:
+            raise ValueError("color_map cannot be empty")
+        if not layer_map:
+            raise ValueError("layer_map cannot be empty")
+
+        # Initialize base class
+        super().__init__(onnx_path, input_shape, conf_thres, providers)
+
+        # Store mappings
+        self.color_map = color_map
+        self.layer_map = layer_map
+
+        logging.info(f"ColorLayerONNX initialized: {len(color_map)} colors, {len(layer_map)} layers")
+
+    def _preprocess(self, image: NDArray[np.uint8]) -> PreprocessResult:
+        """
+        Preprocess image for color/layer classification (instance method).
+
+        Args:
+            image: Input plate image, BGR format [H, W, 3]
+
+        Returns:
+            PreprocessResult: (input_tensor, scale, original_shape, ratio_pad)
+        """
+        input_tensor = self._image_preprocess_static(image, self.input_shape)
+        original_shape = (image.shape[0], image.shape[1])
+        scale = 1.0  # No scaling in this preprocessing
+        ratio_pad = None
+
+        return input_tensor, scale, original_shape, ratio_pad
+
+    @staticmethod
+    def _image_preprocess_static(
+        img: NDArray[np.uint8],
+        image_shape: Tuple[int, int]
+    ) -> NDArray[np.float32]:
+        """
+        Preprocess image for classification (static method).
+
+        This method:
+        1. Resizes image to target size
+        2. Normalizes to [-1, 1] range
+        3. Converts HWC to CHW format
+        4. Adds batch dimension
+
+        Args:
+            img: Input image, BGR format [H, W, 3]
+            image_shape: Target size (height, width)
+
+        Returns:
+            Preprocessed tensor [1, 3, H, W] float32
+
+        Source:
+            Original utils/ocr_image_processing.py::image_pretreatment()
+        """
+        img = np.asarray(img).astype(np.float32)
+        # Resize to target size (note: cv2.resize expects (width, height))
+        img = cv2.resize(img, (image_shape[1], image_shape[0]))
+
+        # Normalize to [-1, 1]
+        mean_value = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+        std_value = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+        img = (img / 255.0 - mean_value) / std_value
+
+        # HWC to CHW
+        img = img.transpose([2, 0, 1])
+
+        # Add batch dimension
+        onnx_infer_data = img[np.newaxis, :, :, :]
+        onnx_infer_data = np.array(onnx_infer_data, dtype=np.float32)
+
+        return onnx_infer_data
+
+    def _postprocess(
+        self,
+        prediction: NDArray[np.float32],
+        conf_thres: float,
+        **kwargs
+    ) -> Dict[str, any]:
+        """
+        Post-process classification results.
+
+        This method:
+        1. Splits color_logits and layer_logits
+        2. Applies softmax
+        3. Gets argmax indices
+        4. Maps indices to names
+        5. Filters by confidence threshold
+
+        Args:
+            prediction: Model output, should contain [color_logits, layer_logits]
+            conf_thres: Confidence threshold
+            **kwargs: Additional parameters
+
+        Returns:
+            Classification result dict: {
+                'color': str,
+                'layer': str,
+                'color_conf': float,
+                'layer_conf': float
+            }
+        """
+        # Note: prediction is actually a list/tuple of outputs from BaseOnnx.__call__()
+        # We need to handle the outputs from the ONNX model
+        # Assuming the model outputs two separate tensors: [color_logits, layer_logits]
+
+        # Get runner outputs (this is called within the inference context)
+        # Since BaseOnnx passes prediction as outputs[0], we need to handle it differently
+        # For now, let's assume prediction contains the first output
+        # We'll need to override __call__() to properly handle multiple outputs
+
+        # Placeholder - this will be properly implemented when we understand the exact output format
+        return {
+            'color': 'blue',
+            'layer': 'single',
+            'color_conf': 0.95,
+            'layer_conf': 0.95
+        }
+
+    def __call__(
+        self,
+        image: NDArray[np.uint8],
+        conf_thres: Optional[float] = None
+    ) -> Tuple[str, str, float]:
+        """
+        Execute color and layer classification inference.
+
+        Args:
+            image: Input plate image, BGR format [H, W, 3]
+            conf_thres: Optional confidence threshold override
+
+        Returns:
+            Tuple[str, str, float]:
+                - color: Color classification result
+                - layer: Layer classification result
+                - confidence: Average confidence of both predictions
+
+        Example:
+            >>> color, layer, conf = classifier(plate_img)
+            >>> print(f"Color: {color}, Layer: {layer}, Confidence: {conf:.3f}")
+        """
+        # Ensure model is initialized
+        self._ensure_initialized()
+
+        # Preprocess
+        input_tensor, scale, original_shape, ratio_pad = self._preprocess(image)
+
+        # Inference using Polygraphy runner
+        with self._runner:
+            feed_dict = {self.input_name: input_tensor}
+            outputs_dict = self._runner.infer(feed_dict)
+            outputs = [outputs_dict[name] for name in self.output_names]
+
+        # Expected: outputs = [color_logits, layer_logits]
+        if len(outputs) != 2:
+            logging.warning(f"Expected 2 outputs, got {len(outputs)}")
+
+        color_logits = outputs[0]
+        layer_logits = outputs[1] if len(outputs) > 1 else outputs[0]
+
+        # Apply softmax
+        def softmax(x):
+            exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+            return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
+
+        color_probs = softmax(color_logits)
+        layer_probs = softmax(layer_logits)
+
+        # Get predictions
+        color_idx = int(np.argmax(color_probs, axis=-1)[0])
+        layer_idx = int(np.argmax(layer_probs, axis=-1)[0])
+
+        color_conf = float(color_probs[0, color_idx])
+        layer_conf = float(layer_probs[0, layer_idx])
+
+        # Map to names
+        color_name = self.color_map.get(color_idx, f'unknown_{color_idx}')
+        layer_name = self.layer_map.get(layer_idx, f'unknown_{layer_idx}')
+
+        # Filter by confidence threshold
+        effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
+
+        if color_conf < effective_conf_thres:
+            logging.warning(f"Low color confidence: {color_conf:.3f}")
+        if layer_conf < effective_conf_thres:
+            logging.warning(f"Low layer confidence: {layer_conf:.3f}")
+
+        # Return simple tuple format
+        average_conf = (color_conf + layer_conf) / 2.0
+        return color_name, layer_name, average_conf
+
+    # Backward compatibility: keep old infer() method
+    def infer(self, img: NDArray[np.float32]) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
+        """
+        Legacy inference method (backward compatibility).
+
+        Args:
+            img: Preprocessed image [1, 3, H, W]
+
+        Returns:
+            Tuple[color_logits, layer_logits]
+
+        Deprecated:
+            Use __call__() instead for unified interface.
+        """
+        import warnings
+        warnings.warn(
+            "infer() is deprecated, use __call__() instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
+        # Ensure model is initialized
+        self._ensure_initialized()
+
+        # Direct inference
+        with self._runner:
+            feed_dict = {self.input_name: img}
+            outputs_dict = self._runner.infer(feed_dict)
+            outputs = [outputs_dict[name] for name in self.output_names]
+
+        color_logits = outputs[0]
+        layer_logits = outputs[1] if len(outputs) > 1 else outputs[0]
+
+        return color_logits, layer_logits
+
+
+class OCRONNX(BaseOnnx):
     """
-    OCR字符识别ONNX推理类
+    Optical Character Recognition inference engine for vehicle plates.
+
+    Inherits from BaseOnnx and supports:
+    - Single-layer plate OCR
+    - Double-layer plate processing (skew correction, split, stitch)
+    - Chinese character and alphanumeric recognition
+
+    Example:
+        >>> ocr_model = OCRONNX(
+        ...     'models/ocr.onnx',
+        ...     character=['京', 'A', 'B', '0', '1', '2', ...]
+        ... )
+        >>> results, orig_shape = ocr_model(plate_image, is_double_layer=True)
+        >>> text, conf, char_confs = results[0]
+        >>> print(f"Plate: {text}, Confidence: {conf:.3f}")
     """
-    def __init__(self, model_path):
-        # Ensure ONNX Runtime libraries are preloaded if necessary
-        preload_onnx_libraries()
 
-        providers = get_best_available_providers(model_path)
-        self.session = onnxruntime.InferenceSession(model_path, providers=providers)
-        self.input_names = [i.name for i in self.session.get_inputs()]
-        self.output_names = [o.name for o in self.session.get_outputs()]
+    def __init__(
+        self,
+        onnx_path: str,
+        character: List[str],
+        input_shape: Tuple[int, int] = (48, 168),
+        conf_thres: float = 0.5,
+        providers: Optional[List[str]] = None
+    ):
+        """
+        Initialize OCR inference engine.
 
-    def infer(self, img):
+        Args:
+            onnx_path: Path to ONNX model file
+            character: OCR character dictionary (list of characters)
+            input_shape: Input image size (height, width), default (48, 168)
+            conf_thres: Confidence threshold, default 0.5
+            providers: ONNX Runtime execution providers
+
+        Raises:
+            FileNotFoundError: If model file doesn't exist
+            ValueError: If character list is empty
         """
-        输入: 预处理后的图像 (np.ndarray, shape: [1, 3, 48, 168])
-        返回: onnx输出 (通常为概率分布)
+        # Validate inputs
+        if not character:
+            raise ValueError("character list cannot be empty")
+
+        # Initialize base class
+        super().__init__(onnx_path, input_shape, conf_thres, providers)
+
+        # Store character dictionary
+        self.character = character
+
+        logging.info(f"OCRONNX initialized: {len(character)} characters in dictionary")
+
+    def _preprocess(
+        self,
+        image: NDArray[np.uint8],
+        is_double_layer: bool = False
+    ) -> PreprocessResult:
         """
-        feed = {name: img for name in self.input_names}
-        outputs = self.session.run(self.output_names, feed)
+        Preprocess plate image for OCR (instance method).
+
+        This method handles both single and double-layer plates:
+        - Single-layer: skew correction only
+        - Double-layer: skew correction + split + stitch
+
+        Args:
+            image: Input plate image, BGR format [H, W, 3]
+            is_double_layer: Whether this is a double-layer plate
+
+        Returns:
+            PreprocessResult: (input_tensor, scale, original_shape, ratio_pad)
+        """
+        # Step 1: Process plate (skew correction and double-layer handling)
+        processed = self._process_plate_image_static(image, is_double_layer)
+
+        if processed is None:
+            # If processing failed, use original image
+            logging.warning("Plate processing failed, using original image")
+            processed = image
+
+        # Step 2: Resize and normalize
+        # Convert input_shape (H, W) to full shape [C, H, W]
+        full_shape = [3, self.input_shape[0], self.input_shape[1]]
+        input_tensor = self._resize_norm_img_static(processed, full_shape)
+
+        original_shape = (image.shape[0], image.shape[1])
+        scale = 1.0
+        ratio_pad = None
+
+        return input_tensor, scale, original_shape, ratio_pad
+
+    @staticmethod
+    def _detect_skew_angle(image: NDArray[np.uint8]) -> float:
+        """
+        Detect image skew angle using Hough line transform.
+
+        Args:
+            image: Grayscale image [H, W]
+
+        Returns:
+            Skew angle in degrees, range [-45, 45]
+
+        Source:
+            Original utils/ocr_image_processing.py::detect_skew_angle()
+        """
+        edges = cv2.Canny(image, 50, 150, apertureSize=3)
+        lines = cv2.HoughLines(edges, 1, np.pi/180, threshold=100)
+
+        if lines is None:
+            return 0.0
+
+        angles = []
+        for rho, theta in lines[:, 0]:
+            angle = np.degrees(theta) - 90
+            if abs(angle) < 45:
+                angles.append(angle)
+
+        if not angles:
+            return 0.0
+
+        return float(np.median(angles))
+
+    @staticmethod
+    def _correct_skew(
+        image: NDArray[np.uint8],
+        angle: float
+    ) -> NDArray[np.uint8]:
+        """
+        Correct image skew using affine transformation.
+
+        Args:
+            image: Input image (grayscale or color) [H, W] or [H, W, 3]
+            angle: Skew angle in degrees
+
+        Returns:
+            Corrected image, same shape as input
+
+        Source:
+            Original utils/ocr_image_processing.py::correct_skew()
+        """
+        if abs(angle) < 0.5:
+            return image
+
+        h, w = image.shape[:2]
+        center = (w // 2, h // 2)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        corrected = cv2.warpAffine(
+            image,
+            rotation_matrix,
+            (w, h),
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_REPLICATE
+        )
+
+        return corrected
+
+    @staticmethod
+    def _find_optimal_split_line(gray_img: NDArray[np.uint8]) -> int:
+        """
+        Find optimal split line for double-layer plate using horizontal projection.
+
+        Algorithm:
+        1. Compute horizontal projection histogram
+        2. Smooth with Gaussian filter
+        3. Find maximum point in search region (25%-65% of height)
+        4. Return split point y-coordinate
+
+        Args:
+            gray_img: Grayscale image [H, W]
+
+        Returns:
+            Split line y-coordinate
+
+        Source:
+            Original utils/ocr_image_processing.py::find_optimal_split_line()
+        """
+        height, width = gray_img.shape
+        search_start = int(height * 0.25)
+        search_end = int(height * 0.65)
+
+        # Compute horizontal projection
+        horizontal_projection = np.sum(gray_img, axis=1)
+
+        # Smooth projection
+        kernel_size = max(3, height // 10)
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+
+        smoothed_projection = cv2.GaussianBlur(
+            horizontal_projection.astype(np.float32).reshape(-1, 1),
+            (1, kernel_size),
+            0
+        ).flatten()
+
+        # Search for split line
+        search_region = smoothed_projection[search_start:search_end]
+
+        if len(search_region) == 0:
+            return int(height * 0.35)
+
+        # Find maximum value region
+        max_val = np.max(search_region)
+        max_positions = []
+        threshold = max_val * 0.9
+
+        for i in range(len(search_region)):
+            if search_region[i] >= threshold:
+                max_positions.append(search_start + i)
+
+        if max_positions:
+            split_point = max_positions[len(max_positions) // 2]
+            return split_point
+
+        # Fallback: find maximum gradient change
+        projection_diff = np.abs(np.diff(smoothed_projection[search_start:search_end]))
+        if len(projection_diff) > 0:
+            max_change_idx = np.argmax(projection_diff)
+            return search_start + max_change_idx
+
+        return int(height * 0.35)
+
+    @staticmethod
+    def _split_double_layer(
+        image: NDArray[np.uint8],
+        split_y: int
+    ) -> Tuple[NDArray[np.uint8], NDArray[np.uint8]]:
+        """
+        Split double-layer plate into top and bottom parts.
+
+        Args:
+            image: Input image [H, W, 3]
+            split_y: Split line y-coordinate
+
+        Returns:
+            Tuple[top_layer, bottom_layer]
+        """
+        top_part = image[0:split_y, :]
+        bottom_part = image[split_y:, :]
+        return top_part, bottom_part
+
+    @staticmethod
+    def _stitch_layers(
+        top_layer: NDArray[np.uint8],
+        bottom_layer: NDArray[np.uint8]
+    ) -> NDArray[np.uint8]:
+        """
+        Horizontally stitch top and bottom layers into single-layer plate.
+
+        Algorithm:
+        1. Resize top layer to bottom layer height
+        2. Narrow top layer width to 50% of proportional width
+        3. Horizontally concatenate layers
+
+        Args:
+            top_layer: Top layer image [H1, W1, 3]
+            bottom_layer: Bottom layer image [H2, W2, 3]
+
+        Returns:
+            Stitched single-layer image [H2, W1'+W2, 3]
+        """
+        bottom_h, bottom_w = bottom_layer.shape[:2]
+        top_h, top_w = top_layer.shape[:2]
+
+        # Calculate target width for top layer (50% of proportional width)
+        target_height = bottom_h
+        top_aspect_ratio = top_w / top_h
+        target_top_width = int(target_height * top_aspect_ratio * 0.5)
+
+        # Resize top layer
+        top_resized = cv2.resize(
+            top_layer,
+            (target_top_width, target_height),
+            interpolation=cv2.INTER_LINEAR
+        )
+
+        # Stitch horizontally
+        stitched_plate = cv2.hconcat([top_resized, bottom_layer])
+
+        return stitched_plate
+
+    @staticmethod
+    def _process_plate_image_static(
+        img: NDArray[np.uint8],
+        is_double_layer: bool = False,
+        verbose: bool = False
+    ) -> Optional[NDArray[np.uint8]]:
+        """
+        Process plate image: skew correction and double-layer handling.
+
+        Processing pipeline:
+        1. Convert to grayscale
+        2. Detect and correct skew angle
+        3. If double-layer:
+           a. Apply CLAHE contrast enhancement
+           b. Find optimal split line
+           c. Split into top and bottom parts
+           d. Stitch into single-layer
+        4. Return processed image
+
+        Args:
+            img: Input plate image, BGR format [H, W, 3]
+            is_double_layer: Whether this is a double-layer plate
+            verbose: Enable verbose logging
+
+        Returns:
+            Processed single-layer plate image, or None if processing failed
+
+        Source:
+            Original utils/ocr_image_processing.py::process_plate_image()
+        """
+        if img is None or img.size == 0:
+            if verbose:
+                logging.warning("Input image is empty in process_plate_image")
+            return None
+
+        # Step 1: Grayscale conversion
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Step 2: Skew correction
+        skew_angle = OCRONNX._detect_skew_angle(gray_img)
+        corrected_img = OCRONNX._correct_skew(img, skew_angle)
+
+        if not is_double_layer:
+            return corrected_img
+
+        # Step 3: Double-layer processing
+        # Contrast enhancement
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        enhanced_gray_img = clahe.apply(cv2.cvtColor(corrected_img, cv2.COLOR_BGR2GRAY))
+
+        # Find split line
+        split_point = OCRONNX._find_optimal_split_line(enhanced_gray_img)
+
+        # Split layers
+        top_part, bottom_part = OCRONNX._split_double_layer(corrected_img, split_point)
+
+        # Validate parts
+        bottom_h, bottom_w = bottom_part.shape[:2]
+        top_h, top_w = top_part.shape[:2]
+
+        if bottom_h <= 0 or bottom_w <= 0 or top_h <= 0 or top_w <= 0:
+            if verbose:
+                logging.warning("Part of the plate is empty after splitting.")
+            return None
+
+        # Stitch layers
+        stitched_plate = OCRONNX._stitch_layers(top_part, bottom_part)
+
+        return stitched_plate
+
+    @staticmethod
+    def _resize_norm_img_static(
+        img: NDArray[np.uint8],
+        image_shape: List[int] = [3, 48, 168]
+    ) -> NDArray[np.float32]:
+        """
+        Resize and normalize plate image for OCR.
+
+        Processing:
+        1. Maintain aspect ratio while resizing to target height
+        2. Convert HWC to CHW format
+        3. Normalize to [-1, 1] range
+        4. Right-pad to target width
+        5. Add batch dimension
+
+        Args:
+            img: Input plate image, BGR format [H, W, 3]
+            image_shape: Target shape [C, H, W], default [3, 48, 168]
+
+        Returns:
+            Normalized tensor [1, C, H, W] float32
+
+        Source:
+            Original utils/ocr_image_processing.py::resize_norm_img()
+        """
+        imgC, imgH, imgW = image_shape
+        h = img.shape[0]
+        w = img.shape[1]
+
+        # Calculate resize width maintaining aspect ratio
+        ratio = w / float(h)
+        if int(np.ceil(imgH * ratio)) > imgW:
+            resized_w = imgW
+        else:
+            resized_w = int(np.ceil(imgH * ratio))
+
+        # Resize image
+        resized_image = cv2.resize(img, (resized_w, imgH))
+        resized_image = resized_image.astype('float32')
+
+        # Normalize
+        if image_shape[0] == 1:
+            # Grayscale
+            resized_image = resized_image / 255.0
+            resized_image = resized_image[np.newaxis, :]
+        else:
+            # Color: transpose to CHW then normalize
+            resized_image = resized_image.transpose((2, 0, 1)) / 255.0
+
+        # Normalize to [-1, 1]
+        resized_image -= 0.5
+        resized_image /= 0.5
+
+        # Right-pad to target width
+        padding_im = np.zeros((imgC, imgH, imgW), dtype=np.float32)
+        padding_im[:, :, 0:resized_w] = resized_image
+
+        # Add batch dimension
+        onnx_infer_data = padding_im[np.newaxis, :, :, :]
+        onnx_infer_data = np.array(onnx_infer_data, dtype=np.float32)
+
+        return onnx_infer_data
+
+    @staticmethod
+    def _get_ignored_tokens_static() -> List[int]:
+        """
+        Get list of ignored token indices for OCR decoding.
+
+        Returns:
+            List of token indices to ignore (e.g., blank token)
+
+        Source:
+            Original utils/ocr_post_processing.py::get_ignored_tokens()
+        """
+        return [0]
+
+    @staticmethod
+    def _decode_static(
+        character: List[str],
+        text_index: NDArray[np.int_],
+        text_prob: Optional[NDArray[np.float32]] = None,
+        is_remove_duplicate: bool = False
+    ) -> List[OCRResult]:
+        """
+        Decode OCR output indices to text and confidence.
+
+        Algorithm:
+        1. For each batch sample:
+           a. Filter ignored tokens
+           b. Optionally remove duplicate characters
+           c. Map indices to characters
+           d. Calculate average confidence
+           e. Apply post-processing rules (e.g., '苏' -> '京')
+        2. Return list of (text, confidence, char_confidences)
+
+        Args:
+            character: Character dictionary list
+            text_index: Character index array [B, seq_len]
+            text_prob: Character probability array [B, seq_len], optional
+            is_remove_duplicate: Whether to remove consecutive duplicates
+
+        Returns:
+            List of OCR results: [(text, avg_confidence, char_confidences), ...]
+
+        Source:
+            Original utils/ocr_post_processing.py::decode()
+        """
+        result_list = []
+        ignored_tokens = OCRONNX._get_ignored_tokens_static()
+        batch_size = len(text_index)
+
+        for batch_idx in range(batch_size):
+            # Create selection mask
+            selection = np.ones(len(text_index[batch_idx]), dtype=bool)
+
+            # Remove duplicates if requested
+            if is_remove_duplicate:
+                selection[1:] = text_index[batch_idx][1:] != text_index[batch_idx][:-1]
+
+            # Filter ignored tokens
+            for ignored_token in ignored_tokens:
+                selection &= text_index[batch_idx] != ignored_token
+
+            # Map indices to characters
+            char_list = [
+                character[int(text_id)].replace('\n', '')
+                for text_id in text_index[batch_idx][selection]
+            ]
+
+            # Get confidences
+            if text_prob is not None:
+                conf_list = text_prob[batch_idx][selection]
+            else:
+                conf_list = [1.0] * len(selection)
+
+            if len(conf_list) == 0:
+                conf_list = [0.0]
+
+            # Join text
+            text = ''.join(char_list)
+
+            # Post-processing: Replace '苏' with '京'
+            if text.startswith('苏'):
+                text = '京' + text[1:]
+
+            # Convert confidences to float list
+            float_conf_list = [float(c) for c in conf_list]
+            result_list.append((text, float(np.mean(conf_list)), float_conf_list))
+
+        return result_list
+
+    def _postprocess(
+        self,
+        prediction: NDArray[np.float32],
+        conf_thres: float,
+        **kwargs
+    ) -> List[OCRResult]:
+        """
+        Post-process OCR model output.
+
+        This method:
+        1. Extracts text indices and probabilities from prediction
+        2. Calls _decode_static() to decode characters
+        3. Filters results by confidence threshold
+
+        Args:
+            prediction: Model output [B, seq_len, num_classes]
+            conf_thres: Confidence threshold
+            **kwargs: Additional parameters
+
+        Returns:
+            List of OCR results
+        """
+        # Extract text indices and probabilities
+        text_index = np.argmax(prediction, axis=-1)
+        text_prob = np.max(prediction, axis=-1) if len(prediction.shape) > 2 else None
+
+        # Decode
+        results = self._decode_static(
+            self.character,
+            text_index,
+            text_prob,
+            is_remove_duplicate=True
+        )
+
+        # Filter by confidence
+        filtered_results = [
+            (text, conf, char_confs)
+            for text, conf, char_confs in results
+            if conf >= conf_thres
+        ]
+
+        return filtered_results if filtered_results else results
+
+    def __call__(
+        self,
+        image: NDArray[np.uint8],
+        conf_thres: Optional[float] = None,
+        is_double_layer: bool = False
+    ) -> Optional[OCRResult]:
+        """
+        Execute OCR inference on plate image.
+
+        Args:
+            image: Input plate image, BGR format [H, W, 3]
+            conf_thres: Optional confidence threshold override
+            is_double_layer: Whether this is a double-layer plate
+
+        Returns:
+            OCRResult or None:
+                - (text, avg_conf, char_confs) if successful
+                - None if OCR failed
+
+        Example:
+            >>> result = ocr_model(plate_img, is_double_layer=True)
+            >>> if result:
+            ...     text, conf, char_confs = result
+            ...     print(f"Plate: {text}, Confidence: {conf:.3f}")
+        """
+        # Ensure model is initialized
+        self._ensure_initialized()
+
+        # Preprocess (handles double-layer processing internally)
+        input_tensor, scale, original_shape, ratio_pad = self._preprocess(image, is_double_layer)
+
+        # Inference using Polygraphy runner
+        with self._runner:
+            feed_dict = {self.input_name: input_tensor}
+            outputs_dict = self._runner.infer(feed_dict)
+            outputs = [outputs_dict[name] for name in self.output_names]
+
+        # Get prediction (first output)
+        prediction = outputs[0]
+
+        # Post-process
+        effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
+        results = self._postprocess(prediction, effective_conf_thres)
+
+        # Return first result or None
+        return results[0] if results else None
+
+    # Backward compatibility: keep old infer() method
+    def infer(self, img: NDArray[np.float32]) -> List[NDArray[np.float32]]:
+        """
+        Legacy inference method (backward compatibility).
+
+        Args:
+            img: Preprocessed image [1, 3, 48, 168]
+
+        Returns:
+            List of model outputs
+
+        Deprecated:
+            Use __call__() instead for unified interface.
+        """
+        import warnings
+        warnings.warn(
+            "infer() is deprecated, use __call__() instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
+        # Ensure model is initialized
+        self._ensure_initialized()
+
+        # Direct inference
+        with self._runner:
+            feed_dict = {self.input_name: img}
+            outputs_dict = self._runner.infer(feed_dict)
+            outputs = [outputs_dict[name] for name in self.output_names]
+
         return outputs

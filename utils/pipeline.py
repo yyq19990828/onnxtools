@@ -3,13 +3,7 @@ import numpy as np
 import yaml
 import logging
 
-from utils import (
-    process_plate_image,
-    image_pretreatment,
-    resize_norm_img,
-    decode,
-    draw_detections
-)
+from utils import draw_detections
 
 # Import new annotator functionality (optional)
 try:
@@ -107,7 +101,7 @@ def initialize_models(args):
         return None
 
     # Initialize color/layer and OCR models
-    from infer_onnx import ColorLayerONNX, OCRONNX
+    from infer_onnx.ocr_onnx import ColorLayerONNX, OCRONNX
     color_layer_model_path = getattr(args, "color_layer_model", "models/color_layer.onnx")
     ocr_model_path = getattr(args, "ocr_model", "models/ocr.onnx")
     plate_yaml_path = "configs/plate.yaml"
@@ -115,9 +109,15 @@ def initialize_models(args):
     with open(plate_yaml_path, "r", encoding="utf-8") as f:
         plate_yaml = yaml.safe_load(f)
         character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
+        color_dict = plate_yaml["color_dict"]
+        layer_dict = plate_yaml["layer_dict"]
 
-    color_layer_classifier = ColorLayerONNX(color_layer_model_path)
-    ocr_model = OCRONNX(ocr_model_path)
+    color_layer_classifier = ColorLayerONNX(
+        color_layer_model_path,
+        color_map=color_dict,
+        layer_map=layer_dict
+    )
+    ocr_model = OCRONNX(ocr_model_path, character=character)
 
     # Load class names and colors from config
     # 优先从detector模型的class_names属性获取（已在BaseOnnx初始化时从metadata读取）
@@ -220,27 +220,13 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
                 plate_img = frame[exp_y1:exp_y2, exp_x1:exp_x2]
 
                 if plate_img.size > 0:
-                    img_rgb = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)
-                    color_input = image_pretreatment(img_rgb)
-                    preds_color, preds_layer = color_layer_classifier.infer(color_input)
-                    color_index = int(np.argmax(preds_color))
-                    layer_index = int(np.argmax(preds_layer))
+                    # Use new API: ColorLayerONNX.__call__() returns (color, layer, confidence)
+                    color_str, layer_str, color_conf = color_layer_classifier(plate_img)
 
-                    with open("configs/plate.yaml", "r", encoding="utf-8") as f:
-                        plate_yaml = yaml.safe_load(f)
-                    color_dict = plate_yaml["color_dict"]
-                    layer_dict = plate_yaml["layer_dict"]
-                    color_str = color_dict.get(color_index, "unknown")
-                    layer_str = layer_dict.get(layer_index, "unknown")
-
+                    # Use new API: OCRONNX.__call__() returns Optional[(text, avg_conf, char_confs)]
                     is_double = (layer_str == "double")
-                    processed_plate = process_plate_image(plate_img, is_double_layer=is_double)
-                    ocr_input = resize_norm_img(processed_plate)
-                    ocr_out = ocr_model.infer(ocr_input)
-                    preds_idx = np.asarray(ocr_out[0]).argmax(axis=2)
-                    preds_prob = np.asarray(ocr_out[0]).max(axis=2)
-                    ocr_result = decode(character, preds_idx, preds_prob, is_remove_duplicate=True)
-                    plate_text = ocr_result[0][0] if ocr_result else ""
+                    ocr_result = ocr_model(plate_img, is_double_layer=is_double)
+                    plate_text = ocr_result[0] if ocr_result else ""
                     
                     # Determine if OCR text should be displayed based on ROI and width
                     should_display_ocr = (y1 >= roi_top_pixel) and (w > 50)
