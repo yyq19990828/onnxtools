@@ -16,6 +16,7 @@ except ImportError as e:
         "Install it with: pip install supervision>=0.16.0"
     ) from e
 
+#TODO del this func
 def draw_detections(image, detections, class_names, colors, plate_results=None, font_path="SourceHanSans-VF.ttf"):
     """
     Draws detection boxes on the image using supervision library.

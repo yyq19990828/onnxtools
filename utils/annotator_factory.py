@@ -386,6 +386,7 @@ class AnnotatorPipeline:
         self,
         scene: np.ndarray,
         detections: sv.Detections,
+        labels: Optional[List[str]] = None,
         use_cache: bool = True
     ) -> np.ndarray:
         """
@@ -394,6 +395,7 @@ class AnnotatorPipeline:
         Args:
             scene: Input image (numpy array)
             detections: Detections to annotate
+            labels: Optional labels for RichLabelAnnotator (e.g., OCR text)
             use_cache: Whether to use cached scene copy for repeated calls
 
         Returns:
@@ -416,7 +418,11 @@ class AnnotatorPipeline:
 
         # Apply each annotator sequentially
         for annotator in self.annotators:
-            result = annotator.annotate(result, detections)
+            # Check if this is a RichLabelAnnotator and we have labels
+            if isinstance(annotator, sv.RichLabelAnnotator) and labels is not None:
+                result = annotator.annotate(result, detections, labels=labels)
+            else:
+                result = annotator.annotate(result, detections)
 
         return result
 
