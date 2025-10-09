@@ -210,6 +210,7 @@ class BaseOnnx(ABC):
     @staticmethod
     def _preprocess_static(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
         """预处理图像（静态方法）"""
+        #TODO del
         return preprocess_image(image, input_shape)
     
     def create_engine_dataloader(self, **kwargs):

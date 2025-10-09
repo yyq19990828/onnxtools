@@ -11,6 +11,7 @@ Both classes inherit from BaseOnnx and follow the unified inference pattern.
 import cv2
 import numpy as np
 import logging
+import warnings
 from typing import List, Tuple, Optional, Dict, TypeAlias
 from numpy.typing import NDArray
 
@@ -278,7 +279,6 @@ class ColorLayerONNX(BaseOnnx):
         Deprecated:
             Use __call__() instead for unified interface.
         """
-        import warnings
         warnings.warn(
             "infer() is deprecated, use __call__() instead",
             DeprecationWarning,
@@ -905,7 +905,6 @@ class OCRONNX(BaseOnnx):
         Deprecated:
             Use __call__() instead for unified interface.
         """
-        import warnings
         warnings.warn(
             "infer() is deprecated, use __call__() instead",
             DeprecationWarning,

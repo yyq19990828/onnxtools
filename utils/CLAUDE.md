@@ -47,15 +47,23 @@ result_img = draw_detections(
 )
 ```
 
-### OCR相关处理
+### OCR相关处理 (已迁移到infer_onnx模块)
 ```python
-from utils import process_plate_image, decode
+# ⚠️ 注意: OCR预处理和后处理函数已迁移到infer_onnx.OCRONNX类
+# 旧版本:
+# from utils import process_plate_image, decode
 
-# 车牌图像预处理
-plate_img = process_plate_image(cropped_plate)
+# 新版本: 使用OCRONNX类的统一接口
+from infer_onnx import OCRONNX
 
-# OCR结果解码
-text, confidence = decode(ocr_output, character_dict)
+ocr_model = OCRONNX('models/ocr.onnx', character=character_dict)
+result = ocr_model(plate_image, is_double_layer=True)
+if result:
+    text, confidence, char_confs = result
+
+# 如果需要独立调用预处理函数:
+from infer_onnx.ocr_onnx import OCRONNX
+processed = OCRONNX._process_plate_image_static(plate_img, is_double_layer=True)
 ```
 
 ## 关键依赖和配置
@@ -140,8 +148,8 @@ A: 根据检测场景调整IoU阈值，密集场景降低阈值，稀疏场景�
 ### 核心处理文件
 - `pipeline.py` - 主处理管道和模型初始化
 - `image_processing.py` - 通用图像预处理工具
-- `ocr_image_processing.py` - OCR专用图像处理
-- `ocr_post_processing.py` - OCR结果后处理和解码
+- ~~`ocr_image_processing.py`~~ - ❌ 已删除,功能迁移到`infer_onnx.OCRONNX`
+- ~~`ocr_post_processing.py`~~ - ❌ 已删除,功能迁移到`infer_onnx.OCRONNX`
 
 ### 可视化和工具
 - `drawing.py` - 检测结果可视化绘制
@@ -154,6 +162,13 @@ A: 根据检测场景调整IoU阈值，密集场景降低阈值，稀疏场景�
 - `__init__.py` - 模块导入和API定义
 
 ## 变更日志 (Changelog)
+
+**2025-10-09** - 完成OCR模块重构 (004-refactor-colorlayeronnx-ocronnx)
+- ❌ 删除`ocr_image_processing.py` - 所有预处理函数迁移到`infer_onnx.OCRONNX`静态方法
+- ❌ 删除`ocr_post_processing.py` - 所有后处理函数迁移到`infer_onnx.OCRONNX`静态方法
+- ✅ 更新`pipeline.py` - 改用OCRONNX和ColorLayerONNX的统一`__call__()`接口
+- ✅ 更新`__init__.py` - 移除OCR相关函数导出
+- ⚠️ 迁移指南: 使用`OCRONNX._process_plate_image_static()`替代`process_plate_image()`
 
 **2025-09-15 20:01:23 CST** - 初始化工具模块文档，建立图像处理和可视化工具规范
 

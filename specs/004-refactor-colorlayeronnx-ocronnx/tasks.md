@@ -473,7 +473,7 @@
 
 ### 文档更新
 
-- [ ] T057 [P] [DOCS] 更新OCRONNX和ColorLayerONNX的docstring
+- [x] T057 [P] [DOCS] 更新OCRONNX和ColorLayerONNX的docstring
   - 添加类级别docstring:
     - 继承关系说明
     - 使用示例
@@ -485,18 +485,18 @@
     - 异常说明
     - 使用示例
 
-- [ ] T058 [P] [DOCS] 更新infer_onnx/CLAUDE.md
+- [x] T058 [P] [DOCS] 更新infer_onnx/CLAUDE.md
   - 更新OCR和颜色分类的API说明
   - 添加继承BaseOnnx的说明
   - 更新使用示例(使用`__call__()`而不是`infer()`)
   - 说明utils文件已删除
 
-- [ ] T059 [P] [DOCS] 更新utils/CLAUDE.md
+- [x] T059 [P] [DOCS] 更新utils/CLAUDE.md
   - 移除ocr_image_processing.py的文档
   - 移除ocr_post_processing.py的文档
   - 更新pipeline.py的说明(反映新的调用方式)
 
-- [ ] T060 [P] [DOCS] 更新根目录CLAUDE.md
+- [x] T060 [P] [DOCS] 更新根目录CLAUDE.md
   - 在"变更日志"添加此次重构记录
   - 更新模块关系图(如有)
   - 更新常见问题FAQ(如有OCR相关问题)

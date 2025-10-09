@@ -261,7 +261,15 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         )
 
         if sv_detections is not None:
-            result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections)
+            # Import label creation function
+            from utils.supervision_labels import create_ocr_labels
+            
+            # Create labels with OCR information
+            labels = None
+            if detections and len(detections[0]) > 0:
+                labels = create_ocr_labels(clipped_detections, plate_results, class_names)
+            
+            result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections, labels=labels)
             logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")
         else:
             result_frame = frame.copy()
