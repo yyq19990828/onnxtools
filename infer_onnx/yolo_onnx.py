@@ -87,6 +87,7 @@ class YoloOnnx(BaseOnnx):
             input_tensor, scale, original_shape = preprocess_image(image, input_shape)
             return input_tensor, scale, original_shape, None
     
+    #TODO 是否要加上静态标识符?
     def _postprocess(self, prediction: np.ndarray, conf_thres: float, scale: float = 1.0, 
                     ratio_pad: Optional[tuple] = None, iou_thres: Optional[float] = None) -> List[np.ndarray]:
         """

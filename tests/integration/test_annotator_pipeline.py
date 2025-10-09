@@ -101,12 +101,11 @@ class TestAnnotatorPipelineIntegration:
 
     def test_color_blur_conflict_warning(self):
         """Test COLOR + BLUR conflict detection."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.COLOR, {'opacity': 0.3})
-                    .add(AnnotatorType.BLUR, {'kernel_size': 15}))
+        # COLOR and BLUR are mutually exclusive, should raise ValueError when adding
+        pipeline = AnnotatorPipeline().add(AnnotatorType.COLOR, {'opacity': 0.3})
 
-        warnings = pipeline.check_conflicts()
-        assert len(warnings) > 0
+        with pytest.raises(ValueError, match="conflicts with existing annotators"):
+            pipeline.add(AnnotatorType.BLUR, {'kernel_size': 15})
 
     def test_no_conflict_for_valid_combination(self):
         """Test that valid combinations don't generate conflicts."""

@@ -1,0 +1,568 @@
+# ColorLayerONNX API Contract
+# Feature: 004-refactor-colorlayeronnx-ocronnx
+# Version: 2.0.0
+# Last Updated: 2025-10-09
+
+api_contract_version: "1.0"
+feature: "004-refactor-colorlayeronnx-ocronnx"
+component: "ColorLayerONNX"
+description: "车牌颜色和层级分类推理器API合约,继承自BaseOnnx"
+
+# ============================================================================
+# Constructor API
+# ============================================================================
+constructor:
+  name: "__init__"
+  signature: "__init__(self, onnx_path: str, color_map: Dict[int, str], layer_map: Dict[int, str], input_shape: Tuple[int, int] = (224, 224), conf_thres: float = 0.5, providers: Optional[List[str]] = None) -> None"
+
+  parameters:
+    - name: "onnx_path"
+      type: "str"
+      required: true
+      description: "ONNX模型文件的绝对或相对路径"
+      constraints:
+        - "文件必须存在"
+        - "文件扩展名必须为.onnx"
+      examples:
+        - "models/color_layer.onnx"
+        - "/absolute/path/to/color_layer_model.onnx"
+
+    - name: "color_map"
+      type: "Dict[int, str]"
+      required: true
+      description: "颜色类别索引到名称的映射字典"
+      constraints:
+        - "字典不能为空"
+        - "键必须是连续的整数(0, 1, 2, ...)"
+        - "值必须是有效的颜色名称字符串"
+      examples:
+        - "{0: 'blue', 1: 'yellow', 2: 'white', 3: 'black', 4: 'green'}"
+
+    - name: "layer_map"
+      type: "Dict[int, str]"
+      required: true
+      description: "层级类别索引到名称的映射字典"
+      constraints:
+        - "字典不能为空"
+        - "键必须是连续的整数(0, 1, ...)"
+        - "值必须是有效的层级名称字符串"
+      examples:
+        - "{0: 'single', 1: 'double'}"
+
+    - name: "input_shape"
+      type: "Tuple[int, int]"
+      required: false
+      default: "(224, 224)"
+      description: "模型输入尺寸 (height, width)"
+      constraints:
+        - "height > 0 且 width > 0"
+        - "推荐使用模型训练时的输入尺寸"
+      examples:
+        - "(224, 224)"
+        - "(256, 256)"
+
+    - name: "conf_thres"
+      type: "float"
+      required: false
+      default: 0.5
+      description: "分类置信度阈值"
+      constraints:
+        - "范围: [0.0, 1.0]"
+      examples:
+        - 0.5
+        - 0.7
+
+    - name: "providers"
+      type: "Optional[List[str]]"
+      required: false
+      default: "None (自动检测)"
+      description: "ONNX Runtime执行提供程序列表"
+      constraints:
+        - "如果指定,必须是有效的provider名称"
+        - "推荐顺序: ['CUDAExecutionProvider', 'CPUExecutionProvider']"
+      examples:
+        - "['CUDAExecutionProvider', 'CPUExecutionProvider']"
+        - "['CPUExecutionProvider']"
+        - null
+
+  raises:
+    - exception: "FileNotFoundError"
+      condition: "onnx_path指定的文件不存在"
+      message: "ONNX model file not found: {onnx_path}"
+
+    - exception: "ValueError"
+      condition: "color_map为空字典"
+      message: "Color map cannot be empty"
+
+    - exception: "ValueError"
+      condition: "layer_map为空字典"
+      message: "Layer map cannot be empty"
+
+    - exception: "ValueError"
+      condition: "conf_thres不在[0, 1]范围内"
+      message: "conf_thres must be in range [0.0, 1.0], got {conf_thres}"
+
+  post_conditions:
+    - "self.session初始化为懒加载状态(未立即加载模型)"
+    - "self.color_map保存颜色映射引用"
+    - "self.layer_map保存层级映射引用"
+    - "self.input_shape设置为指定值"
+    - "self.providers设置为指定或自动检测的provider列表"
+
+# ============================================================================
+# Primary Inference API
+# ============================================================================
+primary_method:
+  name: "__call__"
+  signature: "__call__(self, image: NDArray[np.uint8], conf_thres: Optional[float] = None) -> Tuple[Dict[str, any], Tuple[int, int]]"
+
+  parameters:
+    - name: "image"
+      type: "NDArray[np.uint8]"
+      required: true
+      description: "输入车牌图像,BGR格式"
+      constraints:
+        - "形状: [H, W, 3] (高度, 宽度, 通道)"
+        - "通道顺序: BGR (OpenCV默认)"
+        - "数据类型: np.uint8"
+        - "像素值范围: [0, 255]"
+      examples:
+        - "shape: (100, 300, 3)"
+        - "dtype: uint8"
+
+    - name: "conf_thres"
+      type: "Optional[float]"
+      required: false
+      default: "None (使用构造函数中的conf_thres)"
+      description: "可选的置信度阈值覆盖"
+      constraints:
+        - "如果指定,范围: [0.0, 1.0]"
+      examples:
+        - 0.6
+        - null
+
+  returns:
+    type: "Tuple[Dict[str, any], Tuple[int, int]]"
+    description: "分类结果字典和原始图像形状的元组"
+
+    structure:
+      - name: "classification_result"
+        type: "Dict[str, any]"
+        description: "颜色和层级分类结果字典"
+        keys:
+          - name: "color"
+            type: "str"
+            description: "车牌颜色名称"
+            possible_values:
+              - "blue"
+              - "yellow"
+              - "white"
+              - "black"
+              - "green"
+            examples:
+              - "blue"
+
+          - name: "layer"
+            type: "str"
+            description: "车牌层级名称"
+            possible_values:
+              - "single"
+              - "double"
+            examples:
+              - "single"
+
+          - name: "color_conf"
+            type: "float"
+            description: "颜色分类置信度"
+            constraints:
+              - "范围: [0.0, 1.0]"
+            examples:
+              - 0.98
+
+          - name: "layer_conf"
+            type: "float"
+            description: "层级分类置信度"
+            constraints:
+              - "范围: [0.0, 1.0]"
+            examples:
+              - 0.95
+
+      - name: "original_shape"
+        type: "Tuple[int, int]"
+        description: "原始输入图像的形状 (height, width)"
+        examples:
+          - "(100, 300)"
+
+  raises:
+    - exception: "ValueError"
+      condition: "image形状不是[H, W, 3]"
+      message: "Input image must have shape [H, W, 3], got {image.shape}"
+
+    - exception: "ValueError"
+      condition: "image数据类型不是uint8"
+      message: "Input image must be uint8, got {image.dtype}"
+
+    - exception: "RuntimeError"
+      condition: "模型推理失败"
+      message: "Color/Layer classification failed: {error_details}"
+
+  performance_requirements:
+    - metric: "总推理时间"
+      target: "< 15ms"
+      measurement: "单张车牌图像,GPU模式,包含预处理和后处理"
+
+    - metric: "预处理时间"
+      target: "< 2ms"
+      measurement: "Resize和归一化"
+
+    - metric: "模型推理时间"
+      target: "< 10ms"
+      measurement: "GPU模式,CUDA provider"
+
+    - metric: "后处理时间"
+      target: "< 1ms"
+      measurement: "Softmax和argmax"
+
+    - metric: "GPU内存占用"
+      target: "< 50MB"
+      measurement: "单次推理,batch_size=1"
+
+  example_usage: |
+    ```python
+    import numpy as np
+    import cv2
+    from infer_onnx import ColorLayerONNX
+    import yaml
+
+    # 加载颜色和层级映射
+    with open('configs/plate.yaml') as f:
+        config = yaml.safe_load(f)
+    color_map = config['color_map']  # {0: 'blue', 1: 'yellow', ...}
+    layer_map = config['layer_map']  # {0: 'single', 1: 'double'}
+
+    # 创建颜色和层级分类器
+    classifier = ColorLayerONNX(
+        onnx_path='models/color_layer.onnx',
+        color_map=color_map,
+        layer_map=layer_map,
+        input_shape=(224, 224),
+        conf_thres=0.5
+    )
+
+    # 执行分类推理
+    plate_image = cv2.imread('plate.jpg')  # [H, W, 3], BGR
+    result, orig_shape = classifier(plate_image)
+
+    print(f"Original shape: {orig_shape}")
+    print(f"Color: {result['color']} (conf: {result['color_conf']:.3f})")
+    print(f"Layer: {result['layer']} (conf: {result['layer_conf']:.3f})")
+
+    # 使用自定义置信度阈值
+    result, _ = classifier(plate_image, conf_thres=0.7)
+
+    # 批量处理多张车牌
+    plate_images = [cv2.imread(f'plate_{i}.jpg') for i in range(10)]
+    results = [classifier(img)[0] for img in plate_images]
+
+    # 统计颜色分布
+    from collections import Counter
+    color_counts = Counter(r['color'] for r in results)
+    print(f"Color distribution: {color_counts}")
+    ```
+
+# ============================================================================
+# Private Instance Methods (仅用于理解内部行为,不应被外部调用)
+# ============================================================================
+private_methods:
+  - name: "_preprocess"
+    signature: "_preprocess(self, image: NDArray[np.uint8]) -> PreprocessResult"
+    visibility: "protected"
+    description: "颜色分类预处理实例方法,向后兼容BaseOnnx接口"
+
+    parameters:
+      - name: "image"
+        type: "NDArray[np.uint8]"
+        description: "输入车牌图像,BGR格式"
+
+    returns:
+      type: "PreprocessResult"
+      description: "(input_tensor, scale, original_shape, ratio_pad)"
+      structure:
+        - name: "input_tensor"
+          type: "NDArray[np.float32]"
+          description: "预处理后的输入张量 [1, 3, H, W]"
+
+        - name: "scale"
+          type: "float"
+          description: "缩放因子"
+
+        - name: "original_shape"
+          type: "Tuple[int, int]"
+          description: "原始图像形状 (H, W)"
+
+        - name: "ratio_pad"
+          type: "Optional[Tuple[Tuple[float, float], Tuple[float, float]]]"
+          description: "Ratio和padding信息,分类通常为None"
+
+    implementation_note: "调用_image_pretreatment_static()"
+
+  - name: "_postprocess"
+    signature: "_postprocess(self, prediction: NDArray[np.float32], conf_thres: float, **kwargs) -> Dict[str, any]"
+    visibility: "protected"
+    description: "颜色和层级分类后处理:提取类别和置信度"
+
+    parameters:
+      - name: "prediction"
+        type: "NDArray[np.float32]"
+        description: "模型原始输出,包含两个logits: [color_logits, layer_logits]"
+        structure:
+          - "color_logits: [B, num_colors]"
+          - "layer_logits: [B, num_layers]"
+
+      - name: "conf_thres"
+        type: "float"
+        description: "置信度阈值"
+
+      - name: "kwargs"
+        type: "dict"
+        description: "额外参数(保留兼容性)"
+
+    returns:
+      type: "Dict[str, any]"
+      description: "分类结果字典 {'color': str, 'layer': str, 'color_conf': float, 'layer_conf': float}"
+
+    implementation_note: "分离logits,应用softmax,取argmax,从映射表获取名称"
+
+# ============================================================================
+# Private Static Methods (辅助方法,不应被外部直接调用)
+# ============================================================================
+static_helper_methods:
+  - name: "_image_pretreatment_static"
+    signature: "_image_pretreatment_static(img: NDArray[np.uint8], image_shape: Tuple[int, int]) -> NDArray[np.float32]"
+    visibility: "private"
+    description: "车牌图像分类预处理(静态方法)"
+    source: "原utils/ocr_image_processing.py::image_pretreatment()"
+
+    parameters:
+      - name: "img"
+        type: "NDArray[np.uint8]"
+        description: "输入车牌图像,BGR格式 [H, W, 3]"
+
+      - name: "image_shape"
+        type: "Tuple[int, int]"
+        description: "目标尺寸 (height, width)"
+
+    returns:
+      type: "NDArray[np.float32]"
+      description: "归一化后的张量 [1, 3, H, W]"
+
+    processing_pipeline:
+      - step: "Resize到目标尺寸"
+        method: "cv2.resize()"
+
+      - step: "BGR转RGB"
+        method: "cv2.cvtColor()"
+
+      - step: "归一化"
+        formula: "(img / 255.0 - mean) / std"
+
+      - step: "HWC转CHW"
+        method: "np.transpose()"
+
+      - step: "添加batch维度"
+        method: "np.expand_dims()"
+
+# ============================================================================
+# TensorRT引擎比较API (继承自BaseOnnx)
+# ============================================================================
+tensorrt_methods:
+  - name: "create_engine_dataloader"
+    signature: "create_engine_dataloader(self, data_dir: str, batch_size: int = 1) -> EngineDataLoader"
+    description: "创建TensorRT引擎比较的数据加载器"
+    inherited_from: "BaseOnnx"
+    usage_note: "用于颜色分类模型的ONNX vs TensorRT精度对比"
+
+  - name: "compare_engine"
+    signature: "compare_engine(self, engine_path: str, data_loader: EngineDataLoader, tolerance: float = 1e-3) -> Dict[str, any]"
+    description: "对比ONNX模型和TensorRT引擎的精度"
+    inherited_from: "BaseOnnx"
+    usage_note: "验证TensorRT优化后的精度损失"
+
+# ============================================================================
+# Backward Compatibility (向后兼容性)
+# ============================================================================
+backward_compatibility:
+  deprecated_methods:
+    - old_name: "infer"
+      new_name: "__call__"
+      deprecation_version: "2.0.0"
+      removal_version: "3.0.0"
+      migration_guide: "使用 `model(image)` 替代 `model.infer(image)`"
+
+  breaking_changes:
+    - change: "方法名从infer()改为__call__()"
+      impact: "所有调用者需要更新"
+      mitigation: "提供临时的infer()包装方法,内部调用__call__()"
+
+    - change: "继承自BaseOnnx,使用Polygraphy懒加载"
+      impact: "初始化行为略有不同(模型延迟加载)"
+      mitigation: "首次推理时会触发模型加载,略有延迟"
+
+    - change: "返回格式改为字典而不是元组"
+      impact: "调用者需要更新解包逻辑"
+      old_format: "(color, layer, color_conf, layer_conf)"
+      new_format: "{'color': str, 'layer': str, 'color_conf': float, 'layer_conf': float}"
+      mitigation: "使用字典访问更清晰,减少位置依赖"
+
+# ============================================================================
+# Quality Assurance
+# ============================================================================
+testing_requirements:
+  unit_tests:
+    - "构造函数参数验证"
+    - "各种输入形状和类型"
+    - "颜色分类准确性"
+    - "层级分类准确性"
+    - "置信度计算正确性"
+    - "映射表查找逻辑"
+
+  integration_tests:
+    - "与BaseOnnx的继承关系"
+    - "与utils/pipeline.py的集成"
+    - "端到端分类流程"
+
+  performance_tests:
+    - "预处理性能基准 (< 2ms)"
+    - "推理性能基准 (< 10ms)"
+    - "后处理性能基准 (< 1ms)"
+    - "GPU内存占用 (< 50MB)"
+
+  contract_tests:
+    - "输入输出格式符合合约"
+    - "异常处理符合合约"
+    - "性能指标符合合约"
+    - "返回字典键名正确"
+
+  accuracy_tests:
+    - name: "颜色分类准确率"
+      target: "> 95%"
+      dataset: "测试集500张各颜色车牌"
+
+    - name: "层级分类准确率"
+      target: "> 98%"
+      dataset: "测试集包含单/双层车牌各250张"
+
+# ============================================================================
+# Error Handling Contract
+# ============================================================================
+error_handling:
+  input_validation:
+    - condition: "image不是ndarray"
+      exception: "TypeError"
+      message: "Input image must be numpy.ndarray, got {type(image)}"
+
+    - condition: "image形状不是[H, W, 3]"
+      exception: "ValueError"
+      message: "Input image must have shape [H, W, 3], got {image.shape}"
+
+    - condition: "image不是uint8"
+      exception: "ValueError"
+      message: "Input image must be uint8, got {image.dtype}"
+
+    - condition: "conf_thres超出[0, 1]"
+      exception: "ValueError"
+      message: "conf_thres must be in [0.0, 1.0], got {conf_thres}"
+
+  runtime_errors:
+    - condition: "模型文件损坏"
+      exception: "RuntimeError"
+      message: "Failed to load ONNX model: {error_details}"
+      recovery: "检查模型文件完整性,重新下载模型"
+
+    - condition: "推理过程失败"
+      exception: "RuntimeError"
+      message: "Color/Layer classification failed: {error_details}"
+      recovery: "检查输入图像有效性,查看日志详情"
+
+    - condition: "GPU内存不足"
+      exception: "RuntimeError"
+      message: "CUDA out of memory during classification"
+      recovery: "切换到CPUExecutionProvider或减少并发推理数"
+
+    - condition: "映射表索引超出范围"
+      exception: "KeyError"
+      message: "Class index {idx} not found in color_map/layer_map"
+      recovery: "检查模型输出范围与映射表是否匹配"
+
+# ============================================================================
+# Configuration and Dependencies
+# ============================================================================
+dependencies:
+  required:
+    - package: "numpy"
+      version: ">= 1.20.0"
+      usage: "数组操作和类型提示"
+
+    - package: "onnxruntime-gpu"
+      version: ">= 1.22.0"
+      usage: "ONNX模型推理"
+
+    - package: "opencv-python"
+      version: ">= 4.5.0"
+      usage: "图像预处理"
+
+    - package: "polygraphy"
+      version: ">= 0.49.26"
+      usage: "懒加载和会话管理(通过BaseOnnx)"
+
+  configuration_files:
+    - path: "configs/plate.yaml"
+      required_keys:
+        - "color_map"
+        - "layer_map"
+      description: "颜色和层级映射配置"
+
+# ============================================================================
+# Output Format Specification
+# ============================================================================
+output_format:
+  description: "分类结果字典格式规范"
+
+  schema:
+    type: "object"
+    required_keys:
+      - "color"
+      - "layer"
+      - "color_conf"
+      - "layer_conf"
+
+  example_outputs:
+    - case: "蓝色单层车牌"
+      output:
+        color: "blue"
+        layer: "single"
+        color_conf: 0.98
+        layer_conf: 0.95
+
+    - case: "黄色双层车牌"
+      output:
+        color: "yellow"
+        layer: "double"
+        color_conf: 0.92
+        layer_conf: 0.88
+
+    - case: "绿色单层新能源车牌"
+      output:
+        color: "green"
+        layer: "single"
+        color_conf: 0.96
+        layer_conf: 0.99
+
+  validation_rules:
+    - "color必须在color_map的值域内"
+    - "layer必须在layer_map的值域内"
+    - "color_conf和layer_conf必须在[0.0, 1.0]范围内"
+
+---
+# Contract Version History
+# v1.0 (2025-10-09): 初始版本,定义重构后的ColorLayerONNX API

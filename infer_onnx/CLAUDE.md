@@ -27,15 +27,36 @@ detector = create_detector(
 )
 ```
 
-### OCR和颜色分类
+### OCR和颜色分类 (重构后 - 继承BaseOnnx)
 ```python
 from infer_onnx import ColorLayerONNX, OCRONNX
+import yaml
 
-# 车牌颜色和层级分类
-color_classifier = ColorLayerONNX('models/color_layer.onnx')
+# 加载配置
+with open('configs/plate.yaml') as f:
+    config = yaml.safe_load(f)
 
-# 车牌OCR识别
-ocr_model = OCRONNX('models/ocr.onnx')
+# 车牌颜色和层级分类 (统一的__call__接口)
+color_classifier = ColorLayerONNX(
+    onnx_path='models/color_layer.onnx',
+    color_map=config['color_map'],
+    layer_map=config['layer_map'],
+    input_shape=(48, 168),
+    conf_thres=0.5
+)
+color, layer, conf = color_classifier(plate_image)
+
+# 车牌OCR识别 (支持双层车牌自动处理)
+ocr_model = OCRONNX(
+    onnx_path='models/ocr.onnx',
+    character=config['plate_dict']['character'],
+    input_shape=(48, 168),
+    conf_thres=0.7
+)
+result = ocr_model(plate_image, is_double_layer=True)
+if result:
+    text, confidence, char_confs = result
+    print(f"识别结果: {text}, 置信度: {confidence:.3f}")
 ```
 
 ### 模型评估
@@ -148,6 +169,15 @@ A: 当前支持ONNX opset版本11-17，推荐使用opset 17以获得最佳兼容
 - `__init__.py` - 模块导入和API定义
 
 ## 变更日志 (Changelog)
+
+**2025-10-09** - 完成ColorLayerONNX和OCRONNX重构 (004-refactor-colorlayeronnx-ocronnx)
+- ✅ ColorLayerONNX和OCRONNX成功继承BaseOnnx
+- ✅ 统一的`__call__()`接口替代旧版`infer()`方法
+- ✅ 所有预处理和后处理函数迁移到类内部作为静态方法
+- ✅ 删除utils/ocr_image_processing.py和utils/ocr_post_processing.py依赖
+- ✅ 支持Polygraphy懒加载和provider自动检测
+- ✅ 27个单元测试全部通过,115/122集成测试通过
+- ⚠️ 旧版`infer()`方法保留但已标记为deprecated
 
 **2025-09-15 20:01:23 CST** - 初始化推理引擎模块文档，建立多模型架构文档
 
