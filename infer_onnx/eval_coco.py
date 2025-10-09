@@ -14,7 +14,7 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
 
-from .base_onnx import BaseOnnx
+from .onnx_base import BaseOnnx
 from utils.detection_metrics import evaluate_detection, print_metrics
 
 

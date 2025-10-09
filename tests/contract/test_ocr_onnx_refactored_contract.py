@@ -22,7 +22,7 @@ from typing import Dict, List, Tuple, Any
 @pytest.fixture
 def color_layer_model(color_layer_model_path, color_map, layer_map):
     """Create ColorLayerONNX instance for contract testing."""
-    from infer_onnx.ocr_onnx import ColorLayerONNX
+    from infer_onnx.onnx_ocr import ColorLayerONNX
     return ColorLayerONNX(
         str(color_layer_model_path),
         color_map=color_map,
@@ -33,7 +33,7 @@ def color_layer_model(color_layer_model_path, color_map, layer_map):
 @pytest.fixture
 def ocr_model_refactored(ocr_model_path, ocr_character):
     """Create refactored OCRONNX instance for contract testing."""
-    from infer_onnx.ocr_onnx import OCRONNX
+    from infer_onnx.onnx_ocr import OCRONNX
     return OCRONNX(
         str(ocr_model_path),
         character=ocr_character
@@ -57,7 +57,7 @@ class TestColorLayerONNXContract:
         - conf_thres: float (default 0.5)
         - providers: list (default ['CUDAExecutionProvider', 'CPUExecutionProvider'])
         """
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Test minimal initialization
         model = ColorLayerONNX(
@@ -136,7 +136,7 @@ class TestColorLayerONNXContract:
 
         This supports TensorRT engine workflow where preprocessing happens separately.
         """
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Create test image
         test_img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
@@ -169,7 +169,7 @@ class TestOCRONNXContract:
         - conf_thres: float (default 0.5)
         - providers: list
         """
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Test minimal initialization
         model = OCRONNX(
@@ -263,7 +263,7 @@ class TestOCRONNXContract:
         - _split_double_layer_plate()
         - _stitch_double_layer_plate()
         """
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Test image
         test_img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
@@ -295,7 +295,7 @@ class TestOCRONNXContract:
         - _get_ignored_tokens()
         - _decode_static()
         """
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Test ignored tokens
         ignored_tokens = OCRONNX._get_ignored_tokens_static()
@@ -326,7 +326,7 @@ class TestOCRONNXContract:
         """
         # This is tested indirectly through the decode logic
         # The actual behavior is in _decode_static()
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Simulate a decode result starting with '苏'
         # (In real scenario, this would come from model output)
@@ -392,7 +392,7 @@ class TestRefactoredClassesIntegration:
 
         This test verifies that type annotations match actual behavior.
         """
-        from infer_onnx.ocr_onnx import ColorLayerONNX, OCRONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX, OCRONNX
         import inspect
 
         # Check ColorLayerONNX.__call__ signature

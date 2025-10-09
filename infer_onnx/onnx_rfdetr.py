@@ -12,7 +12,7 @@ import logging
 import cv2
 from typing import List, Tuple, Optional
 
-from .base_onnx import BaseOnnx
+from .onnx_base import BaseOnnx
 
 
 class RFDETROnnx(BaseOnnx):

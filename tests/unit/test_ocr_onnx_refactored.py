@@ -29,7 +29,7 @@ class TestColorLayerPreprocessing:
 
     def test_image_pretreatment_output_shape(self):
         """Test that preprocessing produces correct output shape."""
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Create test image
         img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
@@ -43,7 +43,7 @@ class TestColorLayerPreprocessing:
 
     def test_image_pretreatment_dtype(self):
         """Test that preprocessing produces float32 output."""
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
         result = ColorLayerONNX._image_preprocess_static(img, image_shape=(48, 168))
@@ -53,7 +53,7 @@ class TestColorLayerPreprocessing:
 
     def test_image_pretreatment_normalization(self):
         """Test that preprocessing applies normalization correctly."""
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Create known-value image
         img = np.ones((100, 100, 3), dtype=np.uint8) * 128  # Mid-gray
@@ -67,7 +67,7 @@ class TestColorLayerPreprocessing:
 
     def test_image_pretreatment_channel_order(self):
         """Test that preprocessing converts to CHW format."""
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Create colored image (Red=255, Green=0, Blue=0)
         img = np.zeros((50, 50, 3), dtype=np.uint8)
@@ -87,7 +87,7 @@ class TestOCRSkewCorrection:
 
     def test_detect_skew_angle_horizontal(self):
         """Test skew detection on horizontal plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create horizontal plate-like image
         img = np.zeros((100, 300), dtype=np.uint8)
@@ -102,7 +102,7 @@ class TestOCRSkewCorrection:
 
     def test_detect_skew_angle_tilted(self):
         """Test skew detection on tilted plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create tilted plate-like image
         img = np.zeros((100, 300), dtype=np.uint8)
@@ -126,7 +126,7 @@ class TestOCRSkewCorrection:
 
     def test_correct_skew_preserves_shape(self):
         """Test that skew correction preserves image shape."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
         original_shape = img.shape
@@ -138,7 +138,7 @@ class TestOCRSkewCorrection:
 
     def test_correct_skew_zero_angle(self):
         """Test that zero angle correction returns similar image."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
 
@@ -155,7 +155,7 @@ class TestOCRDoubleLayerProcessing:
 
     def test_find_optimal_split_line_returns_valid_index(self):
         """Test that split line finder returns valid row index."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create gray image with clear horizontal split
         img = np.ones((140, 440), dtype=np.uint8) * 200
@@ -169,7 +169,7 @@ class TestOCRDoubleLayerProcessing:
 
     def test_find_optimal_split_line_detects_midpoint(self):
         """Test that split line is detected near middle for double-layer plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create double-layer-like image
         img = np.ones((140, 440), dtype=np.uint8) * 200
@@ -188,7 +188,7 @@ class TestOCRDoubleLayerProcessing:
 
     def test_split_double_layer_plate(self):
         """Test splitting double-layer plate into two parts."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create double-layer image
         img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
@@ -205,7 +205,7 @@ class TestOCRDoubleLayerProcessing:
 
     def test_stitch_double_layer_plate(self):
         """Test stitching two parts into single-layer plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create two parts
         upper = np.random.randint(0, 255, (60, 220, 3), dtype=np.uint8)
@@ -227,7 +227,7 @@ class TestOCRImageProcessing:
 
     def test_process_plate_image_single_layer(self):
         """Test processing single-layer plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create synthetic single-layer plate
         img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
@@ -241,7 +241,7 @@ class TestOCRImageProcessing:
 
     def test_process_plate_image_double_layer(self):
         """Test processing double-layer plate."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create synthetic double-layer plate
         img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
@@ -256,7 +256,7 @@ class TestOCRImageProcessing:
 
     def test_resize_norm_img_output_shape(self):
         """Test that resize_norm_img produces correct output shape."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         img = np.random.randint(0, 255, (100, 300, 3), dtype=np.uint8)
 
@@ -268,7 +268,7 @@ class TestOCRImageProcessing:
 
     def test_resize_norm_img_dtype(self):
         """Test that resize_norm_img produces float32."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         img = np.random.randint(0, 255, (100, 300, 3), dtype=np.uint8)
 
@@ -279,7 +279,7 @@ class TestOCRImageProcessing:
 
     def test_resize_norm_img_normalization(self):
         """Test that resize_norm_img applies correct normalization."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create known-value image (mid-gray)
         img = np.ones((100, 300, 3), dtype=np.uint8) * 128
@@ -297,7 +297,7 @@ class TestOCRPostprocessing:
 
     def test_get_ignored_tokens(self):
         """Test that ignored tokens list is correct."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         ignored = OCRONNX._get_ignored_tokens_static()
 
@@ -307,7 +307,7 @@ class TestOCRPostprocessing:
 
     def test_decode_basic(self, ocr_character):
         """Test basic decoding functionality."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create simple prediction
         # Assume character[1:8] = '京', 'A', '1', '2', '3', '4', '5'
@@ -331,7 +331,7 @@ class TestOCRPostprocessing:
 
     def test_decode_with_duplicates(self, ocr_character):
         """Test duplicate removal in decoding."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create prediction with duplicates: '京京A11234'
         # Index 1='京', 2='A', 3='1', etc.
@@ -364,7 +364,7 @@ class TestOCRPostprocessing:
 
     def test_decode_special_char_replacement(self):
         """Test special character replacement (苏 -> 京)."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create character list with '苏'
         test_chars = ['blank'] + list('苏京ABCDEFG0123456789')
@@ -391,7 +391,7 @@ class TestOCRPostprocessing:
 
     def test_decode_empty_prediction(self, ocr_character):
         """Test decoding with empty prediction."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Empty prediction
         text_index = np.array([[]])
@@ -409,7 +409,7 @@ class TestOCRPostprocessing:
 
     def test_decode_confidence_calculation(self, ocr_character):
         """Test confidence calculation in decoding."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Create prediction with known confidences
         text_index = np.array([[1, 2, 3, 4, 5]])
@@ -439,7 +439,7 @@ class TestEdgeCases:
 
     def test_process_very_small_image(self):
         """Test processing very small plate image."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Very small image
         tiny_img = np.random.randint(0, 255, (10, 20, 3), dtype=np.uint8)
@@ -452,7 +452,7 @@ class TestEdgeCases:
 
     def test_process_very_large_image(self):
         """Test processing very large plate image."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # Large image
         large_img = np.random.randint(0, 255, (500, 1500, 3), dtype=np.uint8)
@@ -465,7 +465,7 @@ class TestEdgeCases:
 
     def test_decode_with_all_blanks(self, ocr_character):
         """Test decoding when all predictions are 'blank'."""
-        from infer_onnx.ocr_onnx import OCRONNX
+        from infer_onnx.onnx_ocr import OCRONNX
 
         # All predictions are blank (index 0)
         text_index = np.array([[0, 0, 0, 0, 0]])
@@ -483,7 +483,7 @@ class TestEdgeCases:
 
     def test_pretreatment_with_grayscale_input(self):
         """Test color layer preprocessing with grayscale input."""
-        from infer_onnx.ocr_onnx import ColorLayerONNX
+        from infer_onnx.onnx_ocr import ColorLayerONNX
 
         # Grayscale image (2D)
         gray_img = np.random.randint(0, 255, (100, 200), dtype=np.uint8)

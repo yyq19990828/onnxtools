@@ -10,7 +10,7 @@ import numpy as np
 import logging
 from typing import List, Tuple, Optional
 
-from .base_onnx import BaseOnnx
+from .onnx_base import BaseOnnx
 from .infer_utils import scale_boxes
 from utils.image_processing import preprocess_image
 from utils.nms import non_max_suppression

@@ -101,7 +101,7 @@ def initialize_models(args):
         return None
 
     # Initialize color/layer and OCR models
-    from infer_onnx.ocr_onnx import ColorLayerONNX, OCRONNX
+    from infer_onnx.onnx_ocr import ColorLayerONNX, OCRONNX
     color_layer_model_path = getattr(args, "color_layer_model", "models/color_layer.onnx")
     ocr_model_path = getattr(args, "ocr_model", "models/ocr.onnx")
     plate_yaml_path = "configs/plate.yaml"

@@ -14,7 +14,7 @@ import logging
 from typing import List, Tuple, Optional, Dict, TypeAlias
 from numpy.typing import NDArray
 
-from .base_onnx import BaseOnnx
+from .onnx_base import BaseOnnx
 
 
 # Type Aliases for OCR and Color/Layer Classification

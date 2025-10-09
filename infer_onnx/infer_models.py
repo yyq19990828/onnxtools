@@ -8,10 +8,10 @@ ONNX模型推理工厂函数
 统一API设计，减少代码冗余，提高可维护性
 """
 
-from .base_onnx import BaseOnnx
-from .yolo_onnx import YoloOnnx
-from .rtdetr_onnx import RTDETROnnx  
-from .rfdetr_onnx import RFDETROnnx
+from .onnx_base import BaseOnnx
+from .onnx_yolo import YoloOnnx
+from .onnx_rtdetr import RTDETROnnx
+from .onnx_rfdetr import RFDETROnnx
 
 
 def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseOnnx:
