@@ -134,7 +134,7 @@ def initialize_models(args):
         class_names = config["class_names"]
 
     # colors始终从YAML配置文件读取
-    with open("models/det_config.yaml", "r", encoding="utf-8") as f:
+    with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     colors = config["visual_colors"]
 
