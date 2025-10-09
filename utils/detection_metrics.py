@@ -561,48 +561,6 @@ def evaluate_detection(
     return results
 
 
-def print_results(metrics: 'DetectionMetrics', names: Dict[int, str] = None, training: bool = False):
-    """
-    以Ultralytics DetectionValidator风格打印训练/验证集每个类别的指标
-    
-    Args:
-        metrics (DetectionMetrics): 计算好的检测指标
-        names (Dict[int, str], optional): 类别名称字典
-        training (bool): 是否为训练模式
-    """
-    # 使用与DetectionValidator.get_desc()相同的格式
-    pf = "%22s" + "%11i" * 2 + "%11.3g" * len(metrics.keys)  # print format
-    
-    # 总体指标（类似DetectionValidator.print_results中的总体打印）
-    total_seen = metrics.seen
-    total_targets = metrics.nt_per_class.sum() if metrics.nt_per_class is not None else 0
-    
-    # 打印总体结果
-    print(pf % ("all", total_seen, total_targets, *metrics.mean_results()))
-    
-    # 检查是否有标签
-    if total_targets == 0:
-        print(f"WARNING ⚠️ no labels found in {'train' if training else 'val'} set, can not compute metrics without labels")
-        return
-    
-    # 打印每个类别的结果
-    nc = len(names) if names else max(metrics.ap_class_index) + 1 if len(metrics.ap_class_index) > 0 else 0
-    if not training and nc > 1 and len(metrics.ap_class_index) > 0:
-        for i, c in enumerate(metrics.ap_class_index):
-            class_name = names.get(c, f"class{c}") if names else f"class{c}"
-            
-            # 获取该类别的图像数和实例数
-            images_with_class = metrics.nt_per_image[c] if c < len(metrics.nt_per_image) else 0
-            instances_of_class = metrics.nt_per_class[c] if c < len(metrics.nt_per_class) else 0
-            
-            print(pf % (
-                class_name,
-                images_with_class,
-                instances_of_class,
-                *metrics.class_result(i),
-            ))
-
-
 def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
     """
     以Ultralytics风格打印指标结果（保留原有接口兼容性）
