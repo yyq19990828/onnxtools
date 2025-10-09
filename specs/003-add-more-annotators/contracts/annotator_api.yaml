@@ -1,0 +1,190 @@
+openapi: 3.0.0
+info:
+  title: Supervision Annotators API Contract
+  version: 1.0.0
+  description: API合约定义 - AnnotatorFactory和AnnotatorPipeline接口规范
+
+components:
+  schemas:
+    AnnotatorType:
+      type: string
+      enum:
+        - box
+        - rich_label
+        - round_box
+        - box_corner
+        - circle
+        - triangle
+        - ellipse
+        - dot
+        - color
+        - background_overlay
+        - halo
+        - percentage_bar
+        - blur
+        - pixelate
+
+    AnnotatorConfig:
+      type: object
+      properties:
+        color_palette:
+          type: string
+          nullable: true
+        color_lookup:
+          type: string
+          default: "CLASS"
+      additionalProperties: true
+
+    ConflictWarning:
+      type: object
+      properties:
+        type_a:
+          $ref: '#/components/schemas/AnnotatorType'
+        type_b:
+          $ref: '#/components/schemas/AnnotatorType'
+        message:
+          type: string
+      required: [type_a, type_b, message]
+
+paths:
+  /factory/create:
+    post:
+      summary: Create annotator instance
+      operationId: createAnnotator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                annotator_type:
+                  $ref: '#/components/schemas/AnnotatorType'
+                config:
+                  $ref: '#/components/schemas/AnnotatorConfig'
+              required: [annotator_type, config]
+      responses:
+        '200':
+          description: Annotator instance created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  annotator:
+                    type: object
+                    description: supervision annotator instance
+        '400':
+          description: Invalid configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  field:
+                    type: string
+
+  /factory/validate:
+    post:
+      summary: Validate annotator configuration
+      operationId: validateConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                annotator_type:
+                  $ref: '#/components/schemas/AnnotatorType'
+                config:
+                  $ref: '#/components/schemas/AnnotatorConfig'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+
+  /pipeline/add:
+    post:
+      summary: Add annotator to pipeline
+      operationId: addAnnotator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                annotator_type:
+                  $ref: '#/components/schemas/AnnotatorType'
+                config:
+                  $ref: '#/components/schemas/AnnotatorConfig'
+      responses:
+        '200':
+          description: Annotator added to pipeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pipeline:
+                    type: object
+
+  /pipeline/check_conflicts:
+    get:
+      summary: Check for annotator conflicts
+      operationId: checkConflicts
+      responses:
+        '200':
+          description: Conflict check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conflicts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConflictWarning'
+
+  /preset/load:
+    get:
+      summary: Load visualization preset
+      operationId: loadPreset
+      parameters:
+        - name: preset_name
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [standard, lightweight, privacy, debug, high_contrast]
+      responses:
+        '200':
+          description: Preset loaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  annotators:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Preset not found

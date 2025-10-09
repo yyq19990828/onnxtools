@@ -31,7 +31,6 @@ ENV/
 *.pb
 *.tflite
 *.weights
-*.yaml
 *.engine
 *.plan
 *.trt

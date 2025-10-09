@@ -1,0 +1,494 @@
+# OCRONNX API Contract
+# Feature: 004-refactor-colorlayeronnx-ocronnx
+# Version: 2.0.0
+# Last Updated: 2025-10-09
+
+api_contract_version: "1.0"
+feature: "004-refactor-colorlayeronnx-ocronnx"
+component: "OCRONNX"
+description: "车牌OCR识别推理器API合约,继承自BaseOnnx"
+
+# ============================================================================
+# Constructor API
+# ============================================================================
+constructor:
+  name: "__init__"
+  signature: "__init__(self, onnx_path: str, character: List[str], input_shape: Tuple[int, int] = (48, 320), conf_thres: float = 0.5, providers: Optional[List[str]] = None) -> None"
+
+  parameters:
+    - name: "onnx_path"
+      type: "str"
+      required: true
+      description: "ONNX模型文件的绝对或相对路径"
+      constraints:
+        - "文件必须存在"
+        - "文件扩展名必须为.onnx"
+      examples:
+        - "models/ocr.onnx"
+        - "/absolute/path/to/ocr_model.onnx"
+
+    - name: "character"
+      type: "List[str]"
+      required: true
+      description: "OCR字符字典列表,用于解码模型输出"
+      constraints:
+        - "列表不能为空"
+        - "字符顺序必须与模型训练时一致"
+      examples:
+        - "['京', '沪', '粤', 'A', 'B', 'C', '0', '1', '2']"
+
+    - name: "input_shape"
+      type: "Tuple[int, int]"
+      required: false
+      default: "(48, 320)"
+      description: "模型输入尺寸 (height, width)"
+      constraints:
+        - "height > 0 且 width > 0"
+        - "推荐使用模型训练时的输入尺寸"
+      examples:
+        - "(48, 320)"
+        - "(48, 168)"
+
+    - name: "conf_thres"
+      type: "float"
+      required: false
+      default: 0.5
+      description: "OCR识别置信度阈值"
+      constraints:
+        - "范围: [0.0, 1.0]"
+      examples:
+        - 0.5
+        - 0.7
+
+    - name: "providers"
+      type: "Optional[List[str]]"
+      required: false
+      default: "None (自动检测)"
+      description: "ONNX Runtime执行提供程序列表"
+      constraints:
+        - "如果指定,必须是有效的provider名称"
+        - "推荐顺序: ['CUDAExecutionProvider', 'CPUExecutionProvider']"
+      examples:
+        - "['CUDAExecutionProvider', 'CPUExecutionProvider']"
+        - "['CPUExecutionProvider']"
+        - null
+
+  raises:
+    - exception: "FileNotFoundError"
+      condition: "onnx_path指定的文件不存在"
+      message: "ONNX model file not found: {onnx_path}"
+
+    - exception: "ValueError"
+      condition: "character为空列表"
+      message: "Character dictionary cannot be empty"
+
+    - exception: "ValueError"
+      condition: "conf_thres不在[0, 1]范围内"
+      message: "conf_thres must be in range [0.0, 1.0], got {conf_thres}"
+
+  post_conditions:
+    - "self.session初始化为懒加载状态(未立即加载模型)"
+    - "self.character保存字符字典引用"
+    - "self.input_shape设置为指定值"
+    - "self.providers设置为指定或自动检测的provider列表"
+
+# ============================================================================
+# Primary Inference API
+# ============================================================================
+primary_method:
+  name: "__call__"
+  signature: "__call__(self, image: NDArray[np.uint8], conf_thres: Optional[float] = None, is_double_layer: bool = False) -> Tuple[List[OCRResult], Tuple[int, int]]"
+
+  parameters:
+    - name: "image"
+      type: "NDArray[np.uint8]"
+      required: true
+      description: "输入车牌图像,BGR格式"
+      constraints:
+        - "形状: [H, W, 3] (高度, 宽度, 通道)"
+        - "通道顺序: BGR (OpenCV默认)"
+        - "数据类型: np.uint8"
+        - "像素值范围: [0, 255]"
+      examples:
+        - "shape: (100, 300, 3)"
+        - "dtype: uint8"
+
+    - name: "conf_thres"
+      type: "Optional[float]"
+      required: false
+      default: "None (使用构造函数中的conf_thres)"
+      description: "可选的置信度阈值覆盖"
+      constraints:
+        - "如果指定,范围: [0.0, 1.0]"
+      examples:
+        - 0.6
+        - null
+
+    - name: "is_double_layer"
+      type: "bool"
+      required: false
+      default: false
+      description: "是否为双层车牌,需要特殊预处理(倾斜校正和拆分拼接)"
+      examples:
+        - true
+        - false
+
+  returns:
+    type: "Tuple[List[OCRResult], Tuple[int, int]]"
+    description: "OCR结果列表和原始图像形状的元组"
+
+    structure:
+      - name: "ocr_results"
+        type: "List[OCRResult]"
+        description: "OCR识别结果列表,通常只包含一个元素(整个车牌)"
+        element_structure:
+          - name: "text"
+            type: "str"
+            description: "识别的车牌文本"
+            examples:
+              - "京A12345"
+              - "沪B67890"
+
+          - name: "avg_confidence"
+            type: "float"
+            description: "平均置信度 (所有字符置信度的平均值)"
+            constraints:
+              - "范围: [0.0, 1.0]"
+            examples:
+              - 0.95
+
+          - name: "char_confidences"
+            type: "List[float]"
+            description: "每个字符的置信度列表"
+            constraints:
+              - "列表长度等于text的字符数"
+              - "每个元素范围: [0.0, 1.0]"
+            examples:
+              - "[0.98, 0.95, 0.92, 0.97, 0.94, 0.96]"
+
+      - name: "original_shape"
+        type: "Tuple[int, int]"
+        description: "原始输入图像的形状 (height, width)"
+        examples:
+          - "(100, 300)"
+
+  raises:
+    - exception: "ValueError"
+      condition: "image形状不是[H, W, 3]"
+      message: "Input image must have shape [H, W, 3], got {image.shape}"
+
+    - exception: "ValueError"
+      condition: "image数据类型不是uint8"
+      message: "Input image must be uint8, got {image.dtype}"
+
+    - exception: "RuntimeError"
+      condition: "模型推理失败"
+      message: "OCR inference failed: {error_details}"
+
+  performance_requirements:
+    - metric: "总推理时间"
+      target: "< 30ms"
+      measurement: "单张车牌图像,GPU模式,包含预处理和后处理"
+
+    - metric: "预处理时间"
+      target: "< 5ms"
+      measurement: "包含双层车牌拆分和拼接"
+
+    - metric: "模型推理时间"
+      target: "< 20ms"
+      measurement: "GPU模式,CUDA provider"
+
+    - metric: "后处理时间"
+      target: "< 2ms"
+      measurement: "解码和置信度计算"
+
+    - metric: "GPU内存占用"
+      target: "< 100MB"
+      measurement: "单次推理,batch_size=1"
+
+  example_usage: |
+    ```python
+    import numpy as np
+    from infer_onnx import OCRONNX
+    import yaml
+
+    # 加载字符字典
+    with open('configs/plate.yaml') as f:
+        config = yaml.safe_load(f)
+    character = config['plate_dict']['character']
+
+    # 创建OCR推理器
+    ocr_model = OCRONNX(
+        onnx_path='models/ocr.onnx',
+        character=character,
+        input_shape=(48, 320),
+        conf_thres=0.5
+    )
+
+    # 执行OCR推理(单层车牌)
+    plate_image = cv2.imread('plate.jpg')  # [H, W, 3], BGR
+    results, orig_shape = ocr_model(plate_image)
+
+    print(f"Original shape: {orig_shape}")
+    for text, avg_conf, char_confs in results:
+        print(f"Text: {text}")
+        print(f"Avg Confidence: {avg_conf:.3f}")
+        print(f"Char Confidences: {char_confs}")
+
+    # 执行OCR推理(双层车牌)
+    double_plate_image = cv2.imread('double_plate.jpg')
+    results, orig_shape = ocr_model(double_plate_image, is_double_layer=True)
+
+    # 使用自定义置信度阈值
+    results, _ = ocr_model(plate_image, conf_thres=0.7)
+    ```
+
+# ============================================================================
+# Private Instance Methods (仅用于理解内部行为,不应被外部调用)
+# ============================================================================
+private_methods:
+  - name: "_preprocess"
+    signature: "_preprocess(self, image: NDArray[np.uint8], is_double_layer: bool = False) -> PreprocessResult"
+    visibility: "protected"
+    description: "OCR预处理实例方法,向后兼容BaseOnnx接口"
+
+    parameters:
+      - name: "image"
+        type: "NDArray[np.uint8]"
+        description: "输入车牌图像,BGR格式"
+
+      - name: "is_double_layer"
+        type: "bool"
+        description: "是否为双层车牌"
+
+    returns:
+      type: "PreprocessResult"
+      description: "(input_tensor, scale, original_shape, ratio_pad)"
+      structure:
+        - name: "input_tensor"
+          type: "NDArray[np.float32]"
+          description: "预处理后的输入张量 [1, 3, H, W]"
+
+        - name: "scale"
+          type: "float"
+          description: "缩放因子"
+
+        - name: "original_shape"
+          type: "Tuple[int, int]"
+          description: "原始图像形状 (H, W)"
+
+        - name: "ratio_pad"
+          type: "Optional[Tuple[Tuple[float, float], Tuple[float, float]]]"
+          description: "Ratio和padding信息,OCR通常为None"
+
+    implementation_note: "调用_process_plate_image_static()和_resize_norm_img_static()"
+
+  - name: "_postprocess"
+    signature: "_postprocess(self, prediction: NDArray[np.float32], conf_thres: float, **kwargs) -> List[OCRResult]"
+    visibility: "protected"
+    description: "OCR后处理:将模型输出解码为文本和置信度"
+
+    parameters:
+      - name: "prediction"
+        type: "NDArray[np.float32]"
+        description: "模型原始输出 [B, seq_len, num_classes]"
+
+      - name: "conf_thres"
+        type: "float"
+        description: "置信度阈值"
+
+      - name: "kwargs"
+        type: "dict"
+        description: "额外参数(保留兼容性)"
+
+    returns:
+      type: "List[OCRResult]"
+      description: "OCR结果列表"
+
+    implementation_note: "提取text_index和text_prob,调用_decode_static()解码"
+
+# ============================================================================
+# Private Static Methods (辅助方法,不应被外部直接调用)
+# ============================================================================
+static_helper_methods:
+  - name: "_process_plate_image_static"
+    signature: "_process_plate_image_static(img: NDArray[np.uint8], is_double_layer: bool = False) -> NDArray[np.uint8]"
+    visibility: "private"
+    description: "车牌图像预处理主方法:倾斜校正、双层拆分和拼接"
+    source: "原utils/ocr_image_processing.py::process_plate_image()"
+
+  - name: "_detect_skew_angle"
+    signature: "_detect_skew_angle(image: NDArray[np.uint8]) -> float"
+    visibility: "private"
+    description: "检测图像倾斜角度(辅助方法)"
+    returns:
+      description: "倾斜角度(度),范围[-45, 45]"
+
+  - name: "_correct_skew"
+    signature: "_correct_skew(image: NDArray[np.uint8], angle: float) -> NDArray[np.uint8]"
+    visibility: "private"
+    description: "校正图像倾斜(辅助方法)"
+
+  - name: "_find_optimal_split_line"
+    signature: "_find_optimal_split_line(image: NDArray[np.uint8]) -> int"
+    visibility: "private"
+    description: "找到双层车牌的最佳分割水平线(辅助方法)"
+
+  - name: "_split_double_layer"
+    signature: "_split_double_layer(image: NDArray[np.uint8], split_y: int) -> Tuple[NDArray[np.uint8], NDArray[np.uint8]]"
+    visibility: "private"
+    description: "拆分双层车牌为上下两层(辅助方法)"
+
+  - name: "_stitch_layers"
+    signature: "_stitch_layers(top_layer: NDArray[np.uint8], bottom_layer: NDArray[np.uint8]) -> NDArray[np.uint8]"
+    visibility: "private"
+    description: "水平拼接上下两层车牌为单行(辅助方法)"
+
+  - name: "_resize_norm_img_static"
+    signature: "_resize_norm_img_static(img: NDArray[np.uint8], image_shape: Tuple[int, int]) -> NDArray[np.float32]"
+    visibility: "private"
+    description: "图像resize和归一化(静态方法)"
+    source: "原utils/ocr_image_processing.py::resize_norm_img()"
+
+  - name: "_decode_static"
+    signature: "_decode_static(character: List[str], text_index: NDArray[np.int_], text_prob: Optional[NDArray[np.float32]] = None, is_remove_duplicate: bool = False) -> List[OCRResult]"
+    visibility: "private"
+    description: "将OCR输出解码为文本和置信度(静态方法)"
+    source: "原utils/ocr_post_processing.py::decode()"
+
+  - name: "_get_ignored_tokens_static"
+    signature: "_get_ignored_tokens_static() -> List[int]"
+    visibility: "private"
+    description: "获取OCR解码时需要忽略的特殊token索引(静态方法)"
+    source: "原utils/ocr_post_processing.py::get_ignored_tokens()"
+
+# ============================================================================
+# TensorRT引擎比较API (继承自BaseOnnx)
+# ============================================================================
+tensorrt_methods:
+  - name: "create_engine_dataloader"
+    signature: "create_engine_dataloader(self, data_dir: str, batch_size: int = 1) -> EngineDataLoader"
+    description: "创建TensorRT引擎比较的数据加载器"
+    inherited_from: "BaseOnnx"
+    usage_note: "用于OCR模型的ONNX vs TensorRT精度对比"
+
+  - name: "compare_engine"
+    signature: "compare_engine(self, engine_path: str, data_loader: EngineDataLoader, tolerance: float = 1e-3) -> Dict[str, any]"
+    description: "对比ONNX模型和TensorRT引擎的精度"
+    inherited_from: "BaseOnnx"
+    usage_note: "验证TensorRT优化后的精度损失"
+
+# ============================================================================
+# Backward Compatibility (向后兼容性)
+# ============================================================================
+backward_compatibility:
+  deprecated_methods:
+    - old_name: "infer"
+      new_name: "__call__"
+      deprecation_version: "2.0.0"
+      removal_version: "3.0.0"
+      migration_guide: "使用 `model(image)` 替代 `model.infer(image)`"
+
+  breaking_changes:
+    - change: "方法名从infer()改为__call__()"
+      impact: "所有调用者需要更新"
+      mitigation: "提供临时的infer()包装方法,内部调用__call__()"
+
+    - change: "继承自BaseOnnx,使用Polygraphy懒加载"
+      impact: "初始化行为略有不同(模型延迟加载)"
+      mitigation: "首次推理时会触发模型加载,略有延迟"
+
+# ============================================================================
+# Quality Assurance
+# ============================================================================
+testing_requirements:
+  unit_tests:
+    - "构造函数参数验证"
+    - "各种输入形状和类型"
+    - "单层和双层车牌预处理"
+    - "OCR解码准确性"
+    - "置信度计算正确性"
+
+  integration_tests:
+    - "与BaseOnnx的继承关系"
+    - "与utils/pipeline.py的集成"
+    - "端到端OCR识别流程"
+
+  performance_tests:
+    - "预处理性能基准 (< 5ms)"
+    - "推理性能基准 (< 20ms)"
+    - "后处理性能基准 (< 2ms)"
+    - "GPU内存占用 (< 100MB)"
+
+  contract_tests:
+    - "输入输出格式符合合约"
+    - "异常处理符合合约"
+    - "性能指标符合合约"
+
+# ============================================================================
+# Error Handling Contract
+# ============================================================================
+error_handling:
+  input_validation:
+    - condition: "image不是ndarray"
+      exception: "TypeError"
+      message: "Input image must be numpy.ndarray, got {type(image)}"
+
+    - condition: "image形状不是[H, W, 3]"
+      exception: "ValueError"
+      message: "Input image must have shape [H, W, 3], got {image.shape}"
+
+    - condition: "image不是uint8"
+      exception: "ValueError"
+      message: "Input image must be uint8, got {image.dtype}"
+
+    - condition: "conf_thres超出[0, 1]"
+      exception: "ValueError"
+      message: "conf_thres must be in [0.0, 1.0], got {conf_thres}"
+
+  runtime_errors:
+    - condition: "模型文件损坏"
+      exception: "RuntimeError"
+      message: "Failed to load ONNX model: {error_details}"
+      recovery: "检查模型文件完整性,重新下载模型"
+
+    - condition: "推理过程失败"
+      exception: "RuntimeError"
+      message: "OCR inference failed: {error_details}"
+      recovery: "检查输入图像有效性,查看日志详情"
+
+    - condition: "GPU内存不足"
+      exception: "RuntimeError"
+      message: "CUDA out of memory during OCR inference"
+      recovery: "切换到CPUExecutionProvider或减少并发推理数"
+
+# ============================================================================
+# Configuration and Dependencies
+# ============================================================================
+dependencies:
+  required:
+    - package: "numpy"
+      version: ">= 1.20.0"
+      usage: "数组操作和类型提示"
+
+    - package: "onnxruntime-gpu"
+      version: ">= 1.22.0"
+      usage: "ONNX模型推理"
+
+    - package: "opencv-python"
+      version: ">= 4.5.0"
+      usage: "图像预处理"
+
+    - package: "polygraphy"
+      version: ">= 0.49.26"
+      usage: "懒加载和会话管理(通过BaseOnnx)"
+
+  configuration_files:
+    - path: "configs/plate.yaml"
+      required_keys:
+        - "plate_dict.character"
+      description: "OCR字符字典配置"
+
+---
+# Contract Version History
+# v1.0 (2025-10-09): 初始版本,定义重构后的OCRONNX API
