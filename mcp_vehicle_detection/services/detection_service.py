@@ -244,59 +244,38 @@ class VehicleDetectionService:
             车牌信息
         """
         try:
-            # 导入图像处理函数
-            from utils import process_plate_image, image_pretreatment, resize_norm_img, decode
-            
             h_img, w_img = image.shape[:2]
             x1, y1, x2, y2 = int(bbox.x1), int(bbox.y1), int(bbox.x2), int(bbox.y2)
             w, h = x2 - x1, y2 - y1
-            
+
             # 扩展车牌区域
             exp_x1 = int(max(0, x1 - w * 0.1))
             exp_y1 = int(max(0, y1 - h * 0.1))
             exp_x2 = int(min(w_img, x2 + w * 0.1))
             exp_y2 = int(min(h_img, y2 + h * 0.1))
             plate_img = image[exp_y1:exp_y2, exp_x1:exp_x2]
-            
+
             if plate_img.size == 0:
                 return PlateInfo(
                     text="", color=PlateColor.UNKNOWN, layer=PlateLayer.UNKNOWN,
                     confidence=0.0, should_display_ocr=False
                 )
-            
-            # 颜色和层数分类
-            img_rgb = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)
-            color_input = image_pretreatment(img_rgb)
-            preds_color, preds_layer = self.color_layer_classifier.infer(color_input)
-            color_index = int(np.argmax(preds_color))
-            layer_index = int(np.argmax(preds_layer))
-            
-            # 加载颜色层数映射
-            color_layer_path = Path(self.config.color_layer_model.model_path).parent / "plate_color_layer.yaml"
-            with open(color_layer_path, "r", encoding="utf-8") as f:
-                color_layer_yaml = yaml.safe_load(f)
-            
-            color_dict = color_layer_yaml["color_dict"]
-            layer_dict = color_layer_yaml["layer_dict"]
-            color_str = color_dict.get(color_index, "unknown")
-            layer_str = layer_dict.get(layer_index, "unknown")
-            
-            # OCR识别
+
+            # 颜色和层数分类 (使用新的 __call__ 接口)
+            color_str, layer_str, color_conf = self.color_layer_classifier(plate_img)
+
+            # OCR识别 (使用新的 __call__ 接口)
             is_double = (layer_str == "double")
-            processed_plate = process_plate_image(plate_img, is_double_layer=is_double)
-            ocr_input = resize_norm_img(processed_plate)
-            ocr_out = self.ocr_model.infer(ocr_input)
-            preds_idx = np.asarray(ocr_out[0]).argmax(axis=2)
-            preds_prob = np.asarray(ocr_out[0]).max(axis=2)
-            ocr_result = decode(self.character, preds_idx, preds_prob, is_remove_duplicate=True)
-            plate_text = ocr_result[0][0] if ocr_result else ""
-            
-            # 计算OCR置信度
-            ocr_confidence = float(np.mean(preds_prob)) if len(preds_prob) > 0 else 0.0
-            
+            ocr_result = self.ocr_model(plate_img, is_double_layer=is_double)
+
+            plate_text = ""
+            ocr_confidence = 0.0
+            if ocr_result:
+                plate_text, ocr_confidence, _ = ocr_result
+
             # 判断是否显示OCR结果
             should_display_ocr = (y1 >= roi_top_pixel) and (w > 50)
-            
+
             return PlateInfo(
                 text=plate_text,
                 color=PlateColor(color_str) if color_str in PlateColor.__members__.values() else PlateColor.UNKNOWN,

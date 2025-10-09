@@ -129,27 +129,6 @@ class TestColorLayerONNXContract:
             assert layer != 'unknown'
         # Note: We can't force low confidence, so we just validate the interface
 
-    def test_backward_compatible_infer_method(self, color_layer_model, sample_blue_plate):
-        """
-        Contract: ColorLayerONNX.infer() must remain backward compatible.
-
-        This method should still exist for legacy code but emit deprecation warning.
-        """
-        # Preprocess manually (old workflow)
-        from infer_onnx.ocr_onnx import ColorLayerONNX
-
-        preprocessed = ColorLayerONNX._image_preprocess_static(
-            sample_blue_plate,
-            image_shape=(48, 168)
-        )
-
-        # Call old infer() method
-        with pytest.warns(DeprecationWarning, match="use __call__"):
-            outputs = color_layer_model.infer(preprocessed)
-
-        # Validate output format (raw model outputs)
-        assert outputs is not None
-        assert isinstance(outputs, (list, tuple))
 
     def test_static_method_accessibility(self):
         """
@@ -270,30 +249,6 @@ class TestOCRONNXContract:
             # Processing failure is acceptable for synthetic images
             pytest.skip("Double-layer processing failed (expected for synthetic images)")
 
-    def test_backward_compatible_infer_method(
-        self, ocr_model_refactored, sample_single_layer_plate
-    ):
-        """
-        Contract: OCRONNX.infer() must remain backward compatible.
-
-        Legacy code may still call infer() with preprocessed input.
-        """
-        from infer_onnx.ocr_onnx import OCRONNX
-
-        # Preprocess using static methods (old workflow)
-        processed = OCRONNX._process_plate_image_static(
-            sample_single_layer_plate,
-            is_double_layer=False
-        )
-        normalized = OCRONNX._resize_norm_img_static(processed, [3, 48, 168])
-
-        # Call old infer() method
-        with pytest.warns(DeprecationWarning, match="use __call__"):
-            outputs = ocr_model_refactored.infer(normalized)
-
-        # Validate output format (raw model outputs)
-        assert outputs is not None
-        assert isinstance(outputs, (list, tuple))
 
     def test_static_preprocessing_methods_accessibility(self):
         """

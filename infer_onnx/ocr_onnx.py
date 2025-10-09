@@ -11,7 +11,6 @@ Both classes inherit from BaseOnnx and follow the unified inference pattern.
 import cv2
 import numpy as np
 import logging
-import warnings
 from typing import List, Tuple, Optional, Dict, TypeAlias
 from numpy.typing import NDArray
 
@@ -153,45 +152,8 @@ class ColorLayerONNX(BaseOnnx):
         conf_thres: float,
         **kwargs
     ) -> Dict[str, any]:
-        """
-        Post-process classification results.
 
-        This method:
-        1. Splits color_logits and layer_logits
-        2. Applies softmax
-        3. Gets argmax indices
-        4. Maps indices to names
-        5. Filters by confidence threshold
-
-        Args:
-            prediction: Model output, should contain [color_logits, layer_logits]
-            conf_thres: Confidence threshold
-            **kwargs: Additional parameters
-
-        Returns:
-            Classification result dict: {
-                'color': str,
-                'layer': str,
-                'color_conf': float,
-                'layer_conf': float
-            }
-        """
-        # Note: prediction is actually a list/tuple of outputs from BaseOnnx.__call__()
-        # We need to handle the outputs from the ONNX model
-        # Assuming the model outputs two separate tensors: [color_logits, layer_logits]
-
-        # Get runner outputs (this is called within the inference context)
-        # Since BaseOnnx passes prediction as outputs[0], we need to handle it differently
-        # For now, let's assume prediction contains the first output
-        # We'll need to override __call__() to properly handle multiple outputs
-
-        # Placeholder - this will be properly implemented when we understand the exact output format
-        return {
-            'color': 'blue',
-            'layer': 'single',
-            'color_conf': 0.95,
-            'layer_conf': 0.95
-        }
+        pass
 
     def __call__(
         self,
@@ -265,39 +227,6 @@ class ColorLayerONNX(BaseOnnx):
         average_conf = (color_conf + layer_conf) / 2.0
         return color_name, layer_name, average_conf
 
-    # Backward compatibility: keep old infer() method
-    def infer(self, img: NDArray[np.float32]) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
-        """
-        Legacy inference method (backward compatibility).
-
-        Args:
-            img: Preprocessed image [1, 3, H, W]
-
-        Returns:
-            Tuple[color_logits, layer_logits]
-
-        Deprecated:
-            Use __call__() instead for unified interface.
-        """
-        warnings.warn(
-            "infer() is deprecated, use __call__() instead",
-            DeprecationWarning,
-            stacklevel=2
-        )
-
-        # Ensure model is initialized
-        self._ensure_initialized()
-
-        # Direct inference
-        with self._runner:
-            feed_dict = {self.input_name: img}
-            outputs_dict = self._runner.infer(feed_dict)
-            outputs = [outputs_dict[name] for name in self.output_names]
-
-        color_logits = outputs[0]
-        layer_logits = outputs[1] if len(outputs) > 1 else outputs[0]
-
-        return color_logits, layer_logits
 
 
 class OCRONNX(BaseOnnx):
@@ -890,34 +819,3 @@ class OCRONNX(BaseOnnx):
 
         # Return first result or None
         return results[0] if results else None
-
-    # Backward compatibility: keep old infer() method
-    def infer(self, img: NDArray[np.float32]) -> List[NDArray[np.float32]]:
-        """
-        Legacy inference method (backward compatibility).
-
-        Args:
-            img: Preprocessed image [1, 3, 48, 168]
-
-        Returns:
-            List of model outputs
-
-        Deprecated:
-            Use __call__() instead for unified interface.
-        """
-        warnings.warn(
-            "infer() is deprecated, use __call__() instead",
-            DeprecationWarning,
-            stacklevel=2
-        )
-
-        # Ensure model is initialized
-        self._ensure_initialized()
-
-        # Direct inference
-        with self._runner:
-            feed_dict = {self.input_name: img}
-            outputs_dict = self._runner.infer(feed_dict)
-            outputs = [outputs_dict[name] for name in self.output_names]
-
-        return outputs
