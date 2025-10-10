@@ -138,69 +138,193 @@ class BaseOnnx(ABC):
     
     
     @abstractmethod
-    def _postprocess(self, prediction: np.ndarray, conf_thres: float, **kwargs) -> List[np.ndarray]:
-        """后处理抽象方法，子类需要实现"""
-        pass
-    
-    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Tuple[List[np.ndarray], tuple]:
+    def _postprocess(self, prediction: List[np.ndarray], conf_thres: float, **kwargs) -> List[np.ndarray]:
         """
-        对图像进行推理（使用Polygraphy懒加载）
-        
+        Post-process model outputs into final detection/classification results.
+
+        This method must be implemented by all subclasses. It is responsible for
+        converting raw model outputs into a standardized detection format.
+
         Args:
-            image (np.ndarray): 输入图像，BGR格式
-            conf_thres (Optional[float]): 置信度阈值
-            **kwargs: 其他参数
-            
+            prediction: Raw model outputs, list of numpy arrays. Format varies by model:
+                - YOLO: [batch, num_boxes, 5+num_classes]
+                - RT-DETR: [batch, num_boxes, 6]
+            conf_thres: Confidence threshold for filtering low-confidence results
+            **kwargs: Additional parameters, commonly:
+                - iou_thres (float): IoU threshold for NMS (default: self.iou_thres)
+                - max_det (int): Maximum number of detections to keep (default: 300)
+                - scale (Tuple): Scaling information from preprocessing
+                - ratio_pad (Tuple): Padding information for coordinate transformation
+
         Returns:
-            Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
+            List of post-processed results, one array per batch. Each array has shape:
+                - Detection models: [N, 6] where columns are [x1, y1, x2, y2, confidence, class_id]
+                - Classification models: [N, 2] where columns are [class_id, confidence]
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
+            ValueError: If prediction format is invalid
+
+        Example:
+            >>> # In YoloOnnx subclass
+            >>> def _postprocess(self, prediction, conf_thres, **kwargs):
+            ...     iou_thres = kwargs.get('iou_thres', self.iou_thres)
+            ...     results = []
+            ...     for pred in prediction:
+            ...         detections = non_max_suppression(pred, conf_thres, iou_thres)
+            ...         results.append(detections)
+            ...     return results
         """
-        # 确保模型已初始化
+        raise NotImplementedError(
+            f"{self.__class__.__name__}._postprocess() must be implemented by subclass. "
+            "This method is responsible for post-processing model outputs. "
+            "See BaseOnnx._postprocess docstring for implementation guidance."
+        )
+    
+    def _prepare_inference(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple, Optional[tuple]]:
+        """
+        Phase 1: Prepare inference by initializing model and preprocessing image.
+
+        This method ensures the model is initialized and performs image preprocessing
+        to prepare the input tensor for inference.
+
+        Args:
+            image: Input image in BGR format, shape [H, W, C]
+
+        Returns:
+            Tuple containing:
+                - input_tensor: Preprocessed tensor, shape [1, 3, H, W]
+                - scale: Scaling information from preprocessing
+                - original_shape: Original image shape (H, W, C)
+                - ratio_pad: Padding information (optional, for letterbox resize)
+
+        Note:
+            This method can be overridden by subclasses to customize the
+            preparation phase behavior.
+        """
+        # Ensure model is initialized
         self._ensure_initialized()
-        
-        # 预处理
+
+        # Preprocess image
         preprocess_result = self._preprocess(image)
         if len(preprocess_result) == 3:
-            # 兼容旧版本返回值 (input_tensor, scale, original_shape)
+            # Compatible with old version return value (input_tensor, scale, original_shape)
             input_tensor, scale, original_shape = preprocess_result
             ratio_pad = None
         else:
-            # 新版本返回值 (input_tensor, scale, original_shape, ratio_pad)
+            # New version return value (input_tensor, scale, original_shape, ratio_pad)
             input_tensor, scale, original_shape, ratio_pad = preprocess_result
-        
-        # 使用Polygraphy运行器进行推理
+
+        return input_tensor, scale, original_shape, ratio_pad
+
+    def _execute_inference(self, input_tensor: np.ndarray) -> Tuple[List[np.ndarray], int]:
+        """
+        Phase 2: Execute model inference with input tensor.
+
+        This method performs the actual model inference using Polygraphy runner.
+        It handles batch dimension adjustments and executes the ONNX model.
+
+        Args:
+            input_tensor: Preprocessed input tensor, shape [1, 3, H, W]
+
+        Returns:
+            Tuple containing:
+                - outputs: List of model output arrays
+                - expected_batch_size: Expected batch size from model metadata
+
+        Note:
+            This method can be overridden by subclasses to customize the
+            inference execution behavior.
+        """
+        # Execute inference using Polygraphy runner
         with self._runner:
-            # 获取输入元数据来检查batch维度
+            # Get input metadata to check batch dimension
             input_metadata = self._runner.get_input_metadata()
             input_shape = input_metadata[self.input_name].shape
             expected_batch_size = input_shape[0] if isinstance(input_shape[0], int) and input_shape[0] > 0 else 1
-            
+
             if expected_batch_size > 1 and input_tensor.shape[0] == 1:
-                # 如果模型期望batch>1，但输入是batch=1，则复制输入以满足要求
+                # If model expects batch>1 but input is batch=1, repeat input to meet requirement
                 input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
                 logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
-            
-            # 构造feed_dict并执行推理
+
+            # Construct feed_dict and execute inference
             feed_dict = {self.input_name: input_tensor}
             outputs_dict = self._runner.infer(feed_dict)
-            
-            # 将字典转换为列表格式以保持兼容性
+
+            # Convert dictionary to list format to maintain compatibility
             outputs = [outputs_dict[name] for name in self.output_names]
-        
-        # 后处理 - 根据子类不同传递不同参数
+
+        return outputs, expected_batch_size
+
+    def _finalize_inference(
+        self,
+        outputs: List[np.ndarray],
+        expected_batch_size: int,
+        scale: float,
+        ratio_pad: Optional[tuple],
+        conf_thres: Optional[float],
+        **kwargs
+    ) -> List[np.ndarray]:
+        """
+        Phase 3: Finalize inference by post-processing outputs and filtering results.
+
+        This method performs post-processing on model outputs and filters results
+        based on batch size and confidence threshold.
+
+        Args:
+            outputs: List of model output arrays from inference
+            expected_batch_size: Expected batch size from model metadata
+            scale: Scaling information from preprocessing
+            ratio_pad: Padding information (optional, for letterbox resize)
+            conf_thres: Confidence threshold for filtering results
+            **kwargs: Additional parameters for post-processing
+
+        Returns:
+            List of final detection results, one array per batch
+
+        Note:
+            This method can be overridden by subclasses to customize the
+            finalization phase behavior.
+        """
+        # Post-process - pass different parameters based on subclass
         effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
-        
-        # RF-DETR需要完整的outputs，其他模型使用第一个输出
+
+        # RF-DETR needs full outputs, other models use first output
         if type(self).__name__ == 'RFDETROnnx':
             detections = self._postprocess(outputs, effective_conf_thres, **kwargs)
         else:
             prediction = outputs[0]
             detections = self._postprocess(prediction, effective_conf_thres, scale=scale, ratio_pad=ratio_pad, **kwargs)
-        
-        # 如果输入是多batch但只处理一张图片，只返回第一个batch的结果
+
+        # If input is multi-batch but only processing one image, return only first batch result
         if (expected_batch_size > 1 and len(detections) > 1):
             detections = [detections[0]]
             logging.debug(f"只返回第一个batch的检测结果")
-        
+
+        return detections
+
+    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Tuple[List[np.ndarray], tuple]:
+        """
+        对图像进行推理（使用Polygraphy懒加载）
+
+        Args:
+            image (np.ndarray): 输入图像，BGR格式
+            conf_thres (Optional[float]): 置信度阈值
+            **kwargs: 其他参数
+
+        Returns:
+            Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
+        """
+        # Phase 1: Prepare inference
+        input_tensor, scale, original_shape, ratio_pad = self._prepare_inference(image)
+
+        # Phase 2: Execute inference
+        outputs, expected_batch_size = self._execute_inference(input_tensor)
+
+        # Phase 3: Finalize inference
+        detections = self._finalize_inference(outputs, expected_batch_size, scale, ratio_pad, conf_thres, **kwargs)
+
         return detections, original_shape
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
@@ -208,10 +332,50 @@ class BaseOnnx(ABC):
         return self._preprocess_static(image, self.input_shape)
     
     @staticmethod
+    @abstractmethod
     def _preprocess_static(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
-        """预处理图像（静态方法）"""
-        #TODO del
-        return preprocess_image(image, input_shape)
+        """
+        Static preprocessing method for image transformation.
+
+        This static method must be implemented by all subclasses. It performs
+        image preprocessing independent of instance state.
+
+        Args:
+            image: Input image in BGR format (OpenCV default), shape [H, W, C]
+            input_shape: Target input size (height, width), e.g., (640, 640)
+
+        Returns:
+            Tuple containing:
+                - input_tensor: Preprocessed tensor, shape [1, 3, H, W], range [0, 1]
+                  Format: NCHW (batch, channels, height, width), RGB order
+                - scale: Scaling information for coordinate transformation, format varies:
+                  * Letterbox: dict with 'scale', 'pad_w', 'pad_h' keys
+                  * Simple resize: tuple (scale_x, scale_y)
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
+            ValueError: If image dimensions are invalid
+
+        Example:
+            >>> # In RTDETROnnx subclass
+            >>> @staticmethod
+            >>> @abstractmethod
+            >>> def _preprocess_static(image, input_shape):
+            ...     # Letterbox resize (keep aspect ratio)
+            ...     resized, scale = letterbox_resize(image, input_shape)
+            ...     # BGR to RGB
+            ...     rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+            ...     # Normalize to [0, 1]
+            ...     normalized = rgb_image.astype(np.float32) / 255.0
+            ...     # NCHW format
+            ...     input_tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
+            ...     return input_tensor, scale
+        """
+        raise NotImplementedError(
+            f"BaseOnnx._preprocess_static() must be implemented by subclass. "
+            "This static method is responsible for image preprocessing. "
+            "See BaseOnnx._preprocess_static docstring for implementation guidance."
+        )
     
     def create_engine_dataloader(self, **kwargs):
         """

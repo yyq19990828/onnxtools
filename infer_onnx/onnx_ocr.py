@@ -97,18 +97,15 @@ class ColorLayerONNX(BaseOnnx):
         Returns:
             PreprocessResult: (input_tensor, scale, original_shape, ratio_pad)
         """
-        input_tensor = self._image_preprocess_static(image, self.input_shape)
-        original_shape = (image.shape[0], image.shape[1])
-        scale = 1.0  # No scaling in this preprocessing
+        input_tensor, scale, original_shape = self._preprocess_static(image, self.input_shape)
         ratio_pad = None
-
         return input_tensor, scale, original_shape, ratio_pad
 
     @staticmethod
-    def _image_preprocess_static(
+    def _preprocess_static(
         img: NDArray[np.uint8],
         image_shape: Tuple[int, int]
-    ) -> NDArray[np.float32]:
+    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
         """
         Preprocess image for classification (static method).
 
@@ -123,11 +120,17 @@ class ColorLayerONNX(BaseOnnx):
             image_shape: Target size (height, width)
 
         Returns:
-            Preprocessed tensor [1, 3, H, W] float32
+            Tuple containing:
+                - input_tensor: Preprocessed tensor [1, 3, H, W] float32
+                - scale: Fixed scale value (1.0, no scaling)
+                - original_shape: Original image shape (H, W)
 
         Source:
             Original utils/ocr_image_processing.py::image_pretreatment()
         """
+        # Store original shape
+        original_shape = (img.shape[0], img.shape[1])
+
         img = np.asarray(img).astype(np.float32)
         # Resize to target size (note: cv2.resize expects (width, height))
         img = cv2.resize(img, (image_shape[1], image_shape[0]))
@@ -144,7 +147,7 @@ class ColorLayerONNX(BaseOnnx):
         onnx_infer_data = img[np.newaxis, :, :, :]
         onnx_infer_data = np.array(onnx_infer_data, dtype=np.float32)
 
-        return onnx_infer_data
+        return onnx_infer_data, 1.0, original_shape
 
     def _postprocess(
         self,
@@ -319,6 +322,46 @@ class OCRONNX(BaseOnnx):
         ratio_pad = None
 
         return input_tensor, scale, original_shape, ratio_pad
+
+    @staticmethod
+    def _preprocess_static(
+        image: NDArray[np.uint8],
+        input_shape: Tuple[int, int]
+    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        """
+        Preprocess plate image for OCR (static method, single-layer only).
+
+        This is the base static preprocessing method required by BaseOnnx.
+        For double-layer processing, use the instance method _preprocess() instead.
+
+        Args:
+            image: Input plate image, BGR format [H, W, 3]
+            input_shape: Target size (height, width)
+
+        Returns:
+            Tuple containing:
+                - input_tensor: Preprocessed tensor [1, 3, H, W] float32
+                - scale: Fixed scale value (1.0)
+                - original_shape: Original image shape (H, W)
+
+        Note:
+            This method only handles single-layer plates with basic preprocessing.
+            For full OCR preprocessing including double-layer support, use the
+            instance method which calls more specialized static methods.
+        """
+        # Store original shape
+        original_shape = (image.shape[0], image.shape[1])
+
+        # Step 1: Simple skew correction (single-layer only)
+        gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        skew_angle = OCRONNX._detect_skew_angle(gray_img)
+        corrected_img = OCRONNX._correct_skew(image, skew_angle)
+
+        # Step 2: Resize and normalize
+        full_shape = [3, input_shape[0], input_shape[1]]
+        input_tensor = OCRONNX._resize_norm_img_static(corrected_img, full_shape)
+
+        return input_tensor, 1.0, original_shape
 
     @staticmethod
     def _detect_skew_angle(image: NDArray[np.uint8]) -> float:
@@ -719,7 +762,8 @@ class OCRONNX(BaseOnnx):
 
             # Join text
             text = ''.join(char_list)
-
+            
+            # hack
             # Post-processing: Replace '苏' with '京'
             if text.startswith('苏'):
                 text = '京' + text[1:]
