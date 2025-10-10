@@ -5,7 +5,7 @@ This module tests individual static preprocessing and postprocessing methods
 to ensure correctness after migration from utils/ to class methods.
 
 Test Coverage:
-- ColorLayerONNX._image_preprocess_static()
+- ColorLayerONNX._preprocess_static()
 - OCRONNX._detect_skew_angle()
 - OCRONNX._correct_skew()
 - OCRONNX._find_optimal_split_line()
@@ -34,8 +34,8 @@ class TestColorLayerPreprocessing:
         # Create test image
         img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
 
-        # Preprocess
-        result = ColorLayerONNX._image_preprocess_static(img, image_shape=(48, 168))
+        # Preprocess (returns tuple: (tensor, ratio, original_shape))
+        result, ratio, original_shape = ColorLayerONNX._preprocess_static(img, image_shape=(48, 168))
 
         # Validate shape: (1, 3, 48, 168)
         assert result.shape == (1, 3, 48, 168), \
@@ -46,7 +46,7 @@ class TestColorLayerPreprocessing:
         from infer_onnx.onnx_ocr import ColorLayerONNX
 
         img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
-        result = ColorLayerONNX._image_preprocess_static(img, image_shape=(48, 168))
+        result, _, _ = ColorLayerONNX._preprocess_static(img, image_shape=(48, 168))
 
         assert result.dtype == np.float32, \
             f"Expected float32, got {result.dtype}"
@@ -58,7 +58,7 @@ class TestColorLayerPreprocessing:
         # Create known-value image
         img = np.ones((100, 100, 3), dtype=np.uint8) * 128  # Mid-gray
 
-        result = ColorLayerONNX._image_preprocess_static(img, image_shape=(48, 168))
+        result, _, _ = ColorLayerONNX._preprocess_static(img, image_shape=(48, 168))
 
         # After normalization: (128/255 - 0.5) / 0.5 ≈ 0.0039
         # Check that values are in reasonable range
@@ -73,7 +73,7 @@ class TestColorLayerPreprocessing:
         img = np.zeros((50, 50, 3), dtype=np.uint8)
         img[:, :, 2] = 255  # Red channel in BGR
 
-        result = ColorLayerONNX._image_preprocess_static(img, image_shape=(48, 168))
+        result, _, _ = ColorLayerONNX._preprocess_static(img, image_shape=(48, 168))
 
         # Check shape is (1, 3, H, W)
         assert result.shape[1] == 3, "Should have 3 channels"
@@ -490,7 +490,7 @@ class TestEdgeCases:
 
         try:
             # Should either convert or raise error
-            result = ColorLayerONNX._image_preprocess_static(
+            result = ColorLayerONNX._preprocess_static(
                 gray_img,
                 image_shape=(48, 168)
             )
