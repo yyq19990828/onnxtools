@@ -1,0 +1,336 @@
+openapi: 3.0.3
+info:
+  title: OCR Dataset Evaluator API
+  version: 1.0.0
+  description: |
+    OCR数据集评估器API合约定义
+    用于车牌OCR模型性能评估和优化
+
+components:
+  schemas:
+    OCREvaluationRequest:
+      type: object
+      required:
+        - label_file
+        - dataset_base_path
+      properties:
+        label_file:
+          type: string
+          description: 标签文件路径 (train.txt, val.txt等)
+          example: "/path/to/dataset/train.txt"
+        dataset_base_path:
+          type: string
+          description: 数据集根目录（用于解析相对路径）
+          example: "/path/to/dataset"
+        conf_threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.5
+          description: 置信度阈值，低于此值的预测将被过滤
+        max_images:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: 最大评估图像数量（用于快速测试）
+          example: 100
+        output_format:
+          type: string
+          enum: [table, json]
+          default: table
+          description: 输出格式 - table:终端表格对齐, json:JSON导出
+
+    OCREvaluationResult:
+      type: object
+      required:
+        - accuracy
+        - normalized_edit_distance
+        - edit_distance_similarity
+        - total_samples
+        - evaluated_samples
+        - filtered_samples
+        - skipped_samples
+        - evaluation_time
+        - avg_inference_time_ms
+      properties:
+        accuracy:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: 完全准确率（完全匹配的样本比例）
+          example: 0.925
+        normalized_edit_distance:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: 归一化编辑距离（0=完全匹配，1=完全不同）
+          example: 0.045
+        edit_distance_similarity:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: 编辑距离相似度（1 - 归一化编辑距离）
+          example: 0.955
+        total_samples:
+          type: integer
+          minimum: 0
+          description: 标签文件中的总样本数
+          example: 1000
+        evaluated_samples:
+          type: integer
+          minimum: 0
+          description: 实际评估的样本数
+          example: 980
+        filtered_samples:
+          type: integer
+          minimum: 0
+          description: 被置信度阈值过滤的样本数
+          example: 15
+        skipped_samples:
+          type: integer
+          minimum: 0
+          description: 跳过的样本数（错误、缺失文件等）
+          example: 5
+        evaluation_time:
+          type: number
+          format: float
+          minimum: 0.0
+          description: 总评估时间（秒）
+          example: 245.3
+        avg_inference_time_ms:
+          type: number
+          format: float
+          minimum: 0.0
+          description: 平均推理时间（毫秒/图像）
+          example: 12.5
+        per_sample_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleEvaluation'
+          nullable: true
+          description: 每个样本的详细评估结果（可选）
+
+    SampleEvaluation:
+      type: object
+      required:
+        - image_path
+        - ground_truth
+        - predicted_text
+        - confidence
+        - is_correct
+        - edit_distance
+        - normalized_edit_distance
+      properties:
+        image_path:
+          type: string
+          description: 图像文件路径
+          example: "images/train_word_1.png"
+        ground_truth:
+          type: string
+          description: 真实标签文本
+          example: "京A12345"
+        predicted_text:
+          type: string
+          description: OCR预测文本
+          example: "京A12345"
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: 预测置信度
+          example: 0.98
+        is_correct:
+          type: boolean
+          description: 是否完全匹配
+          example: true
+        edit_distance:
+          type: integer
+          minimum: 0
+          description: Levenshtein编辑距离（整数）
+          example: 0
+        normalized_edit_distance:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: 归一化编辑距离
+          example: 0.0
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 错误类型
+          example: "FileNotFoundError"
+        message:
+          type: string
+          description: 错误详细信息
+          example: "Label file not found: /path/to/train.txt"
+        details:
+          type: object
+          nullable: true
+          description: 额外的错误上下文
+
+paths:
+  /evaluate:
+    post:
+      summary: 评估OCR数据集
+      description: |
+        在指定的数据集上评估OCR模型性能
+
+        **注意**:
+        - 标签文件格式: 每行为 `<image_path>\t<ground_truth_text>`
+        - 图像路径可以是相对路径（相对于dataset_base_path）或绝对路径
+        - 置信度低于conf_threshold的预测将被过滤
+        - 返回格式取决于output_format参数
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OCREvaluationRequest'
+            examples:
+              basic:
+                summary: 基本评估
+                value:
+                  label_file: "/path/to/dataset/train.txt"
+                  dataset_base_path: "/path/to/dataset"
+              with_filters:
+                summary: 带过滤条件
+                value:
+                  label_file: "/path/to/dataset/val.txt"
+                  dataset_base_path: "/path/to/dataset"
+                  conf_threshold: 0.7
+                  max_images: 100
+              json_export:
+                summary: JSON导出模式
+                value:
+                  label_file: "/path/to/dataset/test.txt"
+                  dataset_base_path: "/path/to/dataset"
+                  output_format: "json"
+      responses:
+        '200':
+          description: 评估成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OCREvaluationResult'
+              examples:
+                success:
+                  summary: 成功评估示例
+                  value:
+                    accuracy: 0.925
+                    normalized_edit_distance: 0.045
+                    edit_distance_similarity: 0.955
+                    total_samples: 1000
+                    evaluated_samples: 980
+                    filtered_samples: 15
+                    skipped_samples: 5
+                    evaluation_time: 245.3
+                    avg_inference_time_ms: 12.5
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_threshold:
+                  value:
+                    error: "ValueError"
+                    message: "conf_threshold must be in range [0.0, 1.0], got 1.5"
+                invalid_format:
+                  value:
+                    error: "ValueError"
+                    message: "output_format must be 'table' or 'json', got 'csv'"
+        '404':
+          description: 文件或目录不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                label_not_found:
+                  value:
+                    error: "FileNotFoundError"
+                    message: "Label file not found: /path/to/train.txt"
+                dataset_not_found:
+                  value:
+                    error: "NotADirectoryError"
+                    message: "Dataset base path is not a directory: /path/to/dataset"
+        '500':
+          description: 内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ocr_inference_failed:
+                  value:
+                    error: "RuntimeError"
+                    message: "OCR model inference failed"
+                    details:
+                      image_path: "images/corrupted.png"
+
+# 验证规则
+validation_rules:
+  - rule: total_samples = evaluated_samples + filtered_samples + skipped_samples
+    description: 样本总数必须等于三类样本之和
+  - rule: 0.0 <= accuracy <= 1.0
+    description: 准确率必须在[0,1]范围内
+  - rule: 0.0 <= normalized_edit_distance <= 1.0
+    description: 归一化编辑距离必须在[0,1]范围内
+  - rule: 0.0 <= edit_distance_similarity <= 1.0
+    description: 编辑距离相似度必须在[0,1]范围内
+  - rule: edit_distance_similarity = 1.0 - normalized_edit_distance
+    description: 相似度和归一化距离的关系必须满足
+  - rule: evaluated_samples >= 0
+    description: 评估样本数不能为负
+  - rule: evaluation_time > 0.0
+    description: 评估时间必须大于0
+
+# 性能合约
+performance_contract:
+  - metric: evaluation_time
+    threshold: 300.0  # 5 minutes
+    description: 1000张图像评估必须在5分钟内完成（GPU）
+  - metric: memory_usage
+    threshold: 524288000  # 500 MB
+    description: 内存占用不超过500MB（不包括模型权重）
+  - metric: avg_inference_time_ms
+    threshold: 50.0
+    description: 单张图像推理时间不超过50ms（p95）
+
+# 行为合约
+behavioral_contract:
+  - behavior: confidence_filtering
+    description: 置信度低于conf_threshold的预测必须被计入filtered_samples
+  - behavior: error_tolerance
+    description: 单个样本错误不应终止整个评估流程
+  - behavior: progress_logging
+    description: 每50张图像必须记录一次进度日志
+  - behavior: path_resolution
+    description: 相对路径必须相对于dataset_base_path解析
+  - behavior: unicode_support
+    description: 必须正确处理Unicode字符（中文车牌）
+
+# 输出格式合约
+output_format_contract:
+  table_mode:
+    - line1: "指标名称（宽度18） + 3个数值列（各宽度12）"
+    - line2: "统计名称（宽度18） + 4个整数列（各宽度12）"
+    - alignment: 中文字符对齐，数值右对齐
+    - encoding: UTF-8
+  json_mode:
+    - format: 标准JSON，indent=2
+    - encoding: UTF-8，ensure_ascii=False
+    - optional_fields: per_sample_results仅在明确请求时包含
