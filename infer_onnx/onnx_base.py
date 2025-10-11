@@ -22,7 +22,6 @@ from polygraphy.backend.trt import (TrtRunner,
 from polygraphy.comparator import Comparator, CompareFunc
 
 from .infer_utils import get_model_info
-from utils.image_processing import preprocess_image
 
 
 class BaseOnnx(ABC):
@@ -45,9 +44,10 @@ class BaseOnnx(ABC):
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         
-        # 创建Polygraphy懒加载器
+        # 创建Polygraphy懒加载器（只用于初始化）
         self._session_loader = SessionFromOnnx(self.onnx_path, providers=self.providers)
         self._runner = None
+        self._onnx_session = None  # 缓存ONNX Runtime session
         self._is_initialized = False
         
         # 延迟初始化的属性
@@ -56,8 +56,18 @@ class BaseOnnx(ABC):
         self._class_names = None
 
         self.engine_dataloader = None  # 用于引擎比较的数据加载器
-        
+        self._expected_batch_size = None  # 缓存的预期batch size
+
         logging.info(f"创建懒加载ONNX推理器: {self.onnx_path}")
+
+    def __del__(self):
+        """析构函数：清理资源"""
+        if hasattr(self, '_runner') and self._runner is not None and hasattr(self, '_is_initialized') and self._is_initialized:
+            try:
+                self._runner.__exit__(None, None, None)
+                logging.debug(f"已清理ONNX推理器资源: {self.onnx_path}")
+            except Exception as e:
+                logging.warning(f"清理ONNX推理器资源时出错: {e}")
     
     @property
     def class_names(self) -> Dict[int, str]:
@@ -69,36 +79,53 @@ class BaseOnnx(ABC):
     def _ensure_initialized(self):
         """确保模型已初始化（懒加载）"""
         if not self._is_initialized:
-            # 创建Polygraphy运行器
-            self._runner = OnnxrtRunner(self._session_loader)
-            
-            # 激活运行器以获取元数据
-            with self._runner:
-                # 获取输入输出信息
-                input_metadata = self._runner.get_input_metadata()
-                self.input_name = list(input_metadata.keys())[0]
-                
-                # 通过临时会话获取输出名称
-                session = self._session_loader()
-                self.output_names = [output.name for output in session.get_outputs()]
-                
-                # 获取实际输入形状
-                input_metadata = self._runner.get_input_metadata()
-                input_shape_from_model = input_metadata[self.input_name].shape
-                if (len(input_shape_from_model) >= 4 and 
-                    isinstance(input_shape_from_model[2], int) and input_shape_from_model[2] > 0 and
-                    isinstance(input_shape_from_model[3], int) and input_shape_from_model[3] > 0):
-                    self.input_shape = (input_shape_from_model[2], input_shape_from_model[3])
-                    logging.info(f"从ONNX模型读取到固定输入形状: {self.input_shape}")
-                else:
-                    self.input_shape = self._requested_input_shape
-                    logging.info(f"使用用户指定的输入形状: {self.input_shape}")
-                
-                # 获取类别名称（如果存在配置文件）
-                self._class_names = self._load_class_names()
-                
-                logging.info(f"模型已初始化 - 输入: {self.input_name}, 输出: {self.output_names}")
-            
+            # 创建并缓存ONNX Runtime session（只创建一次）
+            self._onnx_session = self._session_loader()
+            logging.info("ONNX Runtime session created and cached")
+
+            # 创建Polygraphy运行器（使用缓存的session）
+            # 注意：这里不能直接传session，需要用一个返回固定session的callable
+            def cached_session_loader():
+                return self._onnx_session
+
+            self._runner = OnnxrtRunner(cached_session_loader)
+
+            # 激活运行器（保持激活状态以提高推理速度）
+            self._runner.__enter__()
+
+            # 获取输入输出信息
+            input_metadata = self._runner.get_input_metadata()
+            self.input_name = list(input_metadata.keys())[0]
+
+            # 使用缓存的session获取输出名称
+            self.output_names = [output.name for output in self._onnx_session.get_outputs()]
+
+            # 记录实际使用的 provider
+            actual_providers = self._onnx_session.get_providers()
+            logging.info(f"ONNX Runtime 使用的 Execution Provider: {actual_providers}")
+            logging.info(f"请求的 Providers: {self.providers}")
+            if actual_providers[0] != self.providers[0]:
+                logging.warning(f"实际使用的 provider ({actual_providers[0]}) 与首选 provider ({self.providers[0]}) 不同")
+
+            # 获取实际输入形状并缓存 batch size
+            input_metadata = self._runner.get_input_metadata()
+            input_shape_from_model = input_metadata[self.input_name].shape
+            self._expected_batch_size = input_shape_from_model[0] if isinstance(input_shape_from_model[0], int) and input_shape_from_model[0] > 0 else 1
+
+            if (len(input_shape_from_model) >= 4 and
+                isinstance(input_shape_from_model[2], int) and input_shape_from_model[2] > 0 and
+                isinstance(input_shape_from_model[3], int) and input_shape_from_model[3] > 0):
+                self.input_shape = (input_shape_from_model[2], input_shape_from_model[3])
+                logging.info(f"从ONNX模型读取到固定输入形状: {self.input_shape}")
+            else:
+                self.input_shape = self._requested_input_shape
+                logging.info(f"使用用户指定的输入形状: {self.input_shape}")
+
+            # 获取类别名称（如果存在配置文件）
+            self._class_names = self._load_class_names()
+
+            logging.info(f"模型已初始化 - 输入: {self.input_name}, 输出: {self.output_names}, 预期batch: {self._expected_batch_size}")
+
             self._is_initialized = True
     
     def _load_class_names(self) -> Dict[int, str]:
@@ -236,24 +263,21 @@ class BaseOnnx(ABC):
             This method can be overridden by subclasses to customize the
             inference execution behavior.
         """
-        # Execute inference using Polygraphy runner
-        with self._runner:
-            # Get input metadata to check batch dimension
-            input_metadata = self._runner.get_input_metadata()
-            input_shape = input_metadata[self.input_name].shape
-            expected_batch_size = input_shape[0] if isinstance(input_shape[0], int) and input_shape[0] > 0 else 1
+        # 使用缓存的 batch size，避免每次推理都查询元数据
+        expected_batch_size = self._expected_batch_size
 
-            if expected_batch_size > 1 and input_tensor.shape[0] == 1:
-                # If model expects batch>1 but input is batch=1, repeat input to meet requirement
-                input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
-                logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
+        if expected_batch_size > 1 and input_tensor.shape[0] == 1:
+            # If model expects batch>1 but input is batch=1, repeat input to meet requirement
+            input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
+            logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
 
-            # Construct feed_dict and execute inference
-            feed_dict = {self.input_name: input_tensor}
-            outputs_dict = self._runner.infer(feed_dict)
+        # Construct feed_dict and execute inference
+        # Runner 已经在初始化时激活，直接使用即可
+        feed_dict = {self.input_name: input_tensor}
+        outputs_dict = self._runner.infer(feed_dict)
 
-            # Convert dictionary to list format to maintain compatibility
-            outputs = [outputs_dict[name] for name in self.output_names]
+        # Convert dictionary to list format to maintain compatibility
+        outputs = [outputs_dict[name] for name in self.output_names]
 
         return outputs, expected_batch_size
 

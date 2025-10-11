@@ -2,6 +2,24 @@
 
 ## 变更日志 (Changelog)
 
+**2025-10-11** - 🐛 Bug修复 + ⚙️ 配置优化
+- 🐛 **JSON数组格式支持**: 修复OCR评估器无法处理JSON数组格式label文件的问题
+  - 问题: `load_label_file()` 将 `["img1.jpg", "img2.jpg"]` 作为单个文件路径处理
+  - 修复: 添加JSON数组检测和解析，自动展开多图片到独立样本
+  - 兼容性: 完全向后兼容原有单图片格式，支持混合格式
+  - 测试: 新增12个单元测试用例，覆盖所有边界情况（12/12通过）
+- ⚙️ **TensorRT可选依赖**: 将TensorRT从核心依赖改为可选依赖 `[trt]`
+  - 配置: 在 `pyproject.toml` 添加 `[project.optional-dependencies]` 和 `no-build-isolation-package`
+  - 安装: `uv pip install pip setuptools wheel && uv pip install -e ".[trt]"`
+  - 文档: 更新 `README.md` 和 `requirements.txt` 安装说明
+  - 脚本: 创建 `install.sh` 便捷安装脚本和 `verify_installation.py` 验证脚本
+- 📝 **文件变更**:
+  - 修改: `infer_onnx/eval_ocr.py` - `load_label_file()` 添加JSON支持
+  - 新增: `tests/unit/test_load_label_file.py` - 12个单元测试
+  - 更新: `pyproject.toml` - TensorRT可选依赖配置
+  - 更新: `requirements.txt` - 依赖说明和安装指南
+  - 更新: `README.md` - 安装指南重构
+
 **2025-10-10** - ✅ 完成OCR指标评估功能 (006-make-ocr-metrics) - Phase 4已交付,字符级分析完成
 - ✅ **核心功能**: OCRDatasetEvaluator类提供完整的OCR模型性能评估
 - ✅ **三大指标**: 完全准确率、归一化编辑距离、编辑距离相似度 (基于python-Levenshtein 0.27.1)
