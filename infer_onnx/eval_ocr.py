@@ -65,12 +65,17 @@ class SampleEvaluation:
 def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, str]]:
     """Load label file with tab-separated format
 
+    Supports two formats:
+    1. Single image: image_path<TAB>ground_truth
+    2. Multiple images (JSON): ["img1.jpg", "img2.jpg"]<TAB>ground_truth
+
     Args:
         label_file: Path to label file (e.g., train.txt, val.txt)
         dataset_base_path: Dataset root directory for resolving relative paths
 
     Returns:
         List of (image_path, ground_truth_text) tuples
+        For multiple images per label, expands to multiple entries
 
     Raises:
         FileNotFoundError: If label file does not exist
@@ -83,6 +88,8 @@ def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, 
         >>> dataset[0][1]  # ground truth text
         '京A12345'
     """
+    import json
+
     label_path = Path(label_file)
     if not label_path.exists():
         raise FileNotFoundError(f"Label file not found: {label_file}")
@@ -101,14 +108,33 @@ def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, 
                 logging.warning(f"Skipping line {line_num}: Invalid format (expected tab-separated)")
                 continue
 
-            image_path, gt_text = parts
-            full_path = base_path / image_path
+            image_path_str, gt_text = parts
 
-            if not full_path.exists():
-                logging.warning(f"Skipping image: File not found {full_path}")
-                continue
+            # Check if image_path is a JSON array (multiple images)
+            image_paths = []
+            if image_path_str.startswith('[') and image_path_str.endswith(']'):
+                try:
+                    # Parse JSON array of image paths
+                    image_paths = json.loads(image_path_str)
+                    if not isinstance(image_paths, list):
+                        logging.warning(f"Line {line_num}: Invalid JSON array format")
+                        continue
+                except json.JSONDecodeError as e:
+                    logging.warning(f"Line {line_num}: Failed to parse JSON array: {e}")
+                    continue
+            else:
+                # Single image path
+                image_paths = [image_path_str]
 
-            dataset.append((str(full_path), gt_text))
+            # Expand multiple images to individual entries
+            for img_path in image_paths:
+                full_path = base_path / img_path
+
+                if not full_path.exists():
+                    logging.warning(f"Skipping image: File not found {full_path}")
+                    continue
+
+                dataset.append((str(full_path), gt_text))
 
     logging.info(f"Loaded {len(dataset)} valid samples from {label_file}")
     return dataset

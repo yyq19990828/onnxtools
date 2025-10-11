@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from infer_onnx import OCRDatasetEvaluator, OCRONNX, SampleEvaluation
 from utils.logging_config import setup_logger
 import logging
+logging.getLogger("polygraphy").setLevel(logging.WARNING)
 
 
 def analyze_errors(results: Dict[str, Any], top_n: int = 10) -> None:
