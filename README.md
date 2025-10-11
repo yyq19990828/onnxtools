@@ -66,32 +66,74 @@ graph TD
 
 ## 安装指南
 
-1.  **克隆仓库:**
-    ```bash
-    git clone https://github.com/your-username/onnx_vehicle_plate_recognition.git
-    cd onnx_vehicle_plate_recognition
-    ```
+### 1. 克隆仓库
+```bash
+git clone https://github.com/your-username/onnx_vehicle_plate_recognition.git
+cd onnx_vehicle_plate_recognition
+```
 
-2.  **安装依赖:**
-    建议首先创建一个虚拟环境。
-    ```bash
-    # 使用pip安装
-    pip install -r requirements.txt
+### 2. 安装核心依赖
 
-    # 或使用uv包管理器（推荐，更快）
-    uv sync
-    ```
+**方法1: 使用uv包管理器（推荐，更快）**
+```bash
+# 创建虚拟环境并安装核心依赖
+uv sync
+
+# 或使用pip安装
+uv pip install -e .
+```
+
+**方法2: 使用pip**
+```bash
+# 创建虚拟环境（推荐）
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# 或 .venv\Scripts\activate  # Windows
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+### 3. 安装TensorRT支持（可选）
+
+TensorRT可以将推理速度提升2-5倍，但安装较为复杂。如果不需要极致性能，可以跳过此步骤。
+
+**使用uv安装TensorRT:**
+```bash
+# 步骤1: 安装构建依赖
+uv pip install pip setuptools wheel
+
+# 步骤2: 安装TensorRT可选依赖组
+uv pip install -e ".[trt]"
+```
+
+**使用pip安装TensorRT:**
+```bash
+# 先确保pip是最新版本
+pip install --upgrade pip setuptools wheel
+
+# 安装TensorRT包
+pip install tensorrt==8.6.1.post1 tensorrt-bindings==8.6.1 tensorrt-libs==8.6.1 \
+    --extra-index-url https://pypi.nvidia.com
+```
+
+> **注意**: TensorRT需要CUDA 11.x+支持，且安装过程依赖特殊的构建配置。如果遇到安装问题，请参考[TensorRT官方安装指南](https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html)。
 
 ### 环境要求
+
+**必需:**
 - Python >= 3.10
-- CUDA支持的GPU（推荐用于TensorRT加速）
-- TensorRT 8.6.x（可选，用于推理加速）
 - 主要依赖:
   - `onnxruntime-gpu==1.22.0`
   - `supervision==0.26.1`
-  - `opencv-python`
-  - `numpy`
-  - `pyyaml`
+  - `opencv-contrib-python>=4.12.0`
+  - `numpy>=2.2.6`
+  - `pyyaml>=6.0.2`
+
+**可选（TensorRT加速）:**
+- CUDA 11.8+
+- TensorRT 8.6.1
+- NVIDIA GPU（算力 >= 6.0推荐）
 
 ## 使用方法
 
