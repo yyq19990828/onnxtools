@@ -1,7 +1,9 @@
 # ============================================
 # 核心依赖 (必需)
 # ============================================
-onnxruntime-gpu[cuda,cudnn]==1.22.0
+# 注意: 不使用 [cuda,cudnn] extras，避免自动安装 nvidia-* python包
+# 系统应该已经安装了 CUDA 和 cuDNN 库（通过 apt/yum 或手动安装）
+onnxruntime-gpu==1.22.0
 opencv-contrib-python>=4.12.0.88
 numpy>=2.2.6
 pyyaml>=6.0.2
