@@ -2,6 +2,28 @@
 
 ## 变更日志 (Changelog)
 
+**2025-10-10** - ✅ 完成OCR指标评估功能 (006-make-ocr-metrics) - Phase 4已交付,字符级分析完成
+- ✅ **核心功能**: OCRDatasetEvaluator类提供完整的OCR模型性能评估
+- ✅ **三大指标**: 完全准确率、归一化编辑距离、编辑距离相似度 (基于python-Levenshtein 0.27.1)
+- ✅ **双输出模式**: 表格对齐终端输出(支持中文列宽20/15) + JSON导出格式
+- ✅ **置信度过滤**: 可配置阈值,自动统计过滤样本数
+- ✅ **进度日志**: 每50张图像记录进度,支持大规模数据集评估
+- ✅ **Tab分隔格式**: 支持标准OCR数据集(train.txt/val.txt)
+- ✅ **字符级分析** (Phase 4): SampleEvaluation数据类提供每样本详细指标,per_sample_results字段输出完整分析
+- 📊 **实施进度**: Phase 1-4完成(18个任务,67%),Phase 5-7待实施(9个任务,33%)
+- 📝 **新增文件**:
+  - `infer_onnx/eval_ocr.py` - OCR评估器模块(324行,含per_sample_results)
+  - `utils/ocr_metrics.py` - OCR指标计算函数(201行,含中文对齐修复)
+  - `tests/contract/test_ocr_evaluator_contract.py` - 合约测试(11个测试用例,含per_sample_results验证)
+  - `tests/integration/test_ocr_evaluation_integration.py` - 集成测试(8个测试用例)
+  - `tests/unit/test_ocr_metrics.py` - 单元测试(23个测试用例,覆盖23种边界情况)
+- 🔧 **模块导出**: OCRDatasetEvaluator、SampleEvaluation已添加到infer_onnx.__all__
+- ✅ **测试覆盖**:
+  - 合约测试: 11/11通过(基础流程、编辑距离、置信度过滤、JSON导出、表格格式、per_sample_results)
+  - 集成测试: 8/8通过(端到端评估、参数验证、性能测试、边界情况处理)
+  - 单元测试: 23/23通过(空字符串、长度差异、插入删除替换、中文字符、真实OCR场景等)
+- ⏭️ **下一步**: Phase 5-7增强功能(置信度过滤优化、性能报告、文档完善、CLI工具)
+
 **2025-10-09** - ✅ 完成BaseOnnx抽象方法强制实现与__call__优化 (005-baseonnx-postprocess-call)
 - ✅ **抽象方法强制实现**: `_postprocess()`和`_preprocess_static()`添加@abstractmethod装饰器,强制所有子类实现
 - ✅ **__call__方法重构**: 代码行数减少83.3% (60→10行),提取3个阶段方法(_prepare_inference, _execute_inference, _finalize_inference)
@@ -420,10 +442,10 @@ setup_logger(log_level='INFO')
   - 配置文件: 100+ 个
 
 测试覆盖:
-  - 集成测试: 4个测试套件
-  - 合约测试: 3个测试套件
-  - 单元测试: 待扩展
-  - 性能测试: 待扩展
+  - 集成测试: 5个测试套件 (新增OCR评估集成测试8个用例)
+  - 合约测试: 4个测试套件 (新增OCR评估合约测试11个用例)
+  - 单元测试: 1个测试套件 (OCR指标计算23个用例)
+  - 性能测试: 1个测试套件 (Annotator性能基准)
 
 文档体系:
   - 模块文档: 8个CLAUDE.md

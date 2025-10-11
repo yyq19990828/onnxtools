@@ -14,19 +14,22 @@ from .infer_models import (
 )
 from .onnx_ocr import ColorLayerONNX, OCRONNX
 from .eval_coco import DatasetEvaluator
+from .eval_ocr import OCRDatasetEvaluator, SampleEvaluation
 RUN = "runs"
 
 # This makes `from infer_onnx import *` behave nicely, exporting only these names.
 __all__ = [
     'BaseOnnx',
-    'YoloOnnx', 
-    'RTDETROnnx', 
-    'RFDETROnnx', 
+    'YoloOnnx',
+    'RTDETROnnx',
+    'RFDETROnnx',
     'DetONNX',  # 向后兼容
     'YoloRTDETROnnx',  # 向后兼容
-    'ColorLayerONNX', 
+    'ColorLayerONNX',
     'OCRONNX',
     'create_detector',
     'DatasetEvaluator',
+    'OCRDatasetEvaluator',
+    'SampleEvaluation',
     'RUN'
 ]

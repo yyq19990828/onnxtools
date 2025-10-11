@@ -1,1 +1,1 @@
-"""Unit tests module for ONNX inference components."""
+"""Unit tests package for OCR metrics and utilities"""

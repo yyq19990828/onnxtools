@@ -107,16 +107,30 @@ contract_validation = {
 - [x] `test_ocr_integration.py` - OCR识别流程测试
 - [x] `test_supervision_only.py` - Supervision库集成测试
 - [x] `test_basic_drawing.py` - 基础绘制功能测试
+- [x] **`test_ocr_evaluation_integration.py`** - OCR数据集评估集成测试 (8个测试)
+  - 端到端评估（table和JSON格式）
+  - 参数验证（max_images、置信度阈值扫描）
+  - 边界情况处理（缺失图像、损坏图像）
+  - 性能测试（<1秒处理5张图像）
 
 ### 合约测试覆盖
 - [x] `test_convert_detections_contract.py` - 检测数据转换合约
 - [x] `test_draw_detections_contract.py` - 可视化API合约
 - [x] `test_benchmark_contract.py` - 性能基准合约
+- [x] **`test_ocr_evaluator_contract.py`** - OCR评估器API合约测试 (11个测试)
+  - 基础评估流程合约（返回格式、数值范围）
+  - 编辑距离指标合约（完美匹配、部分匹配、per_sample_results）
+  - 置信度过滤合约（阈值行为、样本守恒）
+  - JSON导出格式合约（有效性、必需字段）
+  - 表格对齐合约（中文列名、数值格式）
 
 ### 单元测试覆盖
 - [ ] 推理引擎基类测试
 - [ ] 图像预处理函数测试
-- [ ] OCR后处理测试
+- [x] **OCR指标计算测试** (`test_ocr_metrics.py` - 23个测试用例)
+  - 编辑距离边界情况（空字符串、长度差异、插入删除替换）
+  - 中文字符处理测试
+  - 真实OCR场景（常见混淆、部分识别、双层车牌、噪声）
 - [ ] NMS算法测试
 - [ ] 数据转换工具测试
 

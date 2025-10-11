@@ -44,6 +44,33 @@ python tools/compare_onnx_engine.py \
     --iterations 100
 ```
 
+### OCR数据集评估
+```bash
+# OCR模型评估（表格输出）
+python tools/eval_ocr.py \
+    --label-file data/ocr_rec_dataset_examples/val.txt \
+    --dataset-base data/ocr_rec_dataset_examples \
+    --ocr-model models/ocr.onnx \
+    --config configs/plate.yaml \
+    --conf-threshold 0.5
+
+# 深度错误分析
+python tools/eval_ocr.py \
+    --label-file data/val.txt \
+    --dataset-base data/ \
+    --ocr-model models/ocr.onnx \
+    --config configs/plate.yaml \
+    --error-analysis error_report.json
+
+# JSON格式导出用于模型比较
+python tools/eval_ocr.py \
+    --label-file data/val.txt \
+    --dataset-base data/ \
+    --ocr-model models/ocr_v2.onnx \
+    --config configs/plate.yaml \
+    --output-format json > results_v2.json
+```
+
 ## 关键依赖和配置
 
 ### 核心依赖
@@ -143,6 +170,7 @@ A: 1) 增加测试迭代次数; 2) 确保GPU处于稳定状态; 3) 关闭其他G
 
 ### 核心工具脚本
 - `eval.py` - COCO数据集模型评估主程序
+- **`eval_ocr.py`** - OCR数据集评估命令行工具 (支持深度错误分析)
 - `build_engine.py` - TensorRT引擎构建工具
 - `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
 - `network_postprocess.py` - 网络后处理分析工具
