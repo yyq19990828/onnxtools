@@ -179,7 +179,8 @@ class OCRDatasetEvaluator:
         dataset_base_path: str,
         conf_threshold: float = 0.5,
         max_images: Optional[int] = None,
-        output_format: str = 'table'
+        output_format: str = 'table',
+        min_width: int = 40
     ) -> Dict[str, Any]:
         """Evaluate OCR model on dataset
 
@@ -189,6 +190,7 @@ class OCRDatasetEvaluator:
             conf_threshold: Confidence threshold for filtering (default: 0.5)
             max_images: Maximum number of images to evaluate (default: None, evaluate all)
             output_format: Output format, 'table' or 'json' (default: 'table')
+            min_width: Minimum image width for evaluation (default: 40)
 
         Returns:
             Dictionary containing evaluation results:
@@ -255,6 +257,13 @@ class OCRDatasetEvaluator:
             if image is None:
                 logging.warning(f"Cannot read image: {image_path}")
                 skipped_count += 1
+                continue
+
+            # Width filtering
+            img_height, img_width = image.shape[:2]
+            if img_width < min_width:
+                logging.debug(f"Filtered by width: {image_path} (width={img_width} < {min_width})")
+                filtered_count += 1
                 continue
 
             # OCR inference

@@ -295,9 +295,6 @@ def create_dataloader_from_detector(
     Returns:
         CustomEngineDataLoader: 数据加载器实例
     """
-    # 确保检测器已初始化
-    detector_instance._ensure_initialized()
-    
     # 提取特定于不同检测器类的预处理参数
     preprocess_kwargs = {}
     if hasattr(detector_instance, 'use_ultralytics_preprocess'):

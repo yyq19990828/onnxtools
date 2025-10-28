@@ -180,9 +180,6 @@ class ColorLayerONNX(BaseOnnx):
             >>> color, layer, conf = classifier(plate_img)
             >>> print(f"Color: {color}, Layer: {layer}, Confidence: {conf:.3f}")
         """
-        # Ensure model is initialized
-        self._ensure_initialized()
-
         # Preprocess
         input_tensor, scale, original_shape, ratio_pad = self._preprocess(image)
 
@@ -842,9 +839,6 @@ class OCRONNX(BaseOnnx):
             ...     text, conf, char_confs = result
             ...     print(f"Plate: {text}, Confidence: {conf:.3f}")
         """
-        # Ensure model is initialized
-        self._ensure_initialized()
-
         # Preprocess (handles double-layer processing internally)
         input_tensor, scale, original_shape, ratio_pad = self._preprocess(image, is_double_layer)
 

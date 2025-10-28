@@ -21,8 +21,6 @@ from polygraphy.backend.trt import (TrtRunner,
                                     SaveEngine)
 from polygraphy.comparator import Comparator, CompareFunc
 
-from .infer_utils import get_model_info
-
 
 class BaseOnnx(ABC):
     """ONNX模型推理基类 - 使用Polygraphy懒加载"""
@@ -44,124 +42,154 @@ class BaseOnnx(ABC):
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         
-        # 创建Polygraphy懒加载器（只用于初始化）
+        # 创建Polygraphy runner（使用上下文管理器自动管理生命周期）
         self._session_loader = SessionFromOnnx(self.onnx_path, providers=self.providers)
-        self._runner = None
-        self._onnx_session = None  # 缓存ONNX Runtime session
-        self._is_initialized = False
+        self._runner = OnnxrtRunner(self._session_loader)
         
-        # 延迟初始化的属性
-        self.input_name = None
-        self.output_names = None
-        self._class_names = None
+        # 使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
+        model_info = self._get_model_info()
 
-        self.engine_dataloader = None  # 用于引擎比较的数据加载器
-        self._expected_batch_size = None  # 缓存的预期batch size
+        # 从模型信息中提取属性
+        self.input_name = model_info.get('input_name')
+        self.output_names = model_info.get('output_names')
+        self.class_names = model_info.get('class_names', {})
 
-        logging.info(f"创建懒加载ONNX推理器: {self.onnx_path}")
+        # 从模型信息确定input_shape和expected_batch_size
+        model_input_shape = model_info.get('input_shape')
+        if model_input_shape and len(model_input_shape) >= 4:
+            # 提取batch size (第0维)
+            if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0:
+                self._expected_batch_size = model_input_shape[0]
+            else:
+                self._expected_batch_size = 1
 
-    def __del__(self):
-        """析构函数：清理资源"""
-        if hasattr(self, '_runner') and self._runner is not None and hasattr(self, '_is_initialized') and self._is_initialized:
-            try:
-                self._runner.__exit__(None, None, None)
-                logging.debug(f"已清理ONNX推理器资源: {self.onnx_path}")
-            except Exception as e:
-                logging.warning(f"清理ONNX推理器资源时出错: {e}")
-    
-    @property
-    def class_names(self) -> Dict[int, str]:
-        """懒加载的类别名称属性"""
-        if not self._is_initialized:
-            self._ensure_initialized()
-        return self._class_names or {}
-    
-    def _ensure_initialized(self):
-        """确保模型已初始化（懒加载）"""
-        if not self._is_initialized:
-            # 创建并缓存ONNX Runtime session（只创建一次）
-            self._onnx_session = self._session_loader()
-            logging.info("ONNX Runtime session created and cached")
-
-            # 创建Polygraphy运行器（使用缓存的session）
-            # 注意：这里不能直接传session，需要用一个返回固定session的callable
-            def cached_session_loader():
-                return self._onnx_session
-
-            self._runner = OnnxrtRunner(cached_session_loader)
-
-            # 激活运行器（保持激活状态以提高推理速度）
-            self._runner.__enter__()
-
-            # 获取输入输出信息
-            input_metadata = self._runner.get_input_metadata()
-            self.input_name = list(input_metadata.keys())[0]
-
-            # 使用缓存的session获取输出名称
-            self.output_names = [output.name for output in self._onnx_session.get_outputs()]
-
-            # 记录实际使用的 provider
-            actual_providers = self._onnx_session.get_providers()
-            logging.info(f"ONNX Runtime 使用的 Execution Provider: {actual_providers}")
-            logging.info(f"请求的 Providers: {self.providers}")
-            if actual_providers[0] != self.providers[0]:
-                logging.warning(f"实际使用的 provider ({actual_providers[0]}) 与首选 provider ({self.providers[0]}) 不同")
-
-            # 获取实际输入形状并缓存 batch size
-            input_metadata = self._runner.get_input_metadata()
-            input_shape_from_model = input_metadata[self.input_name].shape
-            self._expected_batch_size = input_shape_from_model[0] if isinstance(input_shape_from_model[0], int) and input_shape_from_model[0] > 0 else 1
-
-            if (len(input_shape_from_model) >= 4 and
-                isinstance(input_shape_from_model[2], int) and input_shape_from_model[2] > 0 and
-                isinstance(input_shape_from_model[3], int) and input_shape_from_model[3] > 0):
-                self.input_shape = (input_shape_from_model[2], input_shape_from_model[3])
-                logging.info(f"从ONNX模型读取到固定输入形状: {self.input_shape}")
+            # 提取height和width (第2、3维)
+            if (isinstance(model_input_shape[2], int) and model_input_shape[2] > 0 and
+                isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
+                self.input_shape = (model_input_shape[2], model_input_shape[3])
+                logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}, batch_size: {self._expected_batch_size}")
             else:
                 self.input_shape = self._requested_input_shape
-                logging.info(f"使用用户指定的输入形状: {self.input_shape}")
+                logging.info(f"模型输入形状为动态，使用用户指定形状: {self.input_shape}, batch_size: {self._expected_batch_size}")
+        else:
+            self.input_shape = self._requested_input_shape
+            self._expected_batch_size = 1
+            logging.info(f"使用默认配置: input_shape={self.input_shape}, batch_size={self._expected_batch_size}")
 
-            # 获取类别名称（如果存在配置文件）
-            self._class_names = self._load_class_names()
+        self.engine_dataloader = None  # 用于引擎比较的数据加载器
 
-            logging.info(f"模型已初始化 - 输入: {self.input_name}, 输出: {self.output_names}, 预期batch: {self._expected_batch_size}")
-
-            self._is_initialized = True
+        logging.info(f"创建ONNX推理器: {self.onnx_path}")
     
-    def _load_class_names(self) -> Dict[int, str]:
-        """使用get_model_info加载类别名称（包括ONNX metadata和配置文件）"""
+    def _get_model_info(self) -> Dict[str, any]:
+        """
+        使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
+
+        Returns:
+            Dict包含:
+            - input_name: str
+            - output_names: List[str]
+            - input_shape: List (可能包含动态维度)
+            - class_names: Dict[int, str]
+        """
+        import onnx
+        import json
+
+        result = {
+            'input_name': None,
+            'output_names': [],
+            'input_shape': None,
+            'class_names': {}
+        }
+
         try:
-            # 使用get_model_info获取模型信息，包括从metadata和配置文件的类别名称
-            model_info = get_model_info(self.onnx_path, self.input_shape)
-            if model_info and model_info.get('class_names'):
-                logging.info("从get_model_info获取到类别名称")
-                return model_info['class_names']
-        except Exception as e:
-            logging.warning(f"get_model_info获取类别名称失败: {e}")
-        
-        # 回退到原始方法：从配置文件加载
-        model_dir = Path(self.onnx_path).parent
-        config_files = ['det_config.yaml', 'classes.yaml']
-        
-        for config_file in config_files:
-            config_path = model_dir / config_file
-            if config_path.exists():
+            # 加载ONNX模型（只读取结构，不创建推理会话）
+            model = onnx.load(self.onnx_path)
+            graph = model.graph
+
+            # 获取输入信息
+            if graph.input:
+                input_info = graph.input[0]
+                result['input_name'] = input_info.name
+
+                # 解析输入shape
+                input_shape = []
+                for dim in input_info.type.tensor_type.shape.dim:
+                    if dim.dim_param:
+                        input_shape.append(dim.dim_param)  # 动态维度
+                    else:
+                        input_shape.append(dim.dim_value)  # 固定维度
+                result['input_shape'] = input_shape
+
+            # 获取输出信息
+            result['output_names'] = [output.name for output in graph.output]
+
+            # 读取类别名称从metadata
+            custom_metadata = {}
+            for prop in model.metadata_props:
+                custom_metadata[prop.key] = prop.value
+
+            # 尝试解析names字段
+            if 'names' in custom_metadata:
                 try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
-                        config = yaml.safe_load(f)
-                        if 'names' in config:
-                            names = config['names']
-                            if isinstance(names, list):
-                                logging.info(f"从配置文件 {config_file} 加载类别名称")
-                                return {i: name for i, name in enumerate(names)}
-                            elif isinstance(names, dict):
-                                logging.info(f"从配置文件 {config_file} 加载类别名称")
-                                return names
-                except Exception as e:
-                    logging.warning(f"无法加载配置文件 {config_path}: {e}")
-        
-        logging.warning("未找到类别名称，返回空字典")
-        return {}
+                    # 首先尝试JSON解析
+                    names_data = json.loads(custom_metadata['names'])
+                except (json.JSONDecodeError, TypeError):
+                    try:
+                        # 如果JSON解析失败，尝试Python字典的eval解析（Ultralytics格式）
+                        names_data = eval(custom_metadata['names'])
+                    except Exception:
+                        names_data = None
+
+                # 处理不同的names格式
+                if isinstance(names_data, dict):
+                    try:
+                        result['class_names'] = {int(k): str(v) for k, v in names_data.items()}
+                        logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+                    except (ValueError, TypeError):
+                        result['class_names'] = {i: str(v) for i, v in enumerate(names_data.values())}
+                        logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+                elif isinstance(names_data, list):
+                    result['class_names'] = {i: str(name) for i, name in enumerate(names_data)}
+                    logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+
+            logging.info(f"从ONNX模型读取信息: input={result['input_name']}, outputs={result['output_names']}")
+
+        except Exception as e:
+            logging.warning(f"从ONNX模型读取信息失败: {e}")
+
+        # 如果metadata中没有类别名称，回退到配置文件
+        if not result['class_names']:
+            result['class_names'] = self._load_class_names_from_config()
+
+        return result
+
+    def _load_class_names_from_config(self) -> Dict[int, str]:
+        """从configs/det_config.yaml加载类别名称（回退方案）"""
+        config_path = Path('configs/det_config.yaml')
+
+        if not config_path.exists():
+            logging.warning(f"配置文件不存在: {config_path}")
+            return {}
+
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                class_names = config.get('class_names')
+
+                if not class_names:
+                    logging.warning(f"配置文件中没有class_names字段")
+                    return {}
+
+                if isinstance(class_names, list):
+                    logging.info(f"从 {config_path} 加载 {len(class_names)} 个类别")
+                    return {i: name for i, name in enumerate(class_names)}
+                else:
+                    logging.warning(f"class_names字段格式错误: {type(class_names)}")
+                    return {}
+
+        except Exception as e:
+            logging.error(f"加载配置文件失败: {e}")
+            return {}
     
     
     @abstractmethod
@@ -229,10 +257,7 @@ class BaseOnnx(ABC):
             This method can be overridden by subclasses to customize the
             preparation phase behavior.
         """
-        # Ensure model is initialized
-        self._ensure_initialized()
-
-        # Preprocess image
+        # Preprocess image (runner会在_execute_inference中通过上下文管理器自动激活)
         preprocess_result = self._preprocess(image)
         if len(preprocess_result) == 3:
             # Compatible with old version return value (input_tensor, scale, original_shape)
@@ -248,8 +273,8 @@ class BaseOnnx(ABC):
         """
         Phase 2: Execute model inference with input tensor.
 
-        This method performs the actual model inference using Polygraphy runner.
-        It handles batch dimension adjustments and executes the ONNX model.
+        This method performs the actual model inference using Polygraphy runner
+        with proper context management to avoid state leakage.
 
         Args:
             input_tensor: Preprocessed input tensor, shape [1, 3, H, W]
@@ -271,13 +296,14 @@ class BaseOnnx(ABC):
             input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
             logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
 
-        # Construct feed_dict and execute inference
-        # Runner 已经在初始化时激活，直接使用即可
-        feed_dict = {self.input_name: input_tensor}
-        outputs_dict = self._runner.infer(feed_dict)
+        # 使用上下文管理器确保runner生命周期正确管理
+        # 避免状态泄露和"Must be activated"错误
+        with self._runner:
+            feed_dict = {self.input_name: input_tensor}
+            outputs_dict = self._runner.infer(feed_dict)
 
-        # Convert dictionary to list format to maintain compatibility
-        outputs = [outputs_dict[name] for name in self.output_names]
+            # Convert dictionary to list format to maintain compatibility
+            outputs = [outputs_dict[name] for name in self.output_names]
 
         return outputs, expected_batch_size
 
@@ -437,11 +463,9 @@ class BaseOnnx(ABC):
         Returns:
             bool: 比较结果，True表示精度匹配
         """
-        # 确保模型已初始化
-        self._ensure_initialized()
         
         # 创建ONNX Runner
-        onnx_runner = OnnxrtRunner(self._session_loader)
+        onnx_runner = self._runner
         
         # 创建TensorRT Runner
         if engine_path is not None:

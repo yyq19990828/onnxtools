@@ -41,9 +41,7 @@ class RFDETROnnx(BaseOnnx):
         # RF-DETR输出格式验证延迟到模型初始化时进行
     
     def _validate_rf_detr_format(self):
-        """验证RF-DETR输出格式（懒加载兼容）"""
-        self._ensure_initialized()
-        
+        """验证RF-DETR输出格式"""
         with self._runner:
             # 检查模型期望的batch维度
             input_metadata = self._runner.get_input_metadata()
