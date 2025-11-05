@@ -42,9 +42,10 @@ class BaseOnnx(ABC):
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         
-        # 创建Polygraphy runner（使用上下文管理器自动管理生命周期）
-        self._session_loader = SessionFromOnnx(self.onnx_path, providers=self.providers)
-        self._runner = OnnxrtRunner(self._session_loader)
+        # 创建ONNX Runtime会话（立即创建并缓存，后续复用）
+        import onnxruntime
+        self._onnx_session = onnxruntime.InferenceSession(self.onnx_path, providers=self.providers)
+        logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
         
         # 使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
         model_info = self._get_model_info()
@@ -52,7 +53,7 @@ class BaseOnnx(ABC):
         # 从模型信息中提取属性
         self.input_name = model_info.get('input_name')
         self.output_names = model_info.get('output_names')
-        self.class_names = model_info.get('class_names', {})
+        self._class_names = model_info.get('class_names', {})
 
         # 从模型信息确定input_shape和expected_batch_size
         model_input_shape = model_info.get('input_shape')
@@ -79,7 +80,17 @@ class BaseOnnx(ABC):
         self.engine_dataloader = None  # 用于引擎比较的数据加载器
 
         logging.info(f"创建ONNX推理器: {self.onnx_path}")
-    
+
+    def __del__(self):
+        """析构函数：清理ONNX Runtime会话"""
+        # ONNX Runtime会话会自动清理，无需手动处理
+        pass
+
+    @property
+    def class_names(self) -> Dict[int, str]:
+        """类别名称属性（只读）"""
+        return self._class_names or {}
+
     def _get_model_info(self) -> Dict[str, any]:
         """
         使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
@@ -296,14 +307,9 @@ class BaseOnnx(ABC):
             input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
             logging.debug(f"调整输入batch维度从1到{expected_batch_size}")
 
-        # 使用上下文管理器确保runner生命周期正确管理
-        # 避免状态泄露和"Must be activated"错误
-        with self._runner:
-            feed_dict = {self.input_name: input_tensor}
-            outputs_dict = self._runner.infer(feed_dict)
-
-            # Convert dictionary to list format to maintain compatibility
-            outputs = [outputs_dict[name] for name in self.output_names]
+        # 使用缓存的ONNX Runtime会话执行推理（直接调用，无需激活/停用）
+        feed_dict = {self.input_name: input_tensor}
+        outputs = self._onnx_session.run(self.output_names, feed_dict)
 
         return outputs, expected_batch_size
 

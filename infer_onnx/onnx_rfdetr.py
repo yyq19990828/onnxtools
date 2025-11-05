@@ -42,29 +42,23 @@ class RFDETROnnx(BaseOnnx):
     
     def _validate_rf_detr_format(self):
         """验证RF-DETR输出格式"""
-        with self._runner:
-            # 检查模型期望的batch维度
-            input_metadata = self._runner.get_input_metadata()
-            input_shape = input_metadata[self.input_name].shape
-            expected_batch_size = input_shape[0] if isinstance(input_shape[0], int) and input_shape[0] > 0 else 1
-            
-            dummy_input = np.random.randn(expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
-            
-            feed_dict = {self.input_name: dummy_input}
-            outputs_dict = self._runner.infer(feed_dict)
-            outputs = [outputs_dict[name] for name in self.output_names]
-            
-            if len(outputs) != 2:
-                raise ValueError(f"RF-DETR模型应该有2个输出（pred_boxes, pred_logits），但实际有{len(outputs)}个")
-            
-            pred_boxes_shape, pred_logits_shape = outputs[0].shape, outputs[1].shape
-            logging.info(f"RF-DETR输出格式 - pred_boxes: {pred_boxes_shape}, pred_logits: {pred_logits_shape}")
-            
-            if len(pred_boxes_shape) != 3 or pred_boxes_shape[2] != 4:
-                logging.warning(f"警告: pred_boxes形状 {pred_boxes_shape} 可能不符合标准RF-DETR格式")
-            
-            if len(pred_logits_shape) != 3 or pred_logits_shape[1] != pred_boxes_shape[1]:
-                logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
+        # 使用ONNX Runtime会话进行验证
+        dummy_input = np.random.randn(self._expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
+
+        feed_dict = {self.input_name: dummy_input}
+        outputs = self._onnx_session.run(self.output_names, feed_dict)
+
+        if len(outputs) != 2:
+            raise ValueError(f"RF-DETR模型应该有2个输出（pred_boxes, pred_logits），但实际有{len(outputs)}个")
+
+        pred_boxes_shape, pred_logits_shape = outputs[0].shape, outputs[1].shape
+        logging.info(f"RF-DETR输出格式 - pred_boxes: {pred_boxes_shape}, pred_logits: {pred_logits_shape}")
+
+        if len(pred_boxes_shape) != 3 or pred_boxes_shape[2] != 4:
+            logging.warning(f"警告: pred_boxes形状 {pred_boxes_shape} 可能不符合标准RF-DETR格式")
+
+        if len(pred_logits_shape) != 3 or pred_logits_shape[1] != pred_boxes_shape[1]:
+            logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
         """

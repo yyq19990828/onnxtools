@@ -183,11 +183,9 @@ class ColorLayerONNX(BaseOnnx):
         # Preprocess
         input_tensor, scale, original_shape, ratio_pad = self._preprocess(image)
 
-        # Inference using Polygraphy runner
-        with self._runner:
-            feed_dict = {self.input_name: input_tensor}
-            outputs_dict = self._runner.infer(feed_dict)
-            outputs = [outputs_dict[name] for name in self.output_names]
+        # Inference using ONNX Runtime session
+        feed_dict = {self.input_name: input_tensor}
+        outputs = self._onnx_session.run(self.output_names, feed_dict)
 
         # Expected: outputs = [color_logits, layer_logits]
         if len(outputs) != 2:
@@ -842,11 +840,9 @@ class OCRONNX(BaseOnnx):
         # Preprocess (handles double-layer processing internally)
         input_tensor, scale, original_shape, ratio_pad = self._preprocess(image, is_double_layer)
 
-        # Inference using Polygraphy runner
-        with self._runner:
-            feed_dict = {self.input_name: input_tensor}
-            outputs_dict = self._runner.infer(feed_dict)
-            outputs = [outputs_dict[name] for name in self.output_names]
+        # Inference using ONNX Runtime session
+        feed_dict = {self.input_name: input_tensor}
+        outputs = self._onnx_session.run(self.output_names, feed_dict)
 
         # Get prediction (first output)
         prediction = outputs[0]
