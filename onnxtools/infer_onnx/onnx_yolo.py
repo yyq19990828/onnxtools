@@ -78,7 +78,7 @@ class YoloORT(BaseORT):
         """
         if use_ultralytics_preprocess:
             # 使用Ultralytics兼容的预处理，返回ratio_pad信息
-            from utils.image_processing import UltralyticsLetterBox
+            from onnxtools.utils.image_processing import UltralyticsLetterBox
             letterbox = UltralyticsLetterBox(new_shape=input_shape)
             input_tensor, scale, original_shape, ratio_pad = letterbox(image)
             return input_tensor, scale, original_shape, (((scale, scale), ratio_pad))
