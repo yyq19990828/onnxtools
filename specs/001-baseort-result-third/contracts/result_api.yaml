@@ -1,0 +1,625 @@
+# Result API Contract
+# Version: 1.0.0
+# Date: 2025-11-05
+# Feature: BaseORT Result Wrapper Class
+
+openapi: 3.0.3
+info:
+  title: Result Class API Contract
+  description: |
+    API合约定义Result类的公共接口、输入输出契约和错误处理规范。
+    Result类是BaseORT推理结果的面向对象包装，提供属性访问、索引操作、
+    可视化和数据转换功能。
+  version: 1.0.0
+  contact:
+    name: ONNX Vehicle Plate Recognition Team
+
+components:
+  schemas:
+    # 核心数据类型
+    BoundingBoxes:
+      type: array
+      description: 边界框数组 [N, 4] xyxy格式
+      items:
+        type: array
+        minItems: 4
+        maxItems: 4
+        items:
+          type: number
+          format: float32
+      example: [[10.5, 20.3, 100.2, 150.8], [200.1, 300.5, 400.3, 500.7]]
+
+    Scores:
+      type: array
+      description: 置信度分数数组 [N]
+      items:
+        type: number
+        format: float32
+        minimum: 0.0
+        maximum: 1.0
+      example: [0.95, 0.87]
+
+    ClassIDs:
+      type: array
+      description: 类别ID数组 [N]
+      items:
+        type: integer
+        format: int32
+      example: [0, 1]
+
+    OriginalShape:
+      type: array
+      description: 原始图像形状 (height, width)
+      minItems: 2
+      maxItems: 2
+      items:
+        type: integer
+      example: [640, 640]
+
+    ClassNames:
+      type: object
+      description: 类别ID到类别名称的映射
+      additionalProperties:
+        type: string
+      example:
+        0: "vehicle"
+        1: "plate"
+
+    # Result对象初始化输入
+    ResultInput:
+      type: object
+      required:
+        - orig_shape
+      properties:
+        boxes:
+          $ref: '#/components/schemas/BoundingBoxes'
+        scores:
+          $ref: '#/components/schemas/Scores'
+        class_ids:
+          $ref: '#/components/schemas/ClassIDs'
+        orig_img:
+          type: string
+          format: binary
+          description: 原始图像numpy数组（BGR格式）
+          nullable: true
+        orig_shape:
+          $ref: '#/components/schemas/OriginalShape'
+        names:
+          $ref: '#/components/schemas/ClassNames'
+        path:
+          type: string
+          description: 图像文件路径
+          nullable: true
+          example: "/path/to/image.jpg"
+
+    # Result对象输出（只读属性）
+    ResultOutput:
+      type: object
+      properties:
+        boxes:
+          $ref: '#/components/schemas/BoundingBoxes'
+        scores:
+          $ref: '#/components/schemas/Scores'
+        class_ids:
+          $ref: '#/components/schemas/ClassIDs'
+        orig_shape:
+          $ref: '#/components/schemas/OriginalShape'
+        names:
+          $ref: '#/components/schemas/ClassNames'
+        path:
+          type: string
+          nullable: true
+
+    # 摘要统计信息
+    SummaryOutput:
+      type: object
+      properties:
+        total_detections:
+          type: integer
+          description: 检测目标总数
+          example: 5
+        class_counts:
+          type: object
+          description: 各类别检测数量
+          additionalProperties:
+            type: integer
+          example:
+            vehicle: 3
+            plate: 2
+        avg_confidence:
+          type: number
+          format: float32
+          description: 平均置信度
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.89
+        min_confidence:
+          type: number
+          format: float32
+          description: 最小置信度
+          example: 0.75
+        max_confidence:
+          type: number
+          format: float32
+          description: 最大置信度
+          example: 0.98
+
+    # 错误响应
+    ErrorResponse:
+      type: object
+      required:
+        - error_type
+        - message
+      properties:
+        error_type:
+          type: string
+          enum: [TypeError, ValueError, IndexError, AttributeError]
+          description: 错误类型
+        message:
+          type: string
+          description: 错误消息
+        details:
+          type: object
+          description: 额外错误详情
+          additionalProperties: true
+
+paths:
+  # Result对象构造
+  /Result:
+    post:
+      summary: 创建Result对象
+      description: |
+        构造新的Result对象，包装BaseORT推理结果。
+        所有数组参数必须维度一致（N必须相同）。
+      operationId: createResult
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResultInput'
+      responses:
+        '200':
+          description: Result对象创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOutput'
+        '400':
+          description: 输入验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_orig_shape:
+                  value:
+                    error_type: TypeError
+                    message: "orig_shape is required and cannot be None"
+                invalid_boxes_shape:
+                  value:
+                    error_type: ValueError
+                    message: "boxes must have shape (N, 4), got (10, 5)"
+                length_mismatch:
+                  value:
+                    error_type: ValueError
+                    message: "boxes, scores, and class_ids must have the same length"
+
+  # 属性访问（只读）
+  /Result/properties:
+    get:
+      summary: 访问Result对象属性
+      description: |
+        通过@property装饰器访问只读属性。
+        尝试赋值将抛出AttributeError。
+      operationId: getProperties
+      responses:
+        '200':
+          description: 属性访问成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOutput'
+        '403':
+          description: 尝试修改只读属性
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_type: AttributeError
+                message: "can't set attribute 'boxes'"
+
+  # 索引访问
+  /Result/index:
+    get:
+      summary: 索引访问Result对象
+      description: |
+        通过整数索引或切片访问检测结果子集。
+        返回新的Result对象（共享底层数组视图）。
+      operationId: indexResult
+      parameters:
+        - name: index
+          in: query
+          required: true
+          description: 索引（整数或切片，如"0"或"1:3"）
+          schema:
+            type: string
+            example: "0"
+      responses:
+        '200':
+          description: 索引访问成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOutput'
+        '404':
+          description: 索引越界
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_type: IndexError
+                message: "index 10 is out of bounds for axis 0 with size 5"
+
+  # 长度查询
+  /Result/length:
+    get:
+      summary: 获取检测目标数量
+      description: |
+        返回Result对象包含的检测目标数量（len()）。
+        空结果返回0。
+      operationId: getLength
+      responses:
+        '200':
+          description: 长度查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  length:
+                    type: integer
+                    description: 检测目标数量
+                    example: 5
+
+  # 过滤操作
+  /Result/filter:
+    post:
+      summary: 过滤检测结果
+      description: |
+        按置信度阈值和类别ID过滤检测结果。
+        返回新的Result对象（使用numpy视图）。
+      operationId: filterResult
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conf_threshold:
+                  type: number
+                  format: float32
+                  minimum: 0.0
+                  maximum: 1.0
+                  description: 置信度阈值（保留>=threshold的检测）
+                  example: 0.7
+                  nullable: true
+                classes:
+                  type: array
+                  items:
+                    type: integer
+                  description: 保留的类别ID列表
+                  example: [0, 1]
+                  nullable: true
+      responses:
+        '200':
+          description: 过滤成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOutput'
+        '400':
+          description: 参数验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_type: ValueError
+                message: "conf_threshold must be between 0.0 and 1.0, got 1.5"
+
+  # 可视化
+  /Result/plot:
+    post:
+      summary: 绘制检测结果
+      description: |
+        在原始图像上绘制边界框、标签和置信度。
+        返回标注后的numpy数组图像。
+        要求orig_img非None。
+      operationId: plotResult
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                annotator_preset:
+                  type: string
+                  description: 可视化预设名称
+                  enum: [standard, debug, lightweight, privacy, high_contrast]
+                  example: "debug"
+                  nullable: true
+      responses:
+        '200':
+          description: 绘制成功
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 前提条件未满足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error_type: ValueError
+                message: "orig_img is None, cannot plot without original image"
+
+  /Result/show:
+    post:
+      summary: 显示检测结果
+      description: |
+        在窗口中显示标注后的检测结果。
+        要求orig_img非None。
+      operationId: showResult
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                window_name:
+                  type: string
+                  description: 窗口名称
+                  default: "Result"
+                  example: "Detection Result"
+      responses:
+        '204':
+          description: 显示成功（无返回内容）
+        '400':
+          description: 前提条件未满足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /Result/save:
+    post:
+      summary: 保存标注后的图像
+      description: |
+        将标注后的检测结果保存到文件。
+        要求orig_img非None。
+      operationId: saveResult
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - output_path
+              properties:
+                output_path:
+                  type: string
+                  description: 输出文件路径
+                  example: "/path/to/output.jpg"
+      responses:
+        '204':
+          description: 保存成功
+        '400':
+          description: 参数错误或前提条件未满足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # 数据转换
+  /Result/to_supervision:
+    get:
+      summary: 转换为Supervision Detections格式
+      description: |
+        将Result对象转换为supervision.Detections对象。
+        用于与Supervision可视化工具链集成。
+      operationId: toSupervision
+      responses:
+        '200':
+          description: 转换成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Supervision Detections对象（JSON序列化）
+
+  /Result/summary:
+    get:
+      summary: 生成检测统计摘要
+      description: |
+        返回包含检测总数、各类别数量、平均置信度等统计信息的字典。
+      operationId: getSummary
+      responses:
+        '200':
+          description: 摘要生成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryOutput'
+
+  /Result/to_dict:
+    get:
+      summary: 转换为字典格式（已废弃）
+      description: |
+        将Result对象转换为字典格式，用于向后兼容旧代码。
+        **警告**: 该方法已废弃，将在第2个迭代移除。
+        请使用Result对象的属性访问代替。
+      deprecated: true
+      operationId: toDict
+      responses:
+        '200':
+          description: 转换成功（触发DeprecationWarning）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  boxes:
+                    $ref: '#/components/schemas/BoundingBoxes'
+                  scores:
+                    $ref: '#/components/schemas/Scores'
+                  class_ids:
+                    $ref: '#/components/schemas/ClassIDs'
+          headers:
+            X-Deprecation-Warning:
+              description: 废弃警告消息
+              schema:
+                type: string
+                example: "to_dict()方法已废弃，将在第2个迭代（v0.3.0）移除"
+
+  /Result/numpy:
+    get:
+      summary: 确保所有数据为numpy数组格式
+      description: |
+        返回Result对象本身（确保内部数据为numpy.ndarray）。
+        该方法主要用于类型转换和一致性保证。
+      operationId: toNumpy
+      responses:
+        '200':
+          description: 转换成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOutput'
+
+# 合约测试规范
+x-contract-tests:
+  initialization:
+    - name: "valid_init_with_all_params"
+      input:
+        boxes: [[10, 20, 30, 40]]
+        scores: [0.9]
+        class_ids: [0]
+        orig_shape: [640, 640]
+        names: {0: "vehicle"}
+      expected_output:
+        status: 200
+        properties_accessible: true
+
+    - name: "valid_init_with_none_boxes"
+      input:
+        boxes: null
+        scores: null
+        class_ids: null
+        orig_shape: [640, 640]
+      expected_output:
+        status: 200
+        boxes_shape: [0, 4]
+        scores_shape: [0]
+
+    - name: "invalid_init_missing_orig_shape"
+      input:
+        boxes: [[10, 20, 30, 40]]
+      expected_output:
+        status: 400
+        error_type: TypeError
+
+  indexing:
+    - name: "valid_index_access"
+      setup:
+        boxes: [[10, 20, 30, 40], [50, 60, 70, 80]]
+        scores: [0.9, 0.8]
+        class_ids: [0, 1]
+        orig_shape: [640, 640]
+      operation:
+        method: __getitem__
+        index: 0
+      expected_output:
+        status: 200
+        result_length: 1
+
+    - name: "invalid_index_out_of_bounds"
+      setup:
+        boxes: [[10, 20, 30, 40]]
+        scores: [0.9]
+        class_ids: [0]
+        orig_shape: [640, 640]
+      operation:
+        method: __getitem__
+        index: 10
+      expected_output:
+        status: 404
+        error_type: IndexError
+
+  filtering:
+    - name: "valid_filter_by_confidence"
+      setup:
+        boxes: [[10, 20, 30, 40], [50, 60, 70, 80]]
+        scores: [0.9, 0.6]
+        class_ids: [0, 1]
+        orig_shape: [640, 640]
+      operation:
+        method: filter
+        conf_threshold: 0.7
+      expected_output:
+        status: 200
+        result_length: 1
+
+  visualization:
+    - name: "valid_plot_with_orig_img"
+      setup:
+        boxes: [[10, 20, 30, 40]]
+        scores: [0.9]
+        class_ids: [0]
+        orig_img: "<valid_image_array>"
+        orig_shape: [640, 640]
+      operation:
+        method: plot
+      expected_output:
+        status: 200
+        output_type: numpy.ndarray
+
+    - name: "invalid_plot_without_orig_img"
+      setup:
+        boxes: [[10, 20, 30, 40]]
+        scores: [0.9]
+        class_ids: [0]
+        orig_img: null
+        orig_shape: [640, 640]
+      operation:
+        method: plot
+      expected_output:
+        status: 400
+        error_type: ValueError
+
+# 性能合约
+x-performance-contract:
+  initialization:
+    max_duration_ms: 5
+    conditions:
+      - image_size: [640, 640]
+      - num_detections: 20
+
+  plot:
+    max_duration_ms: 1000
+    conditions:
+      - image_size: [640, 640]
+      - num_detections: 20
+
+  memory_overhead:
+    max_ratio: 1.2
+    baseline: "dict format with same data"

@@ -8,6 +8,7 @@ from .onnx_yolo import YoloORT
 from .onnx_rtdetr import RtdetrORT
 from .onnx_rfdetr import RfdetrORT
 from .onnx_ocr import ColorLayerORT, OcrORT
+from .result import Result
 from .eval_coco import DatasetEvaluator
 from .eval_ocr import OCRDatasetEvaluator, SampleEvaluation
 
@@ -21,6 +22,7 @@ __all__ = [
     'RfdetrORT',
     'ColorLayerORT',
     'OcrORT',
+    'Result',
     'DatasetEvaluator',
     'OCRDatasetEvaluator',
     'SampleEvaluation',

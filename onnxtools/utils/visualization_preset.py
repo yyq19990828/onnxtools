@@ -22,7 +22,7 @@ class Presets:
     DEBUG = "debug"
     HIGH_CONTRAST = "high_contrast"
 
-
+#TODO load default presets from config.py
 @dataclass
 class VisualizationPreset:
     """Visualization preset configuration."""

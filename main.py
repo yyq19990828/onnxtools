@@ -1,3 +1,41 @@
+"""Main inference script for vehicle and license plate detection.
+
+This script uses the full pipeline.py workflow which now internally uses Result objects
+for detection results. For direct API usage, consider using the Result class API:
+
+Example with Result API (recommended for new code):
+    from onnxtools import create_detector
+    import cv2
+
+    # Create detector
+    detector = create_detector('rtdetr', 'models/rtdetr.onnx', conf_thres=0.5)
+
+    # Run inference - returns Result object
+    image = cv2.imread('test.jpg')
+    result = detector(image)
+
+    # Access detection data
+    print(f"Found {len(result)} objects")
+    for i, detection in enumerate(result):
+        box = detection.boxes[0]
+        score = detection.scores[0]
+        class_id = detection.class_ids[0]
+        print(f"Detection {i}: Box={box}, Score={score:.2f}")
+
+    # Visualize and save
+    result.save('output.jpg', annotator_preset='debug')
+
+    # Filter high-confidence detections
+    high_conf = result.filter(conf_threshold=0.8)
+
+    # Get statistics
+    stats = result.summary()
+    print(f"Total: {stats['total_detections']}")
+    print(f"Classes: {stats['class_counts']}")
+
+See onnxtools/infer_onnx/CLAUDE.md for complete Result API documentation.
+"""
+
 import cv2
 import numpy as np
 import json
@@ -5,7 +43,7 @@ import os
 import argparse
 import logging
 
-from onnxtools.pipeline import initialize_models, process_frame
+from onnxtools.pipeline import initialize_models
 from onnxtools import setup_logger
 
 def infer_source_type(input_path):
@@ -50,15 +88,36 @@ def main(args):
             logging.error(f"Could not read image {args.input}")
             return
 
-        # Process the single image
-        result_img, output_data = process_frame(
-            img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
-        )
+        # Run detection - returns Result object
+        result = detector(img)
+        logging.info(f"Detected {len(result)} objects")
+
+        # Print summary statistics
+        if len(result) > 0:
+            stats = result.summary()
+            logging.info(f"Class distribution: {stats['class_counts']}")
+            logging.info(f"Average confidence: {stats['avg_confidence']:.2f}")
+
+        # Generate output data (for JSON compatibility)
+        output_data = []
+        for i in range(len(result)):
+            box = result.boxes[i]
+            score = result.scores[i]
+            class_id = result.class_ids[i]
+            class_name = class_names[int(class_id)] if int(class_id) < len(class_names) else "unknown"
+
+            output_data.append({
+                "type": class_name,
+                "box2d": box.tolist(),
+                "confidence": float(score),
+                "width": float(box[2] - box[0]),
+                "height": float(box[3] - box[1])
+            })
 
         if args.output_mode == 'save':
-            # Save the annotated image
+            # Save annotated image using Result API
             output_image_path = os.path.join(args.output_dir, os.path.basename(args.input))
-            cv2.imwrite(output_image_path, result_img)
+            result.save(output_image_path, annotator_preset=args.annotator_preset or 'standard')
             logging.info(f"Result image saved to {output_image_path}")
 
             # Save JSON results
@@ -67,9 +126,7 @@ def main(args):
                 json.dump(output_data, f, ensure_ascii=False, indent=4)
             logging.info(f"JSON results saved to {output_json_path}")
         elif args.output_mode == 'show':
-            cv2.imshow("Result", result_img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            result.show(window_name="Detection Result", annotator_preset=args.annotator_preset or 'standard')
 
     elif source_type == 'folder':
         image_files = [f for f in os.listdir(args.input) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
@@ -83,24 +140,35 @@ def main(args):
                 logging.warning(f"Could not read image {image_path}, skipping.")
                 continue
 
-            result_img, output_data = process_frame(
-                img, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
-            )
+            # Run detection - returns Result object
+            result = detector(img)
+
+            # Generate output data
+            output_data = []
+            for j in range(len(result)):
+                box = result.boxes[j]
+                score = result.scores[j]
+                class_id = result.class_ids[j]
+                class_name = class_names[int(class_id)] if int(class_id) < len(class_names) else "unknown"
+                output_data.append({
+                    "type": class_name,
+                    "box2d": box.tolist(),
+                    "confidence": float(score),
+                    "width": float(box[2] - box[0]),
+                    "height": float(box[3] - box[1])
+                })
 
             if args.output_mode == 'save':
                 output_image_path = os.path.join(args.output_dir, image_file)
-                cv2.imwrite(output_image_path, result_img)
-                # Log saving action, but the progress is already logged above
-                # logging.info(f"Result image saved to {output_image_path}")
+                result.save(output_image_path, annotator_preset=args.annotator_preset or 'standard')
 
                 output_json_path = os.path.join(args.output_dir, os.path.splitext(image_file)[0] + ".json")
                 with open(output_json_path, 'w', encoding='utf-8') as f:
                     json.dump(output_data, f, ensure_ascii=False, indent=4)
-                # logging.info(f"JSON results saved to {output_json_path}")
             elif args.output_mode == 'show':
-                cv2.imshow(f"Result - {image_file}", result_img)
+                result.show(window_name=f"Result - {image_file}", annotator_preset=args.annotator_preset or 'standard')
                 if cv2.waitKey(0) & 0xFF == ord('q'):
-                    break # Allow quitting with 'q'
+                    break
         cv2.destroyAllWindows()
         logging.info(f"Finished processing all {total_images} images.")
 
@@ -179,11 +247,27 @@ def main(args):
                     frame_path = os.path.join(frames_dir, frame_filename)
                     cv2.imwrite(frame_path, frame)
 
-                # Process frame
-                result_frame, output_data = process_frame(
-                    frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline
-                )
-                last_result_frame = result_frame.copy()  # 保存检测结果
+                # Run detection - returns Result object
+                result = detector(frame)
+
+                # Generate annotated frame
+                result_frame = result.plot(annotator_preset=args.annotator_preset or 'standard')
+                last_result_frame = result_frame.copy()
+
+                # Generate output data
+                output_data = []
+                for j in range(len(result)):
+                    box = result.boxes[j]
+                    score = result.scores[j]
+                    class_id = result.class_ids[j]
+                    class_name = class_names[int(class_id)] if int(class_id) < len(class_names) else "unknown"
+                    output_data.append({
+                        "type": class_name,
+                        "box2d": box.tolist(),
+                        "confidence": float(score),
+                        "width": float(box[2] - box[0]),
+                        "height": float(box[3] - box[1])
+                    })
 
                 # Save JSON data if requested
                 if args.save_json:

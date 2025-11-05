@@ -11,6 +11,7 @@ import logging
 import yaml
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Optional
+from .result import Result
 from pathlib import Path
 
 # Polygraphy懒加载导入
@@ -174,6 +175,7 @@ class BaseORT(ABC):
 
         return result
 
+    #TODO move default classed_names from config.py
     def _load_class_names_from_config(self) -> Dict[int, str]:
         """从configs/det_config.yaml加载类别名称（回退方案）"""
         config_path = Path('configs/det_config.yaml')
@@ -360,7 +362,7 @@ class BaseORT(ABC):
 
         return detections
 
-    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Tuple[List[np.ndarray], tuple]:
+    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Result:
         """
         对图像进行推理（使用Polygraphy懒加载）
 
@@ -370,7 +372,7 @@ class BaseORT(ABC):
             **kwargs: 其他参数
 
         Returns:
-            Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
+            Result: 包装的检测结果对象
         """
         # Phase 1: Prepare inference
         input_tensor, scale, original_shape, ratio_pad = self._prepare_inference(image)
@@ -381,7 +383,27 @@ class BaseORT(ABC):
         # Phase 3: Finalize inference
         detections = self._finalize_inference(outputs, expected_batch_size, scale, ratio_pad, conf_thres, **kwargs)
 
-        return detections, original_shape
+        # Convert list format to Result object (T014)
+        # detections is List[np.ndarray] where each array has shape [N, 6] (x1,y1,x2,y2,conf,class_id)
+        if len(detections) > 0 and len(detections[0]) > 0:
+            det = detections[0]  # Take first batch
+            boxes = det[:, :4].astype(np.float32)
+            scores = det[:, 4].astype(np.float32)
+            class_ids = det[:, 5].astype(np.int32)
+        else:
+            # Empty detections
+            boxes = None
+            scores = None
+            class_ids = None
+
+        return Result(
+            boxes=boxes,
+            scores=scores,
+            class_ids=class_ids,
+            orig_img=image,
+            orig_shape=original_shape,
+            names=self.class_names
+        )
     
     def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
         """预处理图像（实例方法，向后兼容）"""

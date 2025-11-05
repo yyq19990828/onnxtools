@@ -10,7 +10,7 @@ Tests the load_label_file function's ability to handle:
 import pytest
 import tempfile
 from pathlib import Path
-from infer_onnx.eval_ocr import load_label_file
+from onnxtools.infer_onnx.eval_ocr import load_label_file
 
 
 class TestLoadLabelFile:

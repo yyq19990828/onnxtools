@@ -167,37 +167,44 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
     Returns:
         Tuple of (annotated_frame, output_data)
     """
-    # 1. Object Detection
-    detections, original_shape = detector(frame)
+    # 1. Object Detection - now returns Result object
+    result = detector(frame)
 
     output_data = []
     plate_results = []
 
     # 2. Process all detections to gather data for JSON and prepare for drawing
-    if detections and len(detections[0]) > 0:
+    if len(result) > 0:
         h_img, w_img, _ = frame.shape
         roi_top_pixel = int(h_img * args.roi_top_ratio)
 
-        # Scale coordinates to original image size
-        scaled_detections = detections[0].copy()
+        # Access detection data from Result object
+        boxes = result.boxes.copy()  # [N, 4] xyxy format
+        scores = result.scores
+        class_ids = result.class_ids
+
+        # Scale coordinates to original image size if needed
         if hasattr(detector, '__class__') and detector.__class__.__name__ in ['RtdetrORT', 'RfdetrORT']:
             # RT-DETR and RF-DETR models直接拉伸图像，坐标需要从输入尺寸缩放到原始尺寸
             # 坐标从输入尺寸变换回原始尺寸需要乘以缩放比例
             scale_x = w_img / detector.input_shape[1]  # original_width / input_width
             scale_y = h_img / detector.input_shape[0]  # original_height / input_height
-            scaled_detections[:, [0, 2]] *= scale_x  # x1, x2坐标缩放
-            scaled_detections[:, [1, 3]] *= scale_y  # y1, y2坐标缩放
+            boxes[:, [0, 2]] *= scale_x  # x1, x2坐标缩放
+            boxes[:, [1, 3]] *= scale_y  # y1, y2坐标缩放
 
         # Ensure detections are clipped within frame boundaries
-        clipped_detections = scaled_detections
-        clipped_detections[:, 0] = np.clip(clipped_detections[:, 0], 0, w_img)
-        clipped_detections[:, 1] = np.clip(clipped_detections[:, 1], 0, h_img)
-        clipped_detections[:, 2] = np.clip(clipped_detections[:, 2], 0, w_img)
-        clipped_detections[:, 3] = np.clip(clipped_detections[:, 3], 0, h_img)
-        
+        boxes[:, 0] = np.clip(boxes[:, 0], 0, w_img)
+        boxes[:, 1] = np.clip(boxes[:, 1], 0, h_img)
+        boxes[:, 2] = np.clip(boxes[:, 2], 0, w_img)
+        boxes[:, 3] = np.clip(boxes[:, 3], 0, h_img)
+
         plate_conf_thres = args.plate_conf_thres if args.plate_conf_thres is not None else args.conf_thres
 
-        for detection_idx, (*xyxy, conf, cls) in enumerate(clipped_detections):
+        # Iterate through detections
+        for detection_idx in range(len(result)):
+            xyxy = boxes[detection_idx]
+            conf = float(scores[detection_idx])
+            cls = int(class_ids[detection_idx])
             class_name = class_names[int(cls)] if int(cls) < len(class_names) else "unknown"
 
             # Apply specific confidence threshold for plates
@@ -255,28 +262,43 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
     # 3. Draw detections
     # Use annotator pipeline if available, otherwise fall back to legacy drawing
     if annotator_pipeline and ANNOTATOR_AVAILABLE:
-        # Use new annotator system
-        sv_detections = convert_to_supervision_detections(
-            [clipped_detections] if detections and len(detections[0]) > 0 else [],
-            class_names
-        )
+        # Use Result object's to_supervision() method
+        if len(result) > 0:
+            # Create a modified Result with clipped boxes for visualization
+            from onnxtools.infer_onnx import Result
+            vis_result = Result(
+                boxes=boxes,
+                scores=scores,
+                class_ids=class_ids,
+                orig_shape=result.orig_shape,
+                names=result.names,
+                path=result.path,
+                orig_img=frame
+            )
+            sv_detections = vis_result.to_supervision()
 
-        if sv_detections is not None:
             # Import label creation function
             from .utils.supervision_labels import create_ocr_labels
-            
+
             # Create labels with OCR information
-            labels = None
-            if detections and len(detections[0]) > 0:
-                labels = create_ocr_labels(clipped_detections, plate_results, class_names)
-            
+            labels = create_ocr_labels(boxes, plate_results, class_names)
+
             result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections, labels=labels)
             logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")
         else:
             result_frame = frame.copy()
     else:
         # Fall back to legacy drawing system
-        scaled_detections_for_drawing = [clipped_detections] if detections and len(detections[0]) > 0 else []
+        if len(result) > 0:
+            # Convert boxes to old format [N, 6] with conf and cls
+            detections_array = np.concatenate([
+                boxes,
+                scores.reshape(-1, 1),
+                class_ids.reshape(-1, 1)
+            ], axis=1)
+            scaled_detections_for_drawing = [detections_array]
+        else:
+            scaled_detections_for_drawing = []
         result_frame = draw_detections(frame.copy(), scaled_detections_for_drawing, class_names, colors, plate_results=plate_results)
 
     return result_frame, output_data

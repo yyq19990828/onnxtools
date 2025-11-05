@@ -12,6 +12,7 @@ from .infer_onnx import (
     RfdetrORT,
     ColorLayerORT,
     OcrORT,
+    Result,
     DatasetEvaluator,
     OCRDatasetEvaluator,
     SampleEvaluation,
@@ -70,6 +71,7 @@ __all__ = [
     'RfdetrORT',
     'ColorLayerORT',
     'OcrORT',
+    'Result',
     'create_detector',
     # 评估工具
     'DatasetEvaluator',

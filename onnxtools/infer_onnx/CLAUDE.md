@@ -24,12 +24,166 @@ detector = create_detector(
     iou_thres=0.5
 )
 
-# 执行推理
-results = detector(image)  # 使用 __call__ 接口
-boxes, scores, class_ids = results['boxes'], results['scores'], results['class_ids']
+# 执行推理 - 返回Result对象
+result = detector(image)  # 使用 __call__ 接口
+
+# 访问检测结果
+for i in range(len(result)):
+    box = result.boxes[i]
+    score = result.scores[i]
+    class_id = result.class_ids[i]
+    print(f"Detection {i}: {box} with confidence {score}")
+
+# 可视化和保存
+result.plot(annotator_preset='debug')  # 标注图像
+result.show()  # 显示
+result.save('output.jpg')  # 保存
+
+# 过滤和统计
+high_conf = result.filter(conf_threshold=0.8)
+stats = result.summary()
+print(f"Total detections: {stats['total_detections']}")
 ```
 
 ## 外部接口
+
+### 0. Result类 - 检测结果包装器 (NEW)
+
+Result类是BaseORT子类返回的统一检测结果对象,提供面向对象的数据访问、可视化、过滤和统计功能。
+
+#### 创建Result对象
+```python
+from onnxtools.infer_onnx import Result
+import numpy as np
+
+# 从检测结果创建
+result = Result(
+    boxes=np.array([[10, 20, 100, 150]], dtype=np.float32),  # [N, 4] xyxy格式
+    scores=np.array([0.95], dtype=np.float32),               # [N] 置信度
+    class_ids=np.array([0], dtype=np.int32),                 # [N] 类别ID
+    orig_shape=(640, 640),                                    # (H, W) 原图尺寸
+    names={0: 'vehicle', 1: 'plate'},                        # 类别名称映射
+    path='image.jpg',                                         # 图像路径(可选)
+    orig_img=image_array                                      # 原图(可选,用于可视化)
+)
+```
+
+#### 属性访问
+```python
+# 只读属性
+result.boxes       # np.ndarray [N, 4] - 边界框 (xyxy格式)
+result.scores      # np.ndarray [N] - 置信度分数
+result.class_ids   # np.ndarray [N] - 类别ID
+result.orig_shape  # Tuple[int, int] - 原图尺寸 (H, W)
+result.names       # Dict[int, str] - 类别名称映射
+result.path        # Optional[str] - 图像路径
+result.orig_img    # Optional[np.ndarray] - 原始图像
+
+# 基础操作
+len(result)        # 检测数量
+str(result)        # 字符串表示
+```
+
+#### 索引和切片 (User Story 1)
+```python
+# 整数索引 - 返回单个检测的Result对象
+first = result[0]
+last = result[-1]
+assert isinstance(first, Result)
+assert len(first) == 1
+
+# 切片 - 返回子集Result对象
+subset = result[1:3]
+assert isinstance(subset, Result)
+assert len(subset) == 2
+
+# 迭代
+for detection in result:
+    print(f"Box: {detection.boxes[0]}, Score: {detection.scores[0]}")
+```
+
+#### 可视化功能 (User Story 2)
+```python
+# plot() - 生成标注图像
+annotated = result.plot(annotator_preset='standard')  # 返回np.ndarray
+# 可用预设: 'standard', 'debug', 'lightweight', 'privacy'
+
+# show() - 显示标注图像
+result.show(window_name='Detections', annotator_preset='debug')
+
+# save() - 保存标注图像
+result.save('output.jpg', annotator_preset='standard')
+
+# to_supervision() - 转换为supervision.Detections
+sv_detections = result.to_supervision()  # 用于高级可视化
+```
+
+#### 过滤和统计 (User Story 3)
+```python
+# filter() - 按条件过滤检测
+high_conf = result.filter(conf_threshold=0.8)        # 置信度过滤
+vehicles = result.filter(classes=[0])                 # 类别过滤
+high_vehicles = result.filter(conf_threshold=0.7, classes=[0])  # 组合过滤
+
+# summary() - 获取统计信息
+stats = result.summary()
+# 返回: {
+#   'total_detections': 10,
+#   'class_counts': {'vehicle': 8, 'plate': 2},
+#   'avg_confidence': 0.85,
+#   'min_confidence': 0.65,
+#   'max_confidence': 0.98
+# }
+```
+
+#### 错误处理
+```python
+# 可视化方法需要orig_img
+result_no_img = Result(boxes=boxes, orig_shape=(640, 640))
+try:
+    result_no_img.plot()
+except ValueError as e:
+    print(f"Error: {e}")  # "Cannot plot detections: orig_img is None"
+
+# filter()参数验证
+try:
+    result.filter(conf_threshold=1.5)  # 超出范围
+except ValueError as e:
+    print(f"Error: {e}")  # "conf_threshold must be in [0.0, 1.0] range"
+```
+
+#### 完整工作流示例
+```python
+from onnxtools import create_detector
+import cv2
+
+# 1. 创建检测器
+detector = create_detector('rtdetr', 'models/rtdetr.onnx', conf_thres=0.5)
+
+# 2. 执行推理
+image = cv2.imread('test.jpg')
+result = detector(image)
+
+# 3. 查看统计
+print(result)  # "Result(10 detections, 2 classes)"
+stats = result.summary()
+print(f"Found {stats['total_detections']} objects")
+print(f"Class distribution: {stats['class_counts']}")
+
+# 4. 过滤高置信度检测
+high_conf = result.filter(conf_threshold=0.8)
+print(f"High confidence detections: {len(high_conf)}")
+
+# 5. 可视化和保存
+high_conf.save('high_confidence.jpg', annotator_preset='debug')
+
+# 6. 处理单个检测
+for i, detection in enumerate(high_conf):
+    box = detection.boxes[0]
+    score = detection.scores[0]
+    class_name = detection.names[detection.class_ids[0]]
+    print(f"{i}: {class_name} @ {score:.2f} - Box: {box}")
+```
 
 ### 1. 检测器工厂函数
 ```python
@@ -116,8 +270,42 @@ results = ocr_evaluator.evaluate_dataset(label_file, dataset_base)
 
 ## 数据模型
 
-### 检测结果结构
+### Result类 - 统一检测结果对象 (NEW)
 ```python
+from onnxtools.infer_onnx import Result
+
+# Result对象属性
+result = Result(
+    boxes=np.ndarray,           # [N, 4] xyxy格式边界框 (必需)
+    scores=np.ndarray,          # [N] 置信度分数 (可选,默认全1)
+    class_ids=np.ndarray,       # [N] 类别ID (可选,默认全0)
+    orig_shape=(H, W),          # 原图尺寸 (必需)
+    names={int: str},           # 类别名称映射 (可选)
+    path=str,                   # 图像路径 (可选)
+    orig_img=np.ndarray         # 原始图像 (可选,可视化需要)
+)
+
+# Result对象方法
+result.__len__()                            # 检测数量
+result.__getitem__(index)                   # 索引/切片访问
+result.__iter__()                           # 迭代支持
+result.plot(annotator_preset='standard')    # 生成标注图像
+result.show(window_name='Result')           # 显示图像
+result.save(output_path)                    # 保存图像
+result.filter(conf_threshold, classes)      # 过滤检测
+result.summary()                            # 统计信息
+result.to_supervision()                     # 转换为sv.Detections
+result.to_dict()                            # 转换为字典(已废弃)
+
+# 所有BaseORT子类现在返回Result对象而不是字典
+detector = create_detector('yolo', 'model.onnx')
+result = detector(image)  # 返回Result实例
+assert isinstance(result, Result)
+```
+
+### 检测结果字典结构 (旧格式,已废弃)
+```python
+# 注意: BaseORT现在返回Result对象,此格式仅用于向后兼容
 detection_result = {
     'boxes': np.ndarray,        # [N, 4] xyxy格式边界框
     'scores': np.ndarray,       # [N] 置信度分数

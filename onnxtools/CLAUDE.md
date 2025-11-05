@@ -40,7 +40,43 @@ metrics = evaluator.evaluate(detector)
 
 ## 外部接口
 
-### 1. 核心推理接口
+### 1. Result类 - 检测结果对象 (NEW)
+```python
+from onnxtools import Result  # 或 from onnxtools.infer_onnx import Result
+
+# 所有检测器现在返回Result对象
+detector = create_detector('rtdetr', 'models/rtdetr.onnx')
+result = detector(image)  # 返回Result实例
+
+# Result对象提供丰富的API
+print(result)  # "Result(10 detections, 2 classes)"
+print(f"Found {len(result)} objects")
+
+# 访问检测数据
+result.boxes       # np.ndarray [N, 4]
+result.scores      # np.ndarray [N]
+result.class_ids   # np.ndarray [N]
+
+# 索引和切片
+first = result[0]         # 单个检测
+subset = result[1:3]      # 多个检测
+for det in result:        # 迭代
+    print(det.boxes[0])
+
+# 可视化
+result.plot(annotator_preset='debug')
+result.show()
+result.save('output.jpg')
+
+# 过滤和统计
+high_conf = result.filter(conf_threshold=0.8)
+vehicles = result.filter(classes=[0])
+stats = result.summary()
+
+# 参考 onnxtools/infer_onnx/CLAUDE.md 查看完整API文档
+```
+
+### 2. 核心推理接口
 ```python
 from onnxtools import (
     BaseORT,           # 抽象基类
@@ -49,14 +85,17 @@ from onnxtools import (
     RfdetrORT,         # RF-DETR检测器
     ColorLayerORT,     # 颜色/层级分类器
     OcrORT,            # OCR识别器
+    Result,            # 检测结果类 (NEW)
     create_detector    # 工厂函数
 )
 
-# 使用工厂函数（推荐）
+# 使用工厂函数（推荐）- 返回Result对象
 detector = create_detector('yolo', 'models/yolo11n.onnx')
+result = detector(image)  # Result实例
 
 # 或直接实例化
 detector = RtdetrORT('models/rtdetr.onnx', conf_thres=0.5, iou_thres=0.7)
+result = detector(image)  # Result实例
 ```
 
 ### 2. 评估工具

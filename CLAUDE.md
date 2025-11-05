@@ -455,3 +455,10 @@ Key docs:
 ---
 
 Last updated: 2025-11-05
+
+## Active Technologies
+- Python 3.10+ （项目现有版本） + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1 （项目现有依赖） (001-baseort-result-third)
+- N/A （内存中的数据结构，不涉及持久化） (001-baseort-result-third)
+
+## Recent Changes
+- 001-baseort-result-third: Added Python 3.10+ （项目现有版本） + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1 （项目现有依赖）
