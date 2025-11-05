@@ -157,6 +157,58 @@ pip install tensorrt==8.6.1.post1 tensorrt-bindings==8.6.1 tensorrt-libs==8.6.1 
 -   `--save-frame`: (仅视频) 激活此选项可将每个处理过的原始帧保存为图像文件。
 -   `--save-json`: (仅视频) 激活此选项可为每个处理过的帧保存一个包含检测结果的 JSON 文件。
 
+### Python API 使用
+
+项目提供了简洁的Python API，可以直接在代码中使用：
+
+```python
+from onnxtools import create_detector, setup_logger
+import cv2
+
+# 设置日志
+setup_logger('INFO')
+
+# 创建检测器（使用工厂函数）
+detector = create_detector(
+    model_type='rtdetr',  # 'yolo', 'rtdetr', 'rfdetr'
+    onnx_path='models/rtdetr-2024080100.onnx',
+    conf_thres=0.5,
+    iou_thres=0.5
+)
+
+# 读取图像
+image = cv2.imread('data/sample.jpg')
+
+# 执行推理
+results = detector(image)
+boxes = results['boxes']      # [N, 4] xyxy格式
+scores = results['scores']    # [N] 置信度
+class_ids = results['class_ids']  # [N] 类别ID
+
+# OCR识别示例
+from onnxtools import OcrORT, ColorLayerORT
+import yaml
+
+# 加载配置
+with open('configs/plate.yaml') as f:
+    config = yaml.safe_load(f)
+
+# 创建OCR模型
+ocr_model = OcrORT(
+    onnx_path='models/ocr.onnx',
+    character=config['plate_dict']['character'],
+    conf_thres=0.7
+)
+
+# 对检测到的车牌进行OCR
+plate_image = image[int(boxes[0][1]):int(boxes[0][3]),
+                    int(boxes[0][0]):int(boxes[0][2])]
+result = ocr_model(plate_image)
+if result:
+    text, confidence, char_scores = result
+    print(f"识别结果: {text}, 置信度: {confidence:.2f}")
+```
+
 ### 快速开始示例
 
 #### 处理单张图片并保存结果
@@ -201,79 +253,169 @@ python main.py --model-path models/yolov8s_640.engine --input data/sample.jpg --
 
 本项目需要三种类型的 ONNX 模型，应放置在 `models/` 目录下：
 
-1.  **检测模型**: 用于检测车辆和车牌的通用目标检测模型（例如 YOLO）。
-2.  **颜色与层模型 (`color_layer.onnx`)**: 一个分类模型，接收裁剪后的车牌图像，并预测其颜色和单/双层属性。
-3.  **OCR 模型 (`ocr.onnx`)**: 在处理后的车牌图像上执行光学字符识别（OCR）以读取车牌号码的模型。
+1.  **检测模型**: 用于检测车辆和车牌的通用目标检测模型
+    - 支持架构: YOLO v8/v11、RT-DETR、RF-DETR
+    - 输入尺寸: 640x640（默认）
+    - 输出格式: 边界框 + 置信度 + 类别ID
 
-您还需要在 `models/` 目录中提供相应的配置文件（`det_config.yaml`, `plate_color_layer.yaml`, `ocr_dict.yaml`）。
+2.  **颜色与层模型 (`color_layer.onnx`)**: 分类模型，预测车牌颜色和单/双层属性
+    - 输入尺寸: 48x168
+    - 输出: 颜色类别（蓝/黄/白/黑/绿）+ 层级（单层/双层）
+
+3.  **OCR 模型 (`ocr.onnx`)**: 光学字符识别模型，读取车牌号码
+    - 输入尺寸: 48x320
+    - 输出: 字符序列 + 置信度
+
+### 配置文件
+
+项目需要以下配置文件（位于 `configs/` 目录）：
+
+- **`det_config.yaml`**: 检测模型配置
+  ```yaml
+  names:
+    0: vehicle
+    1: plate
+  visual_colors:
+    0: [255, 0, 0]  # 红色 - 车辆
+    1: [0, 255, 0]  # 绿色 - 车牌
+  ```
+
+- **`plate.yaml`**: OCR字典和颜色/层级映射
+  ```yaml
+  plate_dict:
+    character: "京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新0123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+  color_map:
+    0: blue
+    1: yellow
+    2: white
+    3: black
+    4: green
+
+  layer_map:
+    0: single
+    1: double
+  ```
+
+- **`visualization_presets.yaml`**: Supervision可视化预设（可选）
 
 ## 📁 项目结构
 
 ```
 onnx_vehicle_plate_recognition/
-├── infer_onnx/              # 核心推理引擎模块
-│   ├── base_onnx.py         # 基础推理引擎抽象类
-│   ├── yolo_onnx.py         # YOLO模型推理实现
-│   ├── rtdetr_onnx.py       # RT-DETR模型推理实现
-│   ├── rfdetr_onnx.py       # RF-DETR模型推理实现
-│   ├── ocr_onnx.py          # OCR与颜色分类模型
-│   └── infer_models.py      # 模型加载和管理
+├── onnxtools/                      # 核心Python包
+│   ├── __init__.py                 # 包入口，导出公共API
+│   ├── pipeline.py                 # 完整推理管道
+│   │
+│   ├── infer_onnx/                 # 推理引擎子模块
+│   │   ├── __init__.py
+│   │   ├── onnx_base.py            # BaseORT抽象基类
+│   │   ├── onnx_yolo.py            # YOLO模型推理 (YoloORT)
+│   │   ├── onnx_rtdetr.py          # RT-DETR推理 (RtdetrORT)
+│   │   ├── onnx_rfdetr.py          # RF-DETR推理 (RfdetrORT)
+│   │   ├── onnx_ocr.py             # OCR和颜色分类 (OcrORT, ColorLayerORT)
+│   │   ├── eval_coco.py            # COCO数据集评估器
+│   │   ├── eval_ocr.py             # OCR数据集评估器
+│   │   ├── infer_utils.py          # 推理辅助工具
+│   │   ├── engine_dataloader.py   # TensorRT数据加载器
+│   │   └── CLAUDE.md               # 推理引擎模块文档
+│   │
+│   └── utils/                      # 工具函数子模块
+│       ├── __init__.py
+│       ├── drawing.py              # Supervision可视化绘制
+│       ├── annotator_factory.py   # Annotator工厂（13种类型）
+│       ├── visualization_preset.py # 可视化预设（5种场景）
+│       ├── supervision_converter.py # Supervision数据转换
+│       ├── supervision_config.py   # Supervision配置
+│       ├── supervision_labels.py   # 标签创建
+│       ├── ocr_metrics.py          # OCR评估指标
+│       ├── detection_metrics.py    # 检测指标计算
+│       ├── nms.py                  # 非极大值抑制
+│       ├── logging_config.py       # 日志配置
+│       ├── font_utils.py           # 字体工具
+│       ├── output_transforms.py    # 输出转换
+│       └── CLAUDE.md               # 工具模块文档
 │
-├── utils/                   # 工具库
-│   ├── pipeline.py          # 处理管道协调器
-│   ├── drawing.py           # Supervision库可视化（v0.26.1+）
-│   ├── image_processing.py  # 图像预处理工具
-│   └── ocr_post_processing.py # OCR后处理逻辑
+├── configs/                        # 配置文件
+│   ├── det_config.yaml             # 检测类别和颜色配置
+│   ├── plate.yaml                  # OCR字典和映射配置
+│   └── visualization_presets.yaml # 可视化预设配置
 │
-├── tools/                   # 调试和评估工具
-│   ├── eval.py              # 模型评估和基准测试
-│   ├── build_engine.py      # TensorRT引擎构建工具
-│   └── compare_onnx_engine.py # ONNX与TensorRT对比工具
+├── models/                         # 模型文件
+│   ├── *.onnx                      # ONNX模型文件
+│   └── *.engine                    # TensorRT引擎（可选）
 │
-├── models/                  # 模型文件和配置
-│   ├── *.onnx               # ONNX模型文件
-│   ├── *.engine             # TensorRT引擎文件（可选）
-│   ├── det_config.yaml      # 检测模型配置
-│   ├── plate.yaml           # 车牌配置
-│   └── ocr_dict.yaml        # OCR字典
+├── tools/                          # 调试和优化工具
+│   ├── eval.py                     # 模型评估脚本
+│   ├── eval.sh                     # 评估快捷脚本
+│   ├── build_engine.py             # TensorRT引擎构建
+│   ├── build.sh                    # 构建快捷脚本
+│   ├── compare_onnx_engine.py      # ONNX vs TensorRT对比
+│   ├── draw_engine.py              # 引擎可视化
+│   ├── layer_statistics.py         # 层统计分析
+│   └── debug/                      # 调试脚本集
 │
-├── tests/                   # 测试体系
-│   ├── integration/         # 集成测试
-│   ├── contract/            # 合约测试
-│   ├── unit/                # 单元测试
-│   └── performance/         # 性能测试
+├── tests/                          # 测试体系
+│   ├── unit/                       # 单元测试（62+用例）
+│   ├── integration/                # 集成测试（30+套件）
+│   ├── contract/                   # 合约测试（15+套件）
+│   ├── performance/                # 性能测试（基准测试）
+│   └── conftest.py                 # pytest配置和fixtures
 │
-├── specs/                   # 功能规范（Spec-Kit）
-│   ├── 001-supervision-plate-box/  # Supervision库集成规范
-│   └── 002-delete-old-draw/       # 旧版代码重构规范
+├── specs/                          # 功能规范（OpenSpec）
+│   ├── 001-supervision-plate-box/  # Supervision可视化集成
+│   ├── 002-delete-old-draw/        # 旧版代码重构
+│   ├── 003-add-more-annotators/    # 13种Annotators扩展
+│   ├── 004-refactor-colorlayeronnx-ocronnx/ # OCR重构
+│   ├── 005-baseonnx-postprocess-call/       # BaseORT优化
+│   └── 006-make-ocr-metrics/       # OCR评估功能
 │
-├── mcp_vehicle_detection/   # MCP协议服务
-│   ├── server.py            # MCP服务器实现
-│   └── main.py              # 车辆检测服务入口
+├── openspec/                       # OpenSpec规范管理系统
+│   ├── AGENTS.md                   # OpenSpec工作流指南
+│   ├── project.md                  # 项目约定
+│   ├── changes/                    # 活跃的变更提案
+│   └── specs/                      # 能力规范定义
 │
-├── third_party/             # 第三方库集成
-│   ├── ultralytics/         # YOLO实现
-│   ├── Polygraphy/          # NVIDIA调试工具
-│   ├── rfdetr/              # RF-DETR实现
-│   └── trt-engine-explorer/ # TensorRT性能分析
+├── mcp_vehicle_detection/          # MCP协议服务（子项目）
+│   ├── server.py                   # MCP服务器
+│   ├── main.py                     # 检测服务入口
+│   ├── models/                     # 数据模型
+│   ├── services/                   # 服务层
+│   └── mcp_utils/                  # MCP工具
 │
-├── docs/                    # 项目文档
-│   ├── polygraphy使用指南/   # Polygraphy工具文档
-│   └── evaluation_guide.md  # 模型评估指南
+├── third_party/                    # 第三方库集成
+│   ├── ultralytics/                # YOLO参考实现
+│   ├── Polygraphy/                 # NVIDIA调试工具
+│   ├── rfdetr/                     # RF-DETR参考实现
+│   └── trt-engine-explorer/        # TensorRT性能分析
 │
-├── data/                    # 示例数据
-│   └── sample.jpg           # 示例图片
+├── docs/                           # 项目文档
+│   ├── polygraphy使用指南/          # Polygraphy深度指南
+│   ├── evaluation_guide.md         # 评估指南
+│   └── annotator_usage.md          # Annotator使用文档
 │
-├── runs/                    # 运行输出
-│   ├── result.jpg           # 标注结果图片
-│   └── result.json          # 结构化检测结果
+├── data/                           # 数据资源
+│   └── sample.jpg                  # 示例图片
 │
-├── main.py                  # 主程序入口
-├── run.sh                   # 快速运行脚本
-├── requirements.txt         # Python依赖
-├── pyproject.toml           # 项目配置（uv包管理器）
-└── README.md                # 项目文档
+├── runs/                           # 运行输出（自动生成）
+│   ├── result.jpg                  # 标注结果图片
+│   └── result.json                 # 检测结果JSON
+│
+├── main.py                         # 主程序入口
+├── run.sh                          # 快速运行脚本
+├── pyproject.toml                  # 项目配置（uv）
+├── requirements.txt                # Python依赖列表
+├── CLAUDE.md                       # AI助手开发指南
+└── README.md                       # 用户文档（本文件）
 ```
+
+**关键变更说明**：
+- 核心代码已迁移到 `onnxtools/` Python包，提供统一的API接口
+- 推理类重命名：`BaseOnnx` → `BaseORT`，`YoloOnnx` → `YoloORT` 等
+- 使用工厂函数 `create_detector()` 创建检测器实例
+- 集成13种Supervision Annotators和5种可视化预设
+- 完整的OpenSpec规范驱动开发流程
+- 详细的模块文档系统（`CLAUDE.md` 文件）
 
 详细的模块文档请参阅各目录下的 `CLAUDE.md` 文件。
 
@@ -381,10 +523,37 @@ curl -X POST http://localhost:8080/detect -F "image=@data/sample.jpg"
 
 ## 📝 变更日志
 
-### [2025-09-30] - 最新更新
-- **重构**: 移除旧版PIL绘图实现，完全迁移到Supervision库 (#4)
-- **完成**: Spec 001 - Supervision库可视化集成 (#3)
-- **增强**: 更新规范工具链（Spec-Kit）研究和工具
+### [2025-11-05] - 架构重构和文档更新
+- **架构**: 核心代码迁移到 `onnxtools/` Python包，统一API接口
+- **重命名**: 推理类 `BaseOnnx` → `BaseORT`，`YoloOnnx` → `YoloORT` 等
+- **工厂模式**: 新增 `create_detector()` 工厂函数，简化模型创建
+- **文档**: 完整的 `CLAUDE.md` 文档体系，包含模块级文档和面包屑导航
+- **OpenSpec**: 集成OpenSpec规范驱动开发流程
+
+### [2025-10-11] - Bug修复和配置优化
+- **修复**: OCR评估器支持JSON数组格式label文件
+- **配置**: TensorRT改为可选依赖 `[trt]`，简化安装流程
+- **安装**: 创建便捷安装脚本和验证脚本
+- **测试**: 新增12个单元测试用例，覆盖JSON数组边界情况
+
+### [2025-10-10] - OCR评估功能完成
+- **评估器**: OCRDatasetEvaluator提供完整OCR性能评估
+- **指标**: 完全准确率、归一化编辑距离、编辑距离相似度
+- **输出**: 表格对齐终端输出 + JSON导出格式
+- **测试**: 42个测试用例（11个合约 + 8个集成 + 23个单元）
+
+### [2025-10-09] - 核心重构完成
+- **BaseORT**: 抽象方法强制实现，`__call__`方法重构（代码减少83.3%）
+- **OCR重构**: ColorLayerORT和OcrORT继承BaseORT，统一推理接口
+- **性能**: Polygraphy懒加载，初始化时间减少93% (800ms → 50ms)
+- **测试**: 单元测试100%通过，集成测试96.6%通过率
+
+### [2025-09-30] - Supervision集成和Annotators扩展
+- **Annotators**: 13种annotator类型支持（边框、几何、填充、特效、隐私）
+- **预设**: 5种可视化预设场景（standard、debug、lightweight、privacy、high_contrast）
+- **工厂**: AnnotatorFactory和AnnotatorPipeline组合模式
+- **性能**: 完成性能基准测试（75μs ~ 1.5ms）
+- **重构**: 移除旧版PIL绘图实现，完全迁移到Supervision库
 
 ### [2025-09-16]
 - **新增**: Supervision库集成车辆牌照识别可视化系统
@@ -430,9 +599,18 @@ curl -X POST http://localhost:8080/detect -F "image=@data/sample.jpg"
 2. **类型提示**: 所有函数都包含类型提示
 3. **文档字符串**: 使用Google风格的文档字符串
 4. **测试**: 添加相应的单元测试和集成测试
-5. **规范**: 对于新功能，请在`specs/`目录创建功能规范
+5. **OpenSpec规范**: 对于新功能或架构变更，请先创建OpenSpec提案
+   - 查看现有规范: `openspec list --specs`
+   - 创建新提案: 在 `openspec/changes/<change-id>/` 下创建
+   - 验证提案: `openspec validate <change-id> --strict`
 
-详细的开发指南请参阅 `CLAUDE.md`。
+### 开发文档
+
+- **[CLAUDE.md](./CLAUDE.md)** - AI助手开发指南，包含架构设计、核心约定和常用命令
+- **[onnxtools/CLAUDE.md](./onnxtools/CLAUDE.md)** - 核心Python包文档
+- **[onnxtools/infer_onnx/CLAUDE.md](./onnxtools/infer_onnx/CLAUDE.md)** - 推理引擎模块文档
+- **[onnxtools/utils/CLAUDE.md](./onnxtools/utils/CLAUDE.md)** - 工具函数模块文档
+- **[openspec/AGENTS.md](./openspec/AGENTS.md)** - OpenSpec工作流指南
 
 ## 📄 许可证
 
