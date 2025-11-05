@@ -20,8 +20,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 
-from infer_onnx import create_detector, RUN
-from utils.drawing import draw_detections
+from onnxtools import create_detector, RUN
+from onnxtools.utils.drawing import draw_detections
 
 def parse_arguments():
     """解析命令行参数"""
@@ -153,7 +153,7 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
                             f"mean={np.mean(scores):.4f}, std={np.std(scores):.4f}")
         
         # 使用检测器的_postprocess方法，参考 __call__ 中的处理
-        if type(detector).__name__ == 'RFDETROnnx':
+        if type(detector).__name__ == 'RfdetrORT':
             detections = detector._postprocess(raw_outputs, conf_thres)
         else:
             # 对于RT-DETR等模型，使用第一个输出
@@ -161,7 +161,7 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
             detections = detector._postprocess(prediction, conf_thres, scale=scale, ratio_pad=ratio_pad)
         
         # RFDETR和RT-DETR特殊处理：需要将坐标从输入尺寸缩放回原始尺寸
-        if type(detector).__name__ in ['RFDETROnnx', 'RTDETROnnx'] and detections and len(detections) > 0:
+        if type(detector).__name__ in ['RfdetrORT', 'RtdetrORT'] and detections and len(detections) > 0:
             # RFDETR和RT-DETR的 _postprocess 返回的坐标是在输入图像尺寸上的
             # 需要缩放回原始图像尺寸
             input_h, input_w = detector.input_shape
@@ -480,7 +480,7 @@ def test_rtdetr_compare_engine(args):
             logging.error("数据加载器未成功创建")
             return False
         # 加载测试图像（使用修改后的engine_dataloader的路径处理逻辑）
-        from infer_onnx.engine_dataloader import CustomEngineDataLoader
+        from onnxtools.infer_onnx.engine_dataloader import CustomEngineDataLoader
         temp_loader = CustomEngineDataLoader(
             detector_class=type(detector),
             input_shape=detector.input_shape,

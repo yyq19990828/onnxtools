@@ -1,7 +1,7 @@
 [project]
-name = "onnx-vehicle-plate-recognition"
+name = "onnxtools"
 version = "0.1.0"
-description = "Add your description here"
+description = "ONNX model inference toolkit with multi-architecture support"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -39,7 +39,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["infer_onnx*", "utils*"]
+include = ["onnxtools*"]
 exclude = ["tests*", "docs*", "data*", "specs*", "models*", "configs*", "tools*"]
 
 [tool.uv]

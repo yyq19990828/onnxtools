@@ -35,7 +35,7 @@ from polygraphy.comparator import Comparator
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 
-from infer_onnx import RUN
+from onnxtools.infer_onnx import RUN
 
 trt = mod.lazy_import('tensorrt>=8.5')
 

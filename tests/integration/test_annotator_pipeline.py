@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 import supervision as sv
-from utils.annotator_factory import AnnotatorPipeline, AnnotatorType
+from onnxtools.utils.annotator_factory import AnnotatorPipeline, AnnotatorType
 
 
 @pytest.fixture

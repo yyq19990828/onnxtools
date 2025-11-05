@@ -32,8 +32,8 @@ from typing import Dict, Any, List
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from infer_onnx import OCRDatasetEvaluator, OCRONNX, SampleEvaluation
-from utils.logging_config import setup_logger
+from onnxtools import OCRDatasetEvaluator, OcrORT, SampleEvaluation
+from onnxtools import setup_logger
 import logging
 logging.getLogger("polygraphy").setLevel(logging.WARNING)
 
@@ -411,6 +411,13 @@ Examples:
     )
 
     parser.add_argument(
+        '--min-width',
+        type=int,
+        default=35,
+        help='Minimum image width for evaluation. Images with width < min_width will be filtered out (default: 35)'
+    )
+
+    parser.add_argument(
         '--output-format',
         choices=['table', 'json'],
         default='table',
@@ -467,7 +474,7 @@ def main():
 
         # Load OCR model
         logging.info(f"Loading OCR model: {args.ocr_model}")
-        ocr_model = OCRONNX(args.ocr_model, character=character)
+        ocr_model = OcrORT(args.ocr_model, character=character)
         logging.info("OCR model loaded successfully")
 
         # Create evaluator
@@ -478,6 +485,7 @@ def main():
         logging.info(f"Label file: {args.label_file}")
         logging.info(f"Dataset base: {args.dataset_base}")
         logging.info(f"Confidence threshold: {args.conf_threshold}")
+        logging.info(f"Min image width: {args.min_width}")
         logging.info(f"Max images: {args.max_images if args.max_images else 'all'}")
         logging.info(f"Output format: {args.output_format}")
 
@@ -486,7 +494,8 @@ def main():
             dataset_base_path=args.dataset_base,
             conf_threshold=args.conf_threshold,
             max_images=args.max_images,
-            output_format=args.output_format
+            output_format=args.output_format,
+            min_width=args.min_width
         )
 
         if not results:

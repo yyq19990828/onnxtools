@@ -6,7 +6,7 @@ This test MUST FAIL before implementation (TDD approach).
 
 import pytest
 import supervision as sv
-from utils.annotator_factory import AnnotatorFactory, AnnotatorType
+from onnxtools.utils.annotator_factory import AnnotatorFactory, AnnotatorType
 
 
 class TestAnnotatorFactoryContract:

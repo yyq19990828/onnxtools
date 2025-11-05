@@ -8,7 +8,7 @@ measuring rendering performance on 640x640 images with 20 detection objects.
 import pytest
 import numpy as np
 import supervision as sv
-from utils.annotator_factory import AnnotatorFactory, AnnotatorType
+from onnxtools.utils.annotator_factory import AnnotatorFactory, AnnotatorType
 
 
 # Test fixtures

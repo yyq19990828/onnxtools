@@ -5,8 +5,8 @@ import os
 import argparse
 import logging
 
-from utils.pipeline import initialize_models, process_frame
-from utils.logging_config import setup_logger
+from onnxtools.pipeline import initialize_models, process_frame
+from onnxtools import setup_logger
 
 def infer_source_type(input_path):
     """
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--output-mode', type=str, choices=['save', 'show'], default='save', help='Output mode: save to file or show in a window.')
     parser.add_argument('--frame-skip', type=int, default=0, help='Number of frames to skip between processing.')
     parser.add_argument('--output-dir', type=str, default='runs', help='Directory to save output results.')
-    parser.add_argument('--conf-thres', type=float, default=0.5, help='Confidence threshold for detection.')
+    parser.add_argument('--conf-thres', type=float, default=0.10, help='Confidence threshold for detection.')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='IoU threshold for NMS.')
     parser.add_argument('--roi-top-ratio', type=float, default=0.5, help='The top ratio of the ROI for detection, range [0.0, 1.0]. Default is 0.5, meaning the lower half of the image.')
     parser.add_argument('--plate-conf-thres', type=float, default=None, help='Specific confidence threshold for plates.')

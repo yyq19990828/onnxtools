@@ -7,7 +7,7 @@ This test MUST FAIL before implementation (TDD approach).
 import pytest
 import numpy as np
 import supervision as sv
-from utils.annotator_factory import AnnotatorPipeline, AnnotatorFactory, AnnotatorType
+from onnxtools.utils.annotator_factory import AnnotatorPipeline, AnnotatorFactory, AnnotatorType
 
 
 @pytest.fixture

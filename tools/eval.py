@@ -5,9 +5,9 @@ from pathlib import Path
 # 添加项目路径到系统路径
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
-from infer_onnx import create_detector
-from infer_onnx import DatasetEvaluator
-from utils.logging_config import setup_logger
+from onnxtools import create_detector
+from onnxtools import DatasetEvaluator
+from onnxtools import setup_logger
 
 
 def main():

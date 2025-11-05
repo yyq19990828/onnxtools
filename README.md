@@ -1,4 +1,4 @@
-# ONNX 车辆和车牌识别系统
+# onnxtools - ONNX 车辆和车牌识别工具集
 
 > 基于ONNX模型的高性能车辆和车牌识别系统，支持多种输入源（图像、视频、摄像头），提供高精度的车辆检测、车牌识别、字符OCR和颜色/层级分类功能。
 
@@ -68,8 +68,8 @@ graph TD
 
 ### 1. 克隆仓库
 ```bash
-git clone https://github.com/your-username/onnx_vehicle_plate_recognition.git
-cd onnx_vehicle_plate_recognition
+git clone https://github.com/your-username/onnxtools.git
+cd onnxtools
 ```
 
 ### 2. 安装核心依赖
