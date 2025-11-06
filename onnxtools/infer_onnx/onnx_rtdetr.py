@@ -16,6 +16,104 @@ from .onnx_base import BaseORT
 from .infer_utils import xywh2xyxy
 
 
+def apply_softmax(scores: np.ndarray) -> np.ndarray:
+    """
+    对分类输出应用softmax归一化
+
+    Args:
+        scores (np.ndarray): 原始分数 [batch, num_queries, num_classes]
+
+    Returns:
+        np.ndarray: softmax归一化后的概率
+    """
+    # 为了数值稳定性，减去每行的最大值
+    scores_shifted = scores - np.max(scores, axis=-1, keepdims=True)
+
+    # 计算exp
+    exp_scores = np.exp(scores_shifted)
+
+    # 计算softmax
+    softmax_scores = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
+
+    return softmax_scores
+
+
+def smart_normalize_scores(scores: np.ndarray) -> np.ndarray:
+    """
+    智能检测并处理分类输出的归一化状态
+
+    RT-DETR模型的分类输出可能是：
+    1. 未归一化的logits (需要softmax归一化)
+    2. 已归一化的概率值 (0-1之间，各类别概率和为1)
+    3. 已sigmoid处理的概率值 (多标签情况)
+
+    Args:
+        scores (np.ndarray): 分类输出 [batch, num_queries, num_classes]
+
+    Returns:
+        np.ndarray: 归一化后的分数
+    """
+    # 检查输入是否有效
+    if scores.size == 0:
+        return scores
+
+    # 获取一些统计信息来判断归一化状态
+    scores_min = np.min(scores)
+    scores_max = np.max(scores)
+    scores_mean = np.mean(scores)
+
+    # 检查每个query的分数和（用于判断是否已经softmax归一化）
+    scores_sum_per_query = np.sum(scores, axis=-1)  # [batch, num_queries]
+    sum_mean = np.mean(scores_sum_per_query)
+    sum_std = np.std(scores_sum_per_query)
+
+    logging.debug(f"分类输出统计: min={scores_min:.4f}, max={scores_max:.4f}, "
+                 f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}")
+
+    # 判断归一化状态的启发式规则
+    is_softmax_normalized = (
+        0.95 <= sum_mean <= 1.05 and  # 和接近1
+        sum_std < 0.1 and             # 标准差很小
+        scores_min >= -0.1 and        # 最小值接近0或稍微负数
+        scores_max <= 1.1              # 最大值接近1或稍微超过
+    )
+
+    is_sigmoid_normalized = (
+        scores_min >= -0.1 and        # 最小值接近0
+        scores_max <= 1.1 and         # 最大值接近1
+        not is_softmax_normalized     # 不是softmax归一化
+    )
+
+    is_raw_logits = (
+        scores_min < -1.0 or          # 有较大负值
+        scores_max > 5.0 or           # 有较大正值
+        (scores_max - scores_min) > 10.0  # 值域范围很大
+    )
+
+    if is_softmax_normalized:
+        logging.debug("检测到已softmax归一化的分类输出，直接使用")
+        return scores
+    elif is_sigmoid_normalized:
+        logging.debug("检测到已sigmoid处理的分类输出，直接使用")
+        return scores
+    elif is_raw_logits:
+        logging.debug("检测到未归一化的logits，应用softmax归一化")
+        return apply_softmax(scores)
+    else:
+        # 边界情况：尝试softmax，如果结果合理就使用，否则直接返回原值
+        logging.debug("分类输出状态不明确，尝试softmax归一化")
+        softmax_scores = apply_softmax(scores)
+
+        # 检查softmax后的结果是否合理
+        softmax_max = np.max(softmax_scores)
+        if softmax_max > 0.01:  # softmax后至少有一些有意义的概率值
+            logging.debug("应用softmax归一化")
+            return softmax_scores
+        else:
+            logging.warning("softmax归一化后概率值过小，使用原始分数")
+            return scores
+
+
 class RtdetrORT(BaseORT):
     """
     RT-DETR模型ORT推理类 (原YoloRTDETROnnx，已废弃)
@@ -42,20 +140,8 @@ class RtdetrORT(BaseORT):
         
         # RT-DETR输出格式验证延迟到模型初始化时进行
     
-    def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
-        """
-        RT-DETR预处理（实例方法，向后兼容）
-        
-        Args:
-            image (np.ndarray): 输入图像，BGR格式
-            
-        Returns:
-            Tuple: (预处理后的tensor, scale, 原始形状)
-        """
-        return self._preprocess_static(image, self.input_shape)
-    
     @staticmethod
-    def _preprocess_static(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
+    def preprocess(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
         """
         RT-DETR预处理静态方法（复刻ultralytics风格，直接resize不保持长宽比）
         
@@ -95,103 +181,8 @@ class RtdetrORT(BaseORT):
         
         return tensor, scale, original_shape
     
-    def _smart_normalize_scores(self, scores: np.ndarray) -> np.ndarray:
-        """
-        智能检测并处理分类输出的归一化状态
-        
-        RT-DETR模型的分类输出可能是：
-        1. 未归一化的logits (需要softmax归一化)
-        2. 已归一化的概率值 (0-1之间，各类别概率和为1)
-        3. 已sigmoid处理的概率值 (多标签情况)
-        
-        Args:
-            scores (np.ndarray): 分类输出 [batch, num_queries, num_classes]
-            
-        Returns:
-            np.ndarray: 归一化后的分数
-        """
-        # 检查输入是否有效
-        if scores.size == 0:
-            return scores
-        
-        # 获取一些统计信息来判断归一化状态
-        scores_min = np.min(scores)
-        scores_max = np.max(scores)
-        scores_mean = np.mean(scores)
-        
-        # 检查每个query的分数和（用于判断是否已经softmax归一化）
-        scores_sum_per_query = np.sum(scores, axis=-1)  # [batch, num_queries]
-        sum_mean = np.mean(scores_sum_per_query)
-        sum_std = np.std(scores_sum_per_query)
-        
-        logging.debug(f"分类输出统计: min={scores_min:.4f}, max={scores_max:.4f}, "
-                     f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}")
-        
-        # 判断归一化状态的启发式规则
-        is_softmax_normalized = (
-            0.95 <= sum_mean <= 1.05 and  # 和接近1
-            sum_std < 0.1 and             # 标准差很小
-            scores_min >= -0.1 and        # 最小值接近0或稍微负数
-            scores_max <= 1.1              # 最大值接近1或稍微超过
-        )
-        
-        is_sigmoid_normalized = (
-            scores_min >= -0.1 and        # 最小值接近0
-            scores_max <= 1.1 and         # 最大值接近1
-            not is_softmax_normalized     # 不是softmax归一化
-        )
-        
-        is_raw_logits = (
-            scores_min < -1.0 or          # 有较大负值
-            scores_max > 5.0 or           # 有较大正值
-            (scores_max - scores_min) > 10.0  # 值域范围很大
-        )
-        
-        if is_softmax_normalized:
-            logging.debug("检测到已softmax归一化的分类输出，直接使用")
-            return scores
-        elif is_sigmoid_normalized:
-            logging.debug("检测到已sigmoid处理的分类输出，直接使用")
-            return scores
-        elif is_raw_logits:
-            logging.debug("检测到未归一化的logits，应用softmax归一化")
-            return self._apply_softmax(scores)
-        else:
-            # 边界情况：尝试softmax，如果结果合理就使用，否则直接返回原值
-            logging.debug("分类输出状态不明确，尝试softmax归一化")
-            softmax_scores = self._apply_softmax(scores)
-            
-            # 检查softmax后的结果是否合理
-            softmax_max = np.max(softmax_scores)
-            if softmax_max > 0.01:  # softmax后至少有一些有意义的概率值
-                logging.debug("应用softmax归一化")
-                return softmax_scores
-            else:
-                logging.warning("softmax归一化后概率值过小，使用原始分数")
-                return scores
-    
-    def _apply_softmax(self, scores: np.ndarray) -> np.ndarray:
-        """
-        对分类输出应用softmax归一化
-        
-        Args:
-            scores (np.ndarray): 原始分数 [batch, num_queries, num_classes]
-            
-        Returns:
-            np.ndarray: softmax归一化后的概率
-        """
-        # 为了数值稳定性，减去每行的最大值
-        scores_shifted = scores - np.max(scores, axis=-1, keepdims=True)
-        
-        # 计算exp
-        exp_scores = np.exp(scores_shifted)
-        
-        # 计算softmax
-        softmax_scores = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)
-        
-        return softmax_scores
-    
-    def _postprocess(self, preds: np.ndarray, conf_thres: float, **kwargs) -> List[np.ndarray]:
+    @staticmethod
+    def postprocess(preds: np.ndarray, input_shape: Tuple[int, int], conf_thres: float, **kwargs) -> List[np.ndarray]:
         """
         RT-DETR后处理（优化版本，支持自适应分类输出归一化处理）
         
@@ -215,9 +206,9 @@ class RtdetrORT(BaseORT):
         # 分割bbox和scores（复刻 ultralytics/models/rtdetr/val.py#L177）
         bboxes = preds[0][:, :, :4]    # [batch, 300, 4] - bbox坐标
         scores = preds[0][:, :, 4:]    # [batch, 300, 15] - 类别分数
-        
+
         # 智能检测和处理分类输出的归一化状态
-        scores = self._smart_normalize_scores(scores)
+        scores = smart_normalize_scores(scores)
         
         # 缩放bbox到原图尺寸（复刻 ultralytics/models/rtdetr/val.py#L178）
         # RT-DETR输出的bbox是归一化坐标[0,1]，需要转换为像素坐标
@@ -232,7 +223,7 @@ class RtdetrORT(BaseORT):
             bboxes[:, :, [1, 3]] *= orig_h  # cy, h 按高度缩放
         else:
             # 回退到输入尺寸
-            imgsz = self.input_shape[0]  # ultralytics假设输入是正方形
+            imgsz = input_shape[0]  # ultralytics假设输入是正方形
             bboxes = bboxes * imgsz
         
         # 初始化输出

@@ -15,6 +15,8 @@ import logging
 import warnings
 from typing import Tuple, List, Dict, Any, Optional
 
+from onnxtools.utils.drawing import draw_detections
+
 # Import annotator functionality
 try:
     from .utils.annotator_factory import AnnotatorType, AnnotatorPipeline
@@ -244,7 +246,7 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         roi_top_pixel = int(h_img * args.roi_top_ratio)
 
         # Access detection data from Result object
-        boxes = result.boxes.copy()  # [N, 4] xyxy format
+        boxes = result.boxes  # [N, 4] xyxy format
         scores = result.scores
         class_ids = result.class_ids
 
@@ -254,11 +256,9 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         # 详见: onnxtools/infer_onnx/onnx_rtdetr.py:222-232
         #       onnxtools/infer_onnx/onnx_base.py:354-358
 
-        # Ensure detections are clipped within frame boundaries
-        boxes[:, 0] = np.clip(boxes[:, 0], 0, w_img)
-        boxes[:, 1] = np.clip(boxes[:, 1], 0, h_img)
-        boxes[:, 2] = np.clip(boxes[:, 2], 0, w_img)
-        boxes[:, 3] = np.clip(boxes[:, 3], 0, h_img)
+        # NOTE: 边界框裁剪已在Result类的__init__中自动完成
+        # 详见: onnxtools/infer_onnx/result.py:129-137
+        # Result对象创建时会自动将boxes裁剪到[0, width]和[0, height]范围内
 
         plate_conf_thres = args.plate_conf_thres if args.plate_conf_thres is not None else args.conf_thres
 

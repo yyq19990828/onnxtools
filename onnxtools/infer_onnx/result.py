@@ -76,6 +76,7 @@ class Result:
 
         Args:
             boxes: Bounding boxes in xyxy format [N, 4]. Can be None for empty results.
+                  Boxes will be automatically clipped to image boundaries [0, width] and [0, height].
             scores: Confidence scores [N]. Can be None for empty results.
             class_ids: Class ID integers [N]. Can be None for empty results.
             orig_img: Original input image (BGR format). Can be None if visualization not needed.
@@ -87,6 +88,10 @@ class Result:
             TypeError: If orig_shape is None.
             ValueError: If orig_shape is not a tuple of length 2.
             ValueError: If boxes, scores, or class_ids have inconsistent shapes.
+
+        Note:
+            Bounding boxes are automatically clipped to ensure they are within valid image boundaries.
+            This prevents out-of-bounds errors during visualization or further processing.
         """
         # V1: orig_shape validation - must not be None
         if orig_shape is None:
@@ -125,6 +130,16 @@ class Result:
             for name, length in lengths[1:]:
                 if length != first_len:
                     raise ValueError("boxes, scores, and class_ids must have the same length")
+
+        # V7: Clip boxes to image boundaries (NEW)
+        # Ensure all bounding boxes are within the valid image range [0, width] and [0, height]
+        if boxes is not None and len(boxes) > 0:
+            h, w = orig_shape
+            boxes = boxes.copy()  # Avoid modifying the input array
+            boxes[:, 0] = np.clip(boxes[:, 0], 0, w)  # x1
+            boxes[:, 1] = np.clip(boxes[:, 1], 0, h)  # y1
+            boxes[:, 2] = np.clip(boxes[:, 2], 0, w)  # x2
+            boxes[:, 3] = np.clip(boxes[:, 3], 0, h)  # y2
 
         # Store private attributes
         self._boxes = boxes

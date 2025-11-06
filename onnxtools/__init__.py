@@ -13,10 +13,14 @@ from .infer_onnx import (
     ColorLayerORT,
     OcrORT,
     Result,
+    RUN,
+)
+
+# 从 eval 子模块导入评估工具
+from .eval import (
     DatasetEvaluator,
     OCRDatasetEvaluator,
     SampleEvaluation,
-    RUN,
 )
 
 # 从 utils 子模块导入工具函数

@@ -15,7 +15,7 @@ class TestBasicDrawingIntegration:
 
     def test_end_to_end_basic_drawing(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: End-to-end basic detection drawing without OCR."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
 
@@ -27,30 +27,23 @@ class TestBasicDrawingIntegration:
         # Check that image was modified (not identical to input)
         assert not np.array_equal(result, sample_image), "Image should be modified with drawn boxes"
 
-    def test_supervision_vs_pil_output_comparison(self, sample_image, sample_detections, sample_class_names, sample_colors):
-        """Integration: Compare supervision and PIL outputs for visual consistency."""
-        # This test will fail initially until supervision integration is complete
+    def test_supervision_drawing_output(self, sample_image, sample_detections, sample_class_names, sample_colors):
+        """Integration: Test supervision-based drawing output."""
         try:
-            from utils.drawing import draw_detections, draw_detections_supervision
+            from onnxtools.utils.drawing import draw_detections
 
-            # Original PIL-based output
-            pil_result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors, use_supervision=False)
+            # Supervision-based output (now the only implementation)
+            result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
 
-            # New supervision-based output
-            supervision_result = draw_detections_supervision(sample_image, sample_detections, sample_class_names, sample_colors)
+            # Should be valid image
+            assert isinstance(result, np.ndarray)
+            assert result.shape == sample_image.shape
 
-            # Both should be valid images
-            assert isinstance(pil_result, np.ndarray)
-            assert isinstance(supervision_result, np.ndarray)
-            assert pil_result.shape == supervision_result.shape
-
-            # Visual consistency check (should have similar characteristics)
-            # Both should be different from original
-            assert not np.array_equal(pil_result, sample_image)
-            assert not np.array_equal(supervision_result, sample_image)
+            # Should be different from original (has annotations)
+            assert not np.array_equal(result, sample_image)
 
         except ImportError:
-            pytest.fail("draw_detections_supervision must be implemented for integration")
+            pytest.fail("draw_detections must be implemented for integration")
 
     def test_multiple_detection_types(self, sample_image, sample_class_names, sample_colors):
         """Integration: Handle multiple detection types correctly."""
@@ -64,7 +57,7 @@ class TestBasicDrawingIntegration:
             ]
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, diverse_detections, sample_class_names, sample_colors)
 
@@ -83,7 +76,7 @@ class TestBasicDrawingIntegration:
             ]
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, edge_detections, sample_class_names, sample_colors)
 
@@ -100,7 +93,7 @@ class TestBasicDrawingIntegration:
             ]
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, overlapping_detections, sample_class_names, sample_colors)
 
@@ -117,7 +110,7 @@ class TestBasicDrawingIntegration:
             ]
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, varied_confidence_detections, sample_class_names, sample_colors)
 
@@ -129,7 +122,7 @@ class TestBasicDrawingIntegration:
         # Test with different color configurations
         custom_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]  # RGB colors
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, sample_detections, sample_class_names, custom_colors)
 
@@ -147,7 +140,7 @@ class TestBasicDrawingIntegration:
             detection_list.append([x1, y1, x2, y2, 0.8 + (i % 20) * 0.01, i % 2])
         many_detections.append(detection_list)
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, many_detections, sample_class_names, sample_colors)
 
@@ -158,7 +151,7 @@ class TestBasicDrawingIntegration:
         """Integration: Empty detection list should return unmodified image."""
         empty_detections = [[]]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, empty_detections, sample_class_names, sample_colors)
 
@@ -178,7 +171,7 @@ class TestBasicDrawingIntegration:
 
         sample_detections = [[[100.0, 100.0, 200.0, 150.0, 0.9, 0]]]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         for size in test_sizes:
             test_image = np.zeros(size, dtype=np.uint8)
@@ -193,15 +186,15 @@ class TestBasicDrawingIntegration:
         """Integration: Format conversion should work seamlessly in drawing pipeline."""
         # This test ensures the full pipeline works
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
-            from utils.drawing import draw_detections_supervision
+            from onnxtools.utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import draw_detections
             import supervision as sv
 
             # Convert detections
             sv_detections = convert_to_supervision_detections(sample_detections, sample_class_names)
 
             # Use in supervision drawing
-            result = draw_detections_supervision(sample_image, sample_detections, sample_class_names, sample_colors)
+            result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
 
             assert isinstance(result, np.ndarray)
             assert result.shape == sample_image.shape
@@ -219,7 +212,7 @@ class TestBasicDrawingIntegration:
 
         def draw_worker():
             try:
-                from utils.drawing import draw_detections
+                from onnxtools.utils.drawing import draw_detections
                 result = draw_detections(sample_image.copy(), sample_detections, sample_class_names, sample_colors)
                 results.append(result)
             except Exception as e:

@@ -1,11 +1,16 @@
 import cv2
 import numpy as np
+import warnings
 from typing import Tuple, Union
 
 
 def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tuple:
     """
     Preprocesses an image for ONNX model inference.
+
+    .. deprecated:: 2025.1
+        `preprocess_image` is deprecated and will be removed in a future version.
+        Use `UltralyticsLetterBox` class instead for better compatibility with Ultralytics YOLO models.
 
     Args:
         image (np.ndarray): The input image in BGR format.
@@ -14,7 +19,24 @@ def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tupl
     Returns:
         tuple: A tuple containing the preprocessed image tensor,
                the scaling factor, and the original image shape.
+
+    Example:
+        >>> # Deprecated usage
+        >>> tensor, scale, orig_shape = preprocess_image(image, (640, 640))
+        >>>
+        >>> # Recommended usage
+        >>> letterbox = UltralyticsLetterBox(new_shape=(640, 640))
+        >>> tensor, scale, orig_shape, ratio_pad = letterbox(image)
+
+    Warning:
+        This function is deprecated. Use UltralyticsLetterBox for Ultralytics-compatible preprocessing.
     """
+    warnings.warn(
+        "preprocess_image is deprecated and will be removed in a future version. "
+        "Use UltralyticsLetterBox class instead for better compatibility with Ultralytics YOLO models.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     original_shape = image.shape[:2]  # (height, width)
     
     # Calculate scaling factor

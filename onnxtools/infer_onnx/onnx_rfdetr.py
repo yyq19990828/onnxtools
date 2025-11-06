@@ -60,20 +60,8 @@ class RfdetrORT(BaseORT):
         if len(pred_logits_shape) != 3 or pred_logits_shape[1] != pred_boxes_shape[1]:
             logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
     
-    def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
-        """
-        RF-DETR预处理（实例方法，向后兼容）
-        
-        Args:
-            image (np.ndarray): 输入图像，BGR格式
-            
-        Returns:
-            Tuple: (预处理后的tensor, scale, 原始形状)
-        """
-        return self._preprocess_static(image, self.input_shape)
-    
     @staticmethod
-    def _preprocess_static(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
+    def preprocess(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
         """
         RF-DETR预处理静态方法（对齐原始实现）
         
@@ -116,7 +104,8 @@ class RfdetrORT(BaseORT):
         
         return tensor, scale, original_shape
     
-    def _postprocess(self, outputs: List[np.ndarray], conf_thres: float, **kwargs) -> List[np.ndarray]:
+    @staticmethod
+    def postprocess(outputs: List[np.ndarray], input_shape: Tuple[int, int], conf_thres: float, **kwargs) -> List[np.ndarray]:
         """
         RF-DETR后处理逻辑（对齐原始实现）
         
@@ -130,12 +119,6 @@ class RfdetrORT(BaseORT):
         Returns:
             List[np.ndarray]: 后处理后的检测结果
         """
-        # 首次调用时验证RF-DETR格式
-        try:
-            self._validate_rf_detr_format()
-        except Exception as e:
-            logging.warning(f"RF-DETR格式验证失败: {e}")
-        
         # 根据实际输出形状确定pred_logits和pred_boxes
         # 输出0: (4, 300, 4) - 应该是pred_boxes
         # 输出1: (4, 300, 15) - 应该是pred_logits
@@ -197,7 +180,7 @@ class RfdetrORT(BaseORT):
                 scale_fct = np.array([orig_w, orig_h, orig_w, orig_h])
             else:
                 # 回退到输入尺寸
-                imgsz_w, imgsz_h = self.input_shape[1], self.input_shape[0]  # (width, height)
+                imgsz_h, imgsz_w = input_shape  # (height, width)
                 scale_fct = np.array([imgsz_w, imgsz_h, imgsz_w, imgsz_h])
             boxes_xyxy = boxes_xyxy * scale_fct
             

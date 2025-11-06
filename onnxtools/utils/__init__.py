@@ -1,4 +1,4 @@
-from .drawing import draw_detections, draw_detections_supervision, benchmark_drawing_performance
+from .drawing import draw_detections
 from .image_processing import preprocess_image
 from .nms import non_max_suppression
 from .supervision_converter import convert_to_supervision_detections
@@ -8,8 +8,6 @@ from .logging_config import setup_logger
 
 __all__ = [
     'draw_detections',
-    'draw_detections_supervision',
-    'benchmark_drawing_performance',
     'preprocess_image',
     'non_max_suppression',
     'convert_to_supervision_detections',

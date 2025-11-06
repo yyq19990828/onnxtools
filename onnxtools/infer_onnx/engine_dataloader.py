@@ -2,7 +2,7 @@
 """
 自定义引擎比较数据加载器
 
-使用静态预处理方法，避免嵌套调用，支持真实数据集进行ONNX vs TensorRT引擎比较
+使用检测器类的静态 preprocess 方法，避免嵌套调用，支持真实数据集进行ONNX vs TensorRT引擎比较
 """
 
 import numpy as np
@@ -182,7 +182,7 @@ class CustomEngineDataLoader(DataLoader):
             image = self._load_image(index)
             
             # 使用检测器类的静态预处理方法
-            preprocess_result = self.detector_class._preprocess_static(
+            preprocess_result = self.detector_class.preprocess(
                 image, self.input_shape, **self.preprocess_kwargs
             )
             

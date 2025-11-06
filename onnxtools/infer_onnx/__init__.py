@@ -9,8 +9,6 @@ from .onnx_rtdetr import RtdetrORT
 from .onnx_rfdetr import RfdetrORT
 from .onnx_ocr import ColorLayerORT, OcrORT
 from .result import Result
-from .eval_coco import DatasetEvaluator
-from .eval_ocr import OCRDatasetEvaluator, SampleEvaluation
 
 RUN = "runs"
 
@@ -23,8 +21,5 @@ __all__ = [
     'ColorLayerORT',
     'OcrORT',
     'Result',
-    'DatasetEvaluator',
-    'OCRDatasetEvaluator',
-    'SampleEvaluation',
     'RUN'
 ]

@@ -9,7 +9,6 @@ import logging
 from pathlib import Path
 import cv2
 import numpy as np
-import yaml
 import os
 import argparse
 
@@ -22,6 +21,7 @@ sys.path.insert(0, str(project_root))
 
 from onnxtools import create_detector, RUN
 from onnxtools.utils.drawing import draw_detections
+from onnxtools.config import DET_CLASS_NAMES, DET_VISUAL_COLORS
 
 def parse_arguments():
     """解析命令行参数"""
@@ -113,19 +113,8 @@ def parse_arguments():
     return parser.parse_args()
 
 def load_colors_and_class_names():
-    """加载类别名称和颜色配置"""
-    try:
-        with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-        class_names = config["class_names"]
-        colors = config["visual_colors"]
-        return class_names, colors
-    except Exception as e:
-        logging.warning(f"无法加载配置文件: {e}, 使用默认配置")
-        # 默认配置
-        class_names = ["car", "plate", "person", "truck", "bus"]  
-        colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
-        return class_names, colors
+    """加载类别名称和颜色配置（使用onnxtools.config的硬编码配置）"""
+    return DET_CLASS_NAMES, DET_VISUAL_COLORS
 
 def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
     """对 compare_engine 返回的原始输出进行后处理，参考 __call__ 方法"""
@@ -133,15 +122,20 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
         # 获取图像的原始尺寸
         original_shape = test_img.shape
         h_img, w_img, _ = original_shape
-        
-        # 预处理以获取scale和ratio_pad参数
-        preprocess_result = detector._preprocess(test_img)
-        if len(preprocess_result) == 3:
-            _, scale, _ = preprocess_result
-            ratio_pad = None
+
+        # 预处理以获取scale和ratio_pad参数(仅YOLO需要)
+        detector_class = type(detector)
+        if detector_class.__name__ == 'YoloORT':
+            preprocess_result = detector_class.preprocess(test_img, detector.input_shape)
+            if len(preprocess_result) == 3:
+                _, scale, _ = preprocess_result
+                ratio_pad = None
+            else:
+                _, scale, _, ratio_pad = preprocess_result
         else:
-            _, scale, _, ratio_pad = preprocess_result
-        
+            scale = 1.0
+            ratio_pad = None
+
         # 调试：输出原始输出的统计信息
         if isinstance(raw_outputs, list) and len(raw_outputs) > 0:
             prediction = raw_outputs[0]
@@ -151,35 +145,30 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
                 scores = prediction[:, :, 4:]
                 logging.debug(f"分类分数统计: min={np.min(scores):.4f}, max={np.max(scores):.4f}, "
                             f"mean={np.mean(scores):.4f}, std={np.std(scores):.4f}")
-        
-        # 使用检测器的_postprocess方法，参考 __call__ 中的处理
-        if type(detector).__name__ == 'RfdetrORT':
-            detections = detector._postprocess(raw_outputs, conf_thres)
-        else:
-            # 对于RT-DETR等模型，使用第一个输出
+
+        # 使用检测器类的静态postprocess方法
+        # 注意：postprocess现在已经内置了orig_shape参数,会直接返回原图尺寸的坐标
+        if detector_class.__name__ == 'RfdetrORT':
+            detections = detector_class.postprocess(
+                raw_outputs, detector.input_shape, conf_thres,
+                orig_shape=(h_img, w_img)
+            )
+        elif detector_class.__name__ == 'RtdetrORT':
             prediction = raw_outputs[0] if isinstance(raw_outputs, list) else raw_outputs
-            detections = detector._postprocess(prediction, conf_thres, scale=scale, ratio_pad=ratio_pad)
-        
-        # RFDETR和RT-DETR特殊处理：需要将坐标从输入尺寸缩放回原始尺寸
-        if type(detector).__name__ in ['RfdetrORT', 'RtdetrORT'] and detections and len(detections) > 0:
-            # RFDETR和RT-DETR的 _postprocess 返回的坐标是在输入图像尺寸上的
-            # 需要缩放回原始图像尺寸
-            input_h, input_w = detector.input_shape
-            scale_x = w_img / input_w  # 原始宽度 / 输入宽度
-            scale_y = h_img / input_h  # 原始高度 / 输入高度
-            
-            for detection in detections:
-                if len(detection) > 0:
-                    # detection的格式是 [x1, y1, x2, y2, conf, cls]
-                    detection[:, [0, 2]] *= scale_x  # 缩放 x1, x2
-                    detection[:, [1, 3]] *= scale_y  # 缩放 y1, y2
-                    
-                    # 确保坐标在图像边界内
-                    detection[:, 0] = np.clip(detection[:, 0], 0, w_img)  # x1
-                    detection[:, 1] = np.clip(detection[:, 1], 0, h_img)  # y1  
-                    detection[:, 2] = np.clip(detection[:, 2], 0, w_img)  # x2
-                    detection[:, 3] = np.clip(detection[:, 3], 0, h_img)  # y2
-        
+            detections = detector_class.postprocess(
+                prediction, detector.input_shape, conf_thres,
+                orig_shape=(h_img, w_img)
+            )
+        else:
+            # YOLO等模型 (统一使用Ultralytics预处理)
+            prediction = raw_outputs[0] if isinstance(raw_outputs, list) else raw_outputs
+            detections = detector_class.postprocess(
+                prediction, detector.input_shape, conf_thres,
+                detector.iou_thres, detector.multi_label, detector.has_objectness,
+                scale=scale, ratio_pad=ratio_pad, orig_shape=(h_img, w_img)
+            )
+
+        # 坐标已经在postprocess中还原到原图尺寸,无需额外处理
         return detections, original_shape
     except Exception as e:
         logging.error(f"后处理失败: {e}")
@@ -560,18 +549,20 @@ def test_rtdetr_compare_engine(args):
         else:
             logging.info("使用检测器进行单独推理和可视化...")
             for idx, test_img in enumerate(test_images):
-                detections, _ = detector(test_img)
-                if detections and len(detections[0]) > 0:
-                    result_img = draw_detections(test_img.copy(), detections, class_names, colors)
-                    
+                # detector()现在返回Result对象
+                result = detector(test_img)
+                if len(result) > 0:
+                    # Result对象可以直接使用plot()方法生成标注图像
+                    result_img = result.plot()
+
                     # 保存结果 - 使用引擎文件名
                     engine_name = Path(engine_path).stem
                     output_dir = f"{RUN}/{engine_name}"
                     os.makedirs(output_dir, exist_ok=True)
                     output_path = f"{output_dir}/test_detection_result_{idx + 1:03d}.jpg"
                     cv2.imwrite(output_path, result_img)
-                    logging.info(f"图片 {idx + 1} 检测结果已保存: {output_path}")
-                    
+                    logging.info(f"图片 {idx + 1} 检测到 {len(result)} 个目标,结果已保存: {output_path}")
+
                 else:
                     logging.info(f"图片 {idx + 1} 未检测到任何目标")
         

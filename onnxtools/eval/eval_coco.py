@@ -14,8 +14,8 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
 
-from .onnx_base import BaseORT
-from onnxtools.utils.detection_metrics import evaluate_detection, print_metrics
+from ..infer_onnx import BaseORT
+from ..utils.detection_metrics import evaluate_detection, print_metrics
 
 
 class DatasetEvaluator:

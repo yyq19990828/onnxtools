@@ -15,8 +15,8 @@ class TestPipelineIntegration:
     def test_pipeline_drawing_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Pipeline should work seamlessly with new drawing functions."""
         try:
-            from utils.pipeline import process_frame
-            from utils.drawing import draw_detections
+            from onnxtools.pipeline import process_frame
+            from onnxtools.utils.drawing import draw_detections
 
             # Mock the pipeline call to drawing function
             result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
@@ -26,7 +26,7 @@ class TestPipelineIntegration:
 
         except ImportError:
             # If pipeline is not available, test direct integration
-            from utils.drawing import draw_detections
+            from onnxtools.utils.drawing import draw_detections
             result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
             assert isinstance(result, np.ndarray)
 
@@ -45,7 +45,7 @@ class TestPipelineIntegration:
 
         # Test conversion compatibility
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.supervision_converter import convert_to_supervision_detections
             import supervision as sv
 
             sv_detections = convert_to_supervision_detections(pipeline_detections, pipeline_class_names)
@@ -67,7 +67,7 @@ class TestPipelineIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, sample_detections, sample_class_names,
@@ -80,7 +80,7 @@ class TestPipelineIntegration:
     def test_main_script_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Main script should work with supervision integration."""
         # Test main.py compatibility by calling draw_detections as main.py would
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         # Simulate main.py call pattern
         result = draw_detections(
@@ -109,7 +109,7 @@ class TestPipelineIntegration:
             detections = [[[100.0 + i * 50, 100.0, 200.0 + i * 50, 150.0, 0.9, 0]]]
             batch_detections.append(detections)
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
         import time
 
         # Process batch
@@ -137,7 +137,7 @@ class TestPipelineIntegration:
             frame = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
             video_frames.append(frame)
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         processed_frames = []
         for frame in video_frames:
@@ -151,7 +151,7 @@ class TestPipelineIntegration:
 
     def test_real_time_processing_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Real-time processing requirements should be met."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
         import time
 
         # Simulate real-time processing (30 FPS requirement = ~33ms per frame)
@@ -173,7 +173,7 @@ class TestPipelineIntegration:
 
     def test_cli_argument_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: CLI arguments should work with new implementation."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         # Test different CLI-like configurations
         cli_configs = [
@@ -195,7 +195,7 @@ class TestPipelineIntegration:
 
     def test_output_format_pipeline_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Output formats should remain compatible with existing pipeline."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
         import cv2
 
         result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
@@ -219,7 +219,7 @@ class TestPipelineIntegration:
 
     def test_error_handling_pipeline_compatibility(self, sample_image, sample_class_names, sample_colors):
         """Integration: Error handling should maintain pipeline stability."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         # Test error scenarios that pipeline might encounter
         error_scenarios = [
@@ -246,7 +246,7 @@ class TestPipelineIntegration:
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         # Process multiple frames to check for memory leaks
         for i in range(20):
@@ -288,7 +288,7 @@ class TestPipelineIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         for config in config_variants:
             try:
@@ -311,7 +311,7 @@ class TestPipelineIntegration:
 
         def pipeline_worker(worker_id):
             try:
-                from utils.drawing import draw_detections
+                from onnxtools.utils.drawing import draw_detections
                 for i in range(5):  # Process 5 frames per worker
                     image = sample_image.copy()
                     result = draw_detections(image, sample_detections, sample_class_names, sample_colors)

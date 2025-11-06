@@ -8,14 +8,13 @@ ONNX Runtime 模型推理基类
 
 import numpy as np
 import logging
-import yaml
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Optional
 from .result import Result
 from pathlib import Path
 
 # Polygraphy懒加载导入
-from polygraphy.backend.onnxrt import SessionFromOnnx, OnnxrtRunner
+from polygraphy.backend.onnxrt import OnnxrtRunner
 from polygraphy.backend.trt import (TrtRunner, 
                                     EngineFromNetwork, EngineFromPath,
                                     NetworkFromOnnxPath, 
@@ -205,52 +204,53 @@ class BaseORT(ABC):
         except Exception as e:
             logging.error(f"加载配置失败: {e}")
             return {}
-    
-    
-    @abstractmethod
-    def _postprocess(self, prediction: List[np.ndarray], conf_thres: float, **kwargs) -> List[np.ndarray]:
-        """
-        Post-process model outputs into final detection/classification results.
 
-        This method must be implemented by all subclasses. It is responsible for
-        converting raw model outputs into a standardized detection format.
+    @staticmethod
+    @abstractmethod
+    def preprocess(image: np.ndarray, input_shape: Tuple[int, int], **kwargs) -> Tuple:
+        """
+        静态预处理方法，将图像转换为模型输入格式
 
         Args:
-            prediction: Raw model outputs, list of numpy arrays. Format varies by model:
-                - YOLO: [batch, num_boxes, 5+num_classes]
-                - RT-DETR: [batch, num_boxes, 6]
-            conf_thres: Confidence threshold for filtering low-confidence results
-            **kwargs: Additional parameters, commonly:
-                - iou_thres (float): IoU threshold for NMS (default: self.iou_thres)
-                - max_det (int): Maximum number of detections to keep (default: 300)
-                - scale (Tuple): Scaling information from preprocessing
-                - ratio_pad (Tuple): Padding information for coordinate transformation
+            image: 输入图像，BGR格式，shape [H, W, C]
+            input_shape: 目标输入尺寸，例如 (640, 640)
+            **kwargs: 额外参数（子类特定）
 
         Returns:
-            List of post-processed results, one array per batch. Each array has shape:
-                - Detection models: [N, 6] where columns are [x1, y1, x2, y2, confidence, class_id]
-                - Classification models: [N, 2] where columns are [class_id, confidence]
+            Tuple: 预处理结果，至少包含 (input_tensor, scale, original_shape)
+                   可选返回 (input_tensor, scale, original_shape, ratio_pad)
 
         Raises:
-            NotImplementedError: If not implemented by subclass
-            ValueError: If prediction format is invalid
-
-        Example:
-            >>> # In YoloOnnx subclass
-            >>> def _postprocess(self, prediction, conf_thres, **kwargs):
-            ...     iou_thres = kwargs.get('iou_thres', self.iou_thres)
-            ...     results = []
-            ...     for pred in prediction:
-            ...         detections = non_max_suppression(pred, conf_thres, iou_thres)
-            ...         results.append(detections)
-            ...     return results
+            NotImplementedError: 子类必须实现此方法
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__}._postprocess() must be implemented by subclass. "
-            "This method is responsible for post-processing model outputs. "
-            "See BaseORT._postprocess docstring for implementation guidance."
+            f"{__class__.__name__}.preprocess() must be implemented by subclass"
         )
-    
+
+    @staticmethod
+    @abstractmethod
+    def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int],
+                   conf_thres: float, **kwargs) -> List[np.ndarray]:
+        """
+        静态后处理方法，将模型输出转换为检测结果
+
+        Args:
+            prediction: 模型原始输出
+            input_shape: 输入图像尺寸
+            conf_thres: 置信度阈值
+            **kwargs: 额外参数（子类特定，如 iou_thres, orig_shape 等）
+
+        Returns:
+            List[np.ndarray]: 检测结果列表，每个元素为 [N, 6] 数组
+                             格式: [x1, y1, x2, y2, confidence, class_id]
+
+        Raises:
+            NotImplementedError: 子类必须实现此方法
+        """
+        raise NotImplementedError(
+            f"{__class__.__name__}.postprocess() must be implemented by subclass"
+        )
+
     def _prepare_inference(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple, Optional[tuple]]:
         """
         Phase 1: Prepare inference by initializing model and preprocessing image.
@@ -272,14 +272,17 @@ class BaseORT(ABC):
             This method can be overridden by subclasses to customize the
             preparation phase behavior.
         """
-        # Preprocess image (runner会在_execute_inference中通过上下文管理器自动激活)
-        preprocess_result = self._preprocess(image)
-        if len(preprocess_result) == 3:
-            # Compatible with old version return value (input_tensor, scale, original_shape)
+        # Call subclass's static preprocess method
+        preprocess_result = self.preprocess(image, self.input_shape)
+
+        # Use subclass name to determine return value format
+        class_name = self.__class__.__name__
+        if class_name in ['RtdetrORT', 'RfdetrORT']:
+            # RT-DETR and RF-DETR return 3-tuple: (input_tensor, scale, original_shape)
             input_tensor, scale, original_shape = preprocess_result
             ratio_pad = None
         else:
-            # New version return value (input_tensor, scale, original_shape, ratio_pad)
+            # YOLO class return 4-tuple: (input_tensor, scale, original_shape, ratio_pad)
             input_tensor, scale, original_shape, ratio_pad = preprocess_result
 
         return input_tensor, scale, original_shape, ratio_pad
@@ -348,19 +351,30 @@ class BaseORT(ABC):
             This method can be overridden by subclasses to customize the
             finalization phase behavior.
         """
-        # Post-process - pass different parameters based on subclass
+        # Post-process - call static methods with explicit parameters
         effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
+        class_name = self.__class__.__name__
 
-        # RF-DETR needs full outputs, other models use first output
-        if type(self).__name__ == 'RfdetrORT':
-            detections = self._postprocess(outputs, effective_conf_thres, scale=scale, orig_shape=orig_shape, **kwargs)
-        elif type(self).__name__ == 'RtdetrORT':
-            # RT-DETR also needs orig_shape for coordinate scaling
-            prediction = outputs[0]
-            detections = self._postprocess(prediction, effective_conf_thres, scale=scale, orig_shape=orig_shape, ratio_pad=ratio_pad, **kwargs)
+        # Different models have different postprocess signatures
+        if class_name == 'RfdetrORT':
+            # RF-DETR needs full outputs (List[np.ndarray])
+            detections = self.postprocess(
+                outputs, self.input_shape, effective_conf_thres,
+                orig_shape=orig_shape, **kwargs
+            )
+        elif class_name == 'RtdetrORT':
+            # RT-DETR uses first output only
+            detections = self.postprocess(
+                outputs[0], self.input_shape, effective_conf_thres,
+                orig_shape=orig_shape, **kwargs
+            )
         else:
-            prediction = outputs[0]
-            detections = self._postprocess(prediction, effective_conf_thres, scale=scale, ratio_pad=ratio_pad, **kwargs)
+            # YOLO and other models need additional NMS parameters
+            detections = self.postprocess(
+                outputs[0], self.input_shape, effective_conf_thres,
+                self.iou_thres, self.multi_label, self.has_objectness,
+                scale=scale, ratio_pad=ratio_pad, orig_shape=orig_shape
+            )
 
         # If input is multi-batch but only processing one image, return only first batch result
         if (expected_batch_size > 1 and len(detections) > 1):
@@ -410,56 +424,6 @@ class BaseORT(ABC):
             orig_img=image,
             orig_shape=original_shape,
             names=self.class_names
-        )
-    
-    def _preprocess(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple]:
-        """预处理图像（实例方法，向后兼容）"""
-        return self._preprocess_static(image, self.input_shape)
-    
-    @staticmethod
-    @abstractmethod
-    def _preprocess_static(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
-        """
-        Static preprocessing method for image transformation.
-
-        This static method must be implemented by all subclasses. It performs
-        image preprocessing independent of instance state.
-
-        Args:
-            image: Input image in BGR format (OpenCV default), shape [H, W, C]
-            input_shape: Target input size (height, width), e.g., (640, 640)
-
-        Returns:
-            Tuple containing:
-                - input_tensor: Preprocessed tensor, shape [1, 3, H, W], range [0, 1]
-                  Format: NCHW (batch, channels, height, width), RGB order
-                - scale: Scaling information for coordinate transformation, format varies:
-                  * Letterbox: dict with 'scale', 'pad_w', 'pad_h' keys
-                  * Simple resize: tuple (scale_x, scale_y)
-
-        Raises:
-            NotImplementedError: If not implemented by subclass
-            ValueError: If image dimensions are invalid
-
-        Example:
-            >>> # In RTDETROnnx subclass
-            >>> @staticmethod
-            >>> @abstractmethod
-            >>> def _preprocess_static(image, input_shape):
-            ...     # Letterbox resize (keep aspect ratio)
-            ...     resized, scale = letterbox_resize(image, input_shape)
-            ...     # BGR to RGB
-            ...     rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
-            ...     # Normalize to [0, 1]
-            ...     normalized = rgb_image.astype(np.float32) / 255.0
-            ...     # NCHW format
-            ...     input_tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
-            ...     return input_tensor, scale
-        """
-        raise NotImplementedError(
-            f"BaseORT._preprocess_static() must be implemented by subclass. "
-            "This static method is responsible for image preprocessing. "
-            "See BaseORT._preprocess_static docstring for implementation guidance."
         )
     
     def create_engine_dataloader(self, **kwargs):
