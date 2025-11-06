@@ -468,13 +468,9 @@ def main():
             logging.error(f"Config file not found: {args.config}")
             sys.exit(1)
 
-        # Load character dictionary
-        logging.info("Loading configuration...")
-        character = load_character_dict(args.config)
-
-        # Load OCR model
+        # Load OCR model (使用新API,自动加载配置)
         logging.info(f"Loading OCR model: {args.ocr_model}")
-        ocr_model = OcrORT(args.ocr_model, character=character)
+        ocr_model = OcrORT(args.ocr_model, plate_config_path=args.config)
         logging.info("OCR model loaded successfully")
 
         # Create evaluator

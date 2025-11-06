@@ -56,27 +56,62 @@ class ColorLayerORT:
     def __init__(
         self,
         onnx_path: str,
-        color_map: Dict[int, str],
-        layer_map: Dict[int, str],
+        color_map: Optional[Dict[int, str]] = None,
+        layer_map: Optional[Dict[int, str]] = None,
         input_shape: Tuple[int, int] = (48, 168),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None
+        providers: Optional[List[str]] = None,
+        plate_config_path: Optional[str] = None
     ):
         """
         Initialize color and layer classification model.
 
         Args:
             onnx_path: Path to ONNX model file
-            color_map: Mapping from color index to color name
-            layer_map: Mapping from layer index to layer name
+            color_map: Mapping from color index to color name (optional, defaults to config.COLOR_MAP)
+            layer_map: Mapping from layer index to layer name (optional, defaults to config.LAYER_MAP)
             input_shape: Input image size (height, width), default (48, 168)
             conf_thres: Confidence threshold, default 0.5
             providers: ONNX Runtime execution providers
+            plate_config_path: Optional path to plate configuration file
 
         Raises:
             FileNotFoundError: If model file doesn't exist
-            ValueError: If color_map or layer_map is empty
+            ValueError: If color_map or layer_map cannot be loaded
         """
+        # Load from config if not provided
+        if color_map is None or layer_map is None:
+            try:
+                # 如果指定了外部配置文件，使用load_plate_config加载
+                if plate_config_path:
+                    from onnxtools.config import load_plate_config
+                    plate_config = load_plate_config(plate_config_path)
+                    if color_map is None:
+                        color_map = plate_config.get('color_dict')
+                        if not color_map:
+                            raise ValueError("Failed to load color_map from external config")
+                        logging.info(f"从外部配置加载color_map: {len(color_map)} colors")
+
+                    if layer_map is None:
+                        layer_map = plate_config.get('layer_dict')
+                        if not layer_map:
+                            raise ValueError("Failed to load layer_map from external config")
+                        logging.info(f"从外部配置加载layer_map: {len(layer_map)} layers")
+                else:
+                    # 默认直接使用硬编码常量
+                    if color_map is None:
+                        from onnxtools.config import COLOR_MAP
+                        color_map = COLOR_MAP
+                        logging.info(f"使用硬编码color_map: {len(color_map)} colors")
+
+                    if layer_map is None:
+                        from onnxtools.config import LAYER_MAP
+                        layer_map = LAYER_MAP
+                        logging.info(f"使用硬编码layer_map: {len(layer_map)} layers")
+
+            except Exception as e:
+                raise ValueError(f"Failed to load plate configuration: {e}")
+
         # Validate inputs
         if not color_map:
             raise ValueError("color_map cannot be empty")
@@ -263,25 +298,48 @@ class OcrORT:
     def __init__(
         self,
         onnx_path: str,
-        character: List[str],
+        character: Optional[List[str]] = None,
         input_shape: Tuple[int, int] = (48, 168),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None
+        providers: Optional[List[str]] = None,
+        plate_config_path: Optional[str] = None
     ):
         """
         Initialize OCR inference engine.
 
         Args:
             onnx_path: Path to ONNX model file
-            character: OCR character dictionary (list of characters)
+            character: OCR character dictionary (list of characters, optional)
+                      If None, loads from config with "blank" prefix and space suffix
             input_shape: Input image size (height, width), default (48, 168)
             conf_thres: Confidence threshold, default 0.5
             providers: ONNX Runtime execution providers
+            plate_config_path: Optional path to plate configuration file
 
         Raises:
             FileNotFoundError: If model file doesn't exist
-            ValueError: If character list is empty
+            ValueError: If character list cannot be loaded
         """
+        # Load from config if not provided
+        if character is None:
+            try:
+                # 如果指定了外部配置文件，使用get_ocr_character_list加载
+                if plate_config_path:
+                    from onnxtools.config import get_ocr_character_list
+                    character = get_ocr_character_list(
+                        config_path=plate_config_path,
+                        add_blank=True,
+                        add_space=True
+                    )
+                    logging.info(f"从外部配置加载OCR字符: {len(character)} characters")
+                else:
+                    # 默认直接使用硬编码常量
+                    from onnxtools.config import OCR_CHARACTER_DICT
+                    character = ["blank"] + OCR_CHARACTER_DICT + [" "]
+                    logging.info(f"使用硬编码OCR字符: {len(character)} characters")
+            except Exception as e:
+                raise ValueError(f"Failed to load OCR character dictionary: {e}")
+
         # Validate inputs
         if not character:
             raise ValueError("character list cannot be empty")

@@ -149,24 +149,17 @@ def initialize_models(args):
         logging.error("Please ensure the ONNX model path is correct and onnxruntime is installed.")
         return None
 
-    # Initialize color/layer and OCR models
+    # Initialize color/layer and OCR models (使用新API,自动加载配置)
     from onnxtools import ColorLayerORT, OcrORT
     color_layer_model_path = getattr(args, "color_layer_model", "models/color_layer.onnx")
     ocr_model_path = getattr(args, "ocr_model", "models/ocr.onnx")
-    plate_yaml_path = "configs/plate.yaml"
 
-    with open(plate_yaml_path, "r", encoding="utf-8") as f:
-        plate_yaml = yaml.safe_load(f)
-        character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
-        color_dict = plate_yaml["color_dict"]
-        layer_dict = plate_yaml["layer_dict"]
+    # 新API:不再需要手动加载配置,由类内部自动加载
+    color_layer_classifier = ColorLayerORT(color_layer_model_path)
+    ocr_model = OcrORT(ocr_model_path)
 
-    color_layer_classifier = ColorLayerORT(
-        color_layer_model_path,
-        color_map=color_dict,
-        layer_map=layer_dict
-    )
-    ocr_model = OcrORT(ocr_model_path, character=character)
+    # 为了保持向后兼容,提供character访问
+    character = ocr_model.character
 
     # Load class names and colors from config
     # 优先从detector模型的class_names属性获取（已在BaseOnnx初始化时从metadata读取）
@@ -455,38 +448,35 @@ class InferencePipeline:
             logging.error(f"Error initializing detector: {e}")
             raise
 
-        # 加载车牌配置
-        with open(plate_yaml_path, "r", encoding="utf-8") as f:
-            plate_yaml = yaml.safe_load(f)
-            self.character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
-            color_dict = plate_yaml["color_dict"]
-            layer_dict = plate_yaml["layer_dict"]
-
-        # 初始化颜色/层级分类器和OCR模型
+        # 初始化颜色/层级分类器和OCR模型(使用新API,自动加载配置)
         from onnxtools import ColorLayerORT, OcrORT
         self.color_layer_classifier = ColorLayerORT(
             color_layer_model,
-            color_map=color_dict,
-            layer_map=layer_dict
+            plate_config_path=plate_yaml_path
         )
-        self.ocr_model = OcrORT(ocr_model, character=self.character)
+        self.ocr_model = OcrORT(
+            ocr_model,
+            plate_config_path=plate_yaml_path
+        )
         logging.info("Initialized color/layer classifier and OCR model")
 
-        # 加载类别名称和颜色
+        # 保存character用于向后兼容
+        self.character = self.ocr_model.character
+
+        # 加载类别名称和颜色(使用新API)
+        from onnxtools.config import load_det_config
+        det_config = load_det_config(det_config_path if det_config_path != 'configs/det_config.yaml' else None)
+
         if self.detector.class_names:
             logging.info(f"从ONNX模型metadata读取到类别名称: {self.detector.class_names}")
             max_class_id = max(self.detector.class_names.keys())
             self.class_names = [self.detector.class_names.get(i, f"class_{i}") for i in range(max_class_id + 1)]
         else:
-            logging.info("ONNX模型metadata中未找到names字段,回退到YAML配置文件")
-            with open(det_config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-            self.class_names = config["class_names"]
+            logging.info("ONNX模型metadata中未找到names字段,回退到配置")
+            self.class_names = det_config.get("class_names", [])
 
-        # colors始终从YAML配置文件读取
-        with open(det_config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-        self.colors = config["visual_colors"]
+        # colors始终从配置读取
+        self.colors = det_config.get("visual_colors", [])
 
         # 初始化annotator管道
         self.annotator_pipeline = None

@@ -26,22 +26,25 @@ from polygraphy.comparator import Comparator, CompareFunc
 class BaseORT(ABC):
     """ONNX Runtime模型推理基类 - 使用Polygraphy懒加载"""
     
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), 
-                 conf_thres: float = 0.5, providers: Optional[List[str]] = None):
+    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
+                 conf_thres: float = 0.5, providers: Optional[List[str]] = None,
+                 det_config_path: Optional[str] = None):
         """
         初始化ONNX模型推理器
-        
+
         Args:
             onnx_path (str): ONNX模型文件路径
             input_shape (Tuple[int, int]): 输入图像尺寸 (height, width)
             conf_thres (float): 置信度阈值
             providers (Optional[List[str]]): ONNX Runtime执行提供程序
+            det_config_path (Optional[str]): 检测配置文件路径(可选)
         """
         self.onnx_path = onnx_path
         self.conf_thres = conf_thres
         self._requested_input_shape = input_shape  # 用户请求的输入形状
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        self.det_config_path = det_config_path  # 保存配置文件路径
         
         # 创建ONNX Runtime会话（立即创建并缓存，后续复用）
         import onnxruntime
@@ -54,7 +57,7 @@ class BaseORT(ABC):
         # 从模型信息中提取属性
         self.input_name = model_info.get('input_name')
         self.output_names = model_info.get('output_names')
-        self._class_names = model_info.get('class_names', {})
+        self.class_names = model_info.get('class_names', {})
 
         # 从模型信息确定input_shape和expected_batch_size
         model_input_shape = model_info.get('input_shape')
@@ -81,16 +84,6 @@ class BaseORT(ABC):
         self.engine_dataloader = None  # 用于引擎比较的数据加载器
 
         logging.info(f"创建ONNX推理器: {self.onnx_path}")
-
-    def __del__(self):
-        """析构函数：清理ONNX Runtime会话"""
-        # ONNX Runtime会话会自动清理，无需手动处理
-        pass
-
-    @property
-    def class_names(self) -> Dict[int, str]:
-        """类别名称属性（只读）"""
-        return self._class_names or {}
 
     def _get_model_info(self) -> Dict[str, any]:
         """
@@ -175,33 +168,42 @@ class BaseORT(ABC):
 
         return result
 
-    #TODO move default classed_names from config.py
     def _load_class_names_from_config(self) -> Dict[int, str]:
-        """从configs/det_config.yaml加载类别名称（回退方案）"""
-        config_path = Path('configs/det_config.yaml')
+        """
+        从配置加载类别名称（回退方案）
 
-        if not config_path.exists():
-            logging.warning(f"配置文件不存在: {config_path}")
-            return {}
+        优先级:
+        1. self.det_config_path显式指定的外部YAML文件
+        2. onnxtools.config.DET_CLASS_NAMES 硬编码常量（默认）
 
+        Returns:
+            Dict[int, str]: 类别ID到类别名称的映射
+        """
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
+            # 如果指定了外部配置文件，使用load_det_config加载
+            if self.det_config_path:
+                from onnxtools.config import load_det_config
+                config = load_det_config(self.det_config_path)
                 class_names = config.get('class_names')
 
                 if not class_names:
-                    logging.warning(f"配置文件中没有class_names字段")
+                    logging.warning("外部配置中没有class_names字段")
                     return {}
 
                 if isinstance(class_names, list):
-                    logging.info(f"从 {config_path} 加载 {len(class_names)} 个类别")
+                    logging.info(f"从外部配置加载 {len(class_names)} 个类别")
                     return {i: name for i, name in enumerate(class_names)}
                 else:
                     logging.warning(f"class_names字段格式错误: {type(class_names)}")
                     return {}
 
+            # 默认直接使用硬编码常量
+            from onnxtools.config import DET_CLASS_NAMES
+            logging.info(f"使用硬编码类别名称: {len(DET_CLASS_NAMES)} 个类别")
+            return {i: name for i, name in enumerate(DET_CLASS_NAMES)}
+
         except Exception as e:
-            logging.error(f"加载配置文件失败: {e}")
+            logging.error(f"加载配置失败: {e}")
             return {}
     
     
