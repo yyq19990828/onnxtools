@@ -1,7 +1,7 @@
 """Integration tests for OCR Dataset Evaluator
 
 End-to-end tests verifying:
-- Complete evaluation workflow with real OCRONNX model
+- Complete evaluation workflow with real OcrORT model
 - Dataset loading and processing
 - Performance characteristics
 - Output formatting
@@ -55,12 +55,12 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_end_to_end_evaluation_table_format(self, sample_dataset, ocr_model_path, ocr_character):
         """End-to-end evaluation test with table format output"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -99,12 +99,12 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_end_to_end_evaluation_json_format(self, sample_dataset, ocr_model_path, ocr_character, capsys):
         """End-to-end evaluation test with JSON format output"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -138,12 +138,12 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_max_images_limit(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation with max_images parameter"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -169,12 +169,12 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_varying_thresholds(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation with different confidence thresholds"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Test multiple thresholds
         thresholds = [0.3, 0.5, 0.7]
@@ -207,13 +207,13 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_performance(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation performance characteristics"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
         import time
 
         label_file, dataset_base, plates = sample_dataset
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -241,7 +241,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_missing_images(self, tmp_path, ocr_model_path, ocr_character):
         """Test evaluation handling of missing images"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         # Create label file referencing non-existent images
         label_file = tmp_path / "test_missing.txt"
@@ -253,7 +253,7 @@ class TestOCRDatasetEvaluatorIntegration:
             f.write("missing2.png\t沪B67890\n")
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -273,7 +273,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_corrupted_images(self, tmp_path, ocr_model_path, ocr_character):
         """Test evaluation handling of corrupted/invalid images"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         # Create label file
         label_file = tmp_path / "test_corrupted.txt"
@@ -288,7 +288,7 @@ class TestOCRDatasetEvaluatorIntegration:
             f.write("corrupted.png\t京A12345\n")
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)
@@ -312,14 +312,14 @@ class TestOCRDatasetEvaluatorIntegration:
     )
     def test_evaluation_with_real_dataset(self, ocr_model_path, ocr_character):
         """Test evaluation with real OCR dataset (if available)"""
-        from infer_onnx import OCRDatasetEvaluator, OCRONNX
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         # Use real dataset if available
         label_file = "data/ocr_rec_dataset_examples/val.txt"
         dataset_base = "data/ocr_rec_dataset_examples"
 
         # Load OCR model
-        ocr_model = OCRONNX(str(ocr_model_path), character=ocr_character)
+        ocr_model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         # Create evaluator
         evaluator = OCRDatasetEvaluator(ocr_model)

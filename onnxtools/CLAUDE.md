@@ -77,23 +77,39 @@ stats = result.summary()
 ```
 
 ### 2. 核心推理接口
+
+**架构说明**: onnxtools提供两类推理类:
+- **检测器类** (继承BaseORT): 目标检测任务,返回`Result`对象
+- **分类器/OCR类** (独立): 分类/序列识别任务,返回元组
+
 ```python
 from onnxtools import (
+    # 检测器类 (继承BaseORT) - 返回Result
     BaseORT,           # 抽象基类
     YoloORT,           # YOLO系列检测器
     RtdetrORT,         # RT-DETR检测器
     RfdetrORT,         # RF-DETR检测器
+
+    # 独立分类器/OCR类 - 返回元组
     ColorLayerORT,     # 颜色/层级分类器
     OcrORT,            # OCR识别器
+
+    # 其他
     Result,            # 检测结果类 (NEW)
     create_detector    # 工厂函数
 )
 
-# 使用工厂函数（推荐）- 返回Result对象
+# 检测器使用（推荐）- 返回Result对象
 detector = create_detector('yolo', 'models/yolo11n.onnx')
 result = detector(image)  # Result实例
+boxes = result.boxes
+scores = result.scores
 
-# 或直接实例化
+# 分类器/OCR使用 - 返回元组
+classifier = ColorLayerORT('color.onnx', color_map, layer_map)
+color, layer, conf = classifier(plate_image)  # 元组解包
+
+# 或直接实例化检测器
 detector = RtdetrORT('models/rtdetr.onnx', conf_thres=0.5, iou_thres=0.7)
 result = detector(image)  # Result实例
 ```
@@ -339,6 +355,11 @@ graph LR
 ```
 
 ## 变更日志 (Changelog)
+
+**2025-11-05 (阶段1.3)** - OCR/分类类架构独立化
+- ✅ 更新核心推理接口说明,区分检测器类和分类器/OCR类
+- ✅ 强调两类推理类的返回类型差异(Result vs 元组)
+- ✅ 添加架构说明注释
 
 **2025-11-05** - 初始化完整模块文档，建立清晰的模块结构
 - 创建onnxtools根模块文档

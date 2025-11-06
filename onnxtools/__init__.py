@@ -24,6 +24,9 @@ from .utils import (
     setup_logger,
 )
 
+# 从 pipeline 子模块导入推理管道类
+from .pipeline import InferencePipeline
+
 
 # ============================================================================
 # 工厂函数：根据模型类型创建相应的检测器
@@ -73,6 +76,8 @@ __all__ = [
     'OcrORT',
     'Result',
     'create_detector',
+    # 推理管道
+    'InferencePipeline',
     # 评估工具
     'DatasetEvaluator',
     'OCRDatasetEvaluator',

@@ -1,31 +1,44 @@
 """Label generation functions for supervision annotators."""
 
 from typing import List, Dict, Any, Optional, Union
+import numpy as np
 
 
-def create_ocr_labels(detections: List[List[float]],
-                     plate_results: List[Optional[Dict[str, Any]]],
-                     class_names: Union[Dict[int, str], List[str]]) -> List[str]:
+def create_ocr_labels(
+    boxes: np.ndarray,
+    scores: np.ndarray,
+    class_ids: np.ndarray,
+    plate_results: List[Optional[Dict[str, Any]]],
+    class_names: Union[Dict[int, str], List[str]]
+) -> List[str]:
     """
     Create labels for detections including OCR information for plate class.
 
+    Adapted for Result API - accepts separate arrays instead of combined detection list.
+
     Args:
-        detections: List of detection tuples [x1, y1, x2, y2, confidence, class_id]
+        boxes: Detection boxes array [N, 4] in xyxy format
+        scores: Confidence scores array [N]
+        class_ids: Class ID array [N]
         plate_results: List of OCR results for each detection (None for non-plates)
         class_names: Dict mapping class_id to class_name or list of class names
 
     Returns:
         List of label strings for each detection
+
+    Example:
+        >>> result = detector(image)
+        >>> labels = create_ocr_labels(
+        ...     result.boxes, result.scores, result.class_ids,
+        ...     plate_results, class_names
+        ... )
     """
     labels = []
+    n_detections = len(boxes)
 
-    for i, detection in enumerate(detections):
-        if len(detection) < 6:
-            labels.append("invalid_detection")
-            continue
-
-        class_id = int(detection[5])
-        confidence = detection[4]
+    for i in range(n_detections):
+        class_id = int(class_ids[i])
+        confidence = float(scores[i])
 
         # Get class name
         if isinstance(class_names, dict):

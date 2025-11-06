@@ -1,7 +1,7 @@
 """
 Pytest configuration and fixtures for OCR and color classification model testing.
 
-This module provides shared fixtures for OCRONNX and ColorLayerONNX testing,
+This module provides shared fixtures for OcrORT and ColorLayerORT testing,
 including model instances, test data paths, and configuration loaders.
 """
 

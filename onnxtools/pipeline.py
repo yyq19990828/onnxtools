@@ -1,24 +1,34 @@
-import cv2
+"""Pipeline module for vehicle and license plate detection.
+
+This module provides both the new InferencePipeline class (recommended)
+and legacy functions for backward compatibility.
+
+Recommended usage:
+    from onnxtools import InferencePipeline
+    pipeline = InferencePipeline(model_type='rtdetr', model_path='model.onnx')
+    result_img, output_data = pipeline(image)
+"""
+
 import numpy as np
 import yaml
 import logging
+import warnings
+from typing import Tuple, List, Dict, Any, Optional
 
-from .utils.drawing import draw_detections
-
-# Import new annotator functionality (optional)
+# Import annotator functionality
 try:
-    from .utils.annotator_factory import AnnotatorFactory, AnnotatorType, AnnotatorPipeline
-    from .utils.visualization_preset import VisualizationPreset, Presets
-    from .utils.supervision_converter import convert_to_supervision_detections
-    import supervision as sv
+    from .utils.annotator_factory import AnnotatorType, AnnotatorPipeline
+    from .utils.visualization_preset import VisualizationPreset
     ANNOTATOR_AVAILABLE = True
 except ImportError:
     ANNOTATOR_AVAILABLE = False
     logging.warning("Annotator functionality not available. Using legacy drawing.")
 
 def create_annotator_pipeline(args):
-    """
-    Create annotator pipeline based on command line arguments.
+    """Create annotator pipeline based on command line arguments.
+
+    .. deprecated:: 0.2.0
+        Use InferencePipeline class instead. This function will be removed in v0.3.0.
 
     Args:
         args: Command line arguments containing annotator configuration
@@ -26,6 +36,12 @@ def create_annotator_pipeline(args):
     Returns:
         AnnotatorPipeline or None if annotators not available/configured
     """
+    warnings.warn(
+        "create_annotator_pipeline() is deprecated and will be removed in v0.3.0. "
+        "Use InferencePipeline class instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     if not ANNOTATOR_AVAILABLE:
         return None
 
@@ -82,11 +98,43 @@ def create_annotator_pipeline(args):
     return None
 
 
-#TODO use a class to wrap pipeline
+# ==============================================================================
+# DEPRECATED LEGACY FUNCTIONS (v0.2.0)
+# These functions are kept for backward compatibility with existing code.
+# They will be removed in v0.3.0. Use InferencePipeline class instead.
+# ==============================================================================
+
 def initialize_models(args):
+    """Initialize all the models required for the pipeline.
+
+    .. deprecated:: 0.2.0
+        Use InferencePipeline class instead. This function will be removed in v0.3.0.
+
+    Args:
+        args: Argument namespace with model configuration
+
+    Returns:
+        Tuple of (detector, color_layer_classifier, ocr_model, character,
+                  class_names, colors, annotator_pipeline)
+
+    Example:
+        >>> # Old way (deprecated)
+        >>> models = initialize_models(args)
+        >>>
+        >>> # New way (recommended)
+        >>> from onnxtools import InferencePipeline
+        >>> pipeline = InferencePipeline(
+        ...     model_type=args.model_type,
+        ...     model_path=args.model_path,
+        ...     conf_thres=args.conf_thres
+        ... )
     """
-    Initialize all the models required for the pipeline.
-    """
+    warnings.warn(
+        "initialize_models() is deprecated and will be removed in v0.3.0. "
+        "Use InferencePipeline class instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     # Initialize the detector based on model type
     try:
         from onnxtools import create_detector
@@ -149,9 +197,12 @@ def initialize_models(args):
     return detector, color_layer_classifier, ocr_model, character, class_names, colors, annotator_pipeline
 
 
-def process_frame(frame, detector, color_layer_classifier, ocr_model, character, class_names, colors, args, annotator_pipeline=None):
-    """
-    Process a single frame for vehicle and plate detection and recognition.
+def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
+                  class_names, colors, args, annotator_pipeline=None):
+    """Process a single frame for vehicle and plate detection and recognition.
+
+    .. deprecated:: 0.2.0
+        Use InferencePipeline class instead. This function will be removed in v0.3.0.
 
     Args:
         frame: Input image frame
@@ -166,7 +217,28 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
 
     Returns:
         Tuple of (annotated_frame, output_data)
+
+    Example:
+        >>> # Old way (deprecated)
+        >>> result_frame, output_data = process_frame(
+        ...     frame, detector, color_classifier, ocr_model,
+        ...     character, class_names, colors, args
+        ... )
+        >>>
+        >>> # New way (recommended)
+        >>> from onnxtools import InferencePipeline
+        >>> pipeline = InferencePipeline(
+        ...     model_type='rtdetr',
+        ...     model_path='models/rtdetr.onnx'
+        ... )
+        >>> result_frame, output_data = pipeline(frame)
     """
+    warnings.warn(
+        "process_frame() is deprecated and will be removed in v0.3.0. "
+        "Use InferencePipeline class instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     # 1. Object Detection - now returns Result object
     result = detector(frame)
 
@@ -183,14 +255,11 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         scores = result.scores
         class_ids = result.class_ids
 
-        # Scale coordinates to original image size if needed
-        if hasattr(detector, '__class__') and detector.__class__.__name__ in ['RtdetrORT', 'RfdetrORT']:
-            # RT-DETR and RF-DETR models直接拉伸图像，坐标需要从输入尺寸缩放到原始尺寸
-            # 坐标从输入尺寸变换回原始尺寸需要乘以缩放比例
-            scale_x = w_img / detector.input_shape[1]  # original_width / input_width
-            scale_y = h_img / detector.input_shape[0]  # original_height / input_height
-            boxes[:, [0, 2]] *= scale_x  # x1, x2坐标缩放
-            boxes[:, [1, 3]] *= scale_y  # y1, y2坐标缩放
+        # NOTE: 坐标变换已在检测器的_postprocess方法中完成
+        # RT-DETR/RF-DETR的_postprocess会接收orig_shape参数并直接缩放到原图尺寸
+        # 所以这里boxes已经是原图坐标,不需要再次缩放
+        # 详见: onnxtools/infer_onnx/onnx_rtdetr.py:222-232
+        #       onnxtools/infer_onnx/onnx_base.py:354-358
 
         # Ensure detections are clipped within frame boundaries
         boxes[:, 0] = np.clip(boxes[:, 0], 0, w_img)
@@ -280,8 +349,8 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
             # Import label creation function
             from .utils.supervision_labels import create_ocr_labels
 
-            # Create labels with OCR information
-            labels = create_ocr_labels(boxes, plate_results, class_names)
+            # Create labels with OCR information (adapted for Result API)
+            labels = create_ocr_labels(boxes, scores, class_ids, plate_results, class_names)
 
             result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections, labels=labels)
             logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")
@@ -302,3 +371,218 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         result_frame = draw_detections(frame.copy(), scaled_detections_for_drawing, class_names, colors, plate_results=plate_results)
 
     return result_frame, output_data
+
+
+# ==============================================================================
+# RECOMMENDED API - InferencePipeline Class (v0.2.0+)
+# This is the recommended way to perform inference. It encapsulates all
+# functionality in a single, easy-to-use class.
+# ==============================================================================
+
+class InferencePipeline:
+    """完整的推理管道类,封装检测、OCR识别和可视化功能。
+
+    这个类整合了目标检测、颜色/层级分类、OCR识别和可视化标注的完整流程,
+    提供简单的API接口用于图像推理。
+
+    Attributes:
+        detector: 目标检测模型
+        color_layer_classifier: 颜色和层级分类模型
+        ocr_model: OCR识别模型
+        character: OCR字符字典
+        class_names: 检测类别名称列表
+        colors: 可视化颜色配置
+        annotator_pipeline: 可视化标注管道
+
+    Example:
+        >>> pipeline = InferencePipeline(
+        ...     model_type='rtdetr',
+        ...     model_path='models/rtdetr.onnx',
+        ...     conf_thres=0.5
+        ... )
+        >>> result_img, output_data = pipeline(image)
+    """
+
+    def __init__(
+        self,
+        model_type: str,
+        model_path: str,
+        conf_thres: float = 0.5,
+        iou_thres: float = 0.5,
+        roi_top_ratio: float = 0.5,
+        plate_conf_thres: Optional[float] = None,
+        color_layer_model: str = 'models/color_layer.onnx',
+        ocr_model: str = 'models/ocr.onnx',
+        plate_yaml_path: str = 'configs/plate.yaml',
+        det_config_path: str = 'configs/det_config.yaml',
+        annotator_preset: Optional[str] = None,
+        annotator_types: Optional[List[str]] = None,
+        **kwargs
+    ):
+        """初始化推理管道。
+
+        Args:
+            model_type: 检测模型类型 ('yolo', 'rtdetr', 'rfdetr')
+            model_path: ONNX检测模型路径
+            conf_thres: 检测置信度阈值
+            iou_thres: NMS的IoU阈值
+            roi_top_ratio: ROI区域上边界比例 (0.0-1.0)
+            plate_conf_thres: 车牌特定置信度阈值,默认使用conf_thres
+            color_layer_model: 颜色/层级分类模型路径
+            ocr_model: OCR模型路径
+            plate_yaml_path: 车牌配置文件路径
+            det_config_path: 检测配置文件路径
+            annotator_preset: 可视化预设名称
+            annotator_types: 自定义annotator类型列表
+            **kwargs: 其他参数
+        """
+        self.conf_thres = conf_thres
+        self.iou_thres = iou_thres
+        self.roi_top_ratio = roi_top_ratio
+        self.plate_conf_thres = plate_conf_thres if plate_conf_thres is not None else conf_thres
+
+        # 初始化检测器
+        try:
+            from onnxtools import create_detector
+            self.detector = create_detector(
+                model_type=model_type,
+                onnx_path=model_path,
+                conf_thres=conf_thres,
+                iou_thres=iou_thres
+            )
+            logging.info(f"Initialized {model_type} detector from {model_path}")
+        except Exception as e:
+            logging.error(f"Error initializing detector: {e}")
+            raise
+
+        # 加载车牌配置
+        with open(plate_yaml_path, "r", encoding="utf-8") as f:
+            plate_yaml = yaml.safe_load(f)
+            self.character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
+            color_dict = plate_yaml["color_dict"]
+            layer_dict = plate_yaml["layer_dict"]
+
+        # 初始化颜色/层级分类器和OCR模型
+        from onnxtools import ColorLayerORT, OcrORT
+        self.color_layer_classifier = ColorLayerORT(
+            color_layer_model,
+            color_map=color_dict,
+            layer_map=layer_dict
+        )
+        self.ocr_model = OcrORT(ocr_model, character=self.character)
+        logging.info("Initialized color/layer classifier and OCR model")
+
+        # 加载类别名称和颜色
+        if self.detector.class_names:
+            logging.info(f"从ONNX模型metadata读取到类别名称: {self.detector.class_names}")
+            max_class_id = max(self.detector.class_names.keys())
+            self.class_names = [self.detector.class_names.get(i, f"class_{i}") for i in range(max_class_id + 1)]
+        else:
+            logging.info("ONNX模型metadata中未找到names字段,回退到YAML配置文件")
+            with open(det_config_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+            self.class_names = config["class_names"]
+
+        # colors始终从YAML配置文件读取
+        with open(det_config_path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+        self.colors = config["visual_colors"]
+
+        # 初始化annotator管道
+        self.annotator_pipeline = None
+        if annotator_preset or annotator_types:
+            self.annotator_pipeline = self._create_annotator_pipeline(
+                annotator_preset, annotator_types, **kwargs
+            )
+            if self.annotator_pipeline:
+                logging.info("Annotator pipeline initialized successfully")
+
+    def _create_annotator_pipeline(
+        self,
+        preset: Optional[str],
+        types: Optional[List[str]],
+        **kwargs
+    ) -> Optional[AnnotatorPipeline]:
+        """创建annotator管道。"""
+        if not ANNOTATOR_AVAILABLE:
+            return None
+
+        # 优先使用预设
+        if preset:
+            try:
+                preset_obj = VisualizationPreset.from_yaml(preset)
+                pipeline = preset_obj.create_pipeline()
+                logging.info(f"Using annotator preset: {preset}")
+                return pipeline
+            except Exception as e:
+                logging.warning(f"Failed to load preset '{preset}': {e}")
+                return None
+
+        # 使用自定义类型
+        if types:
+            pipeline = AnnotatorPipeline()
+            for ann_type_str in types:
+                try:
+                    ann_type = AnnotatorType(ann_type_str)
+                    config = {}
+                    # 根据类型配置参数
+                    if ann_type == AnnotatorType.ROUND_BOX:
+                        config = {
+                            'thickness': kwargs.get('box_thickness', 2),
+                            'roundness': kwargs.get('roundness', 0.3)
+                        }
+                    elif ann_type == AnnotatorType.BLUR:
+                        config = {'kernel_size': kwargs.get('blur_kernel_size', 15)}
+                    elif ann_type in [AnnotatorType.BOX, AnnotatorType.BOX_CORNER]:
+                        config = {'thickness': kwargs.get('box_thickness', 2)}
+
+                    pipeline.add(ann_type, config)
+                except ValueError:
+                    logging.warning(f"Unknown annotator type: {ann_type_str}")
+
+            return pipeline
+
+        return None
+
+    def __call__(
+        self,
+        frame: np.ndarray
+    ) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+        """执行完整的推理管道。
+
+        Args:
+            frame: 输入图像 (BGR格式)
+
+        Returns:
+            Tuple[np.ndarray, List[Dict]]:
+                - 标注后的图像 (BGR格式)
+                - 输出数据列表,包含检测框、车牌文本、颜色、层级等信息
+
+        Example:
+            >>> result_img, output_data = pipeline(image)
+            >>> cv2.imwrite('output.jpg', result_img)
+            >>> print(output_data[0]['plate_name'])  # 打印第一个车牌号
+        """
+        # 创建一个伪args对象用于process_frame
+        class Args:
+            def __init__(self, roi_top_ratio, plate_conf_thres, conf_thres):
+                self.roi_top_ratio = roi_top_ratio
+                self.plate_conf_thres = plate_conf_thres
+                self.conf_thres = conf_thres
+
+        args = Args(self.roi_top_ratio, self.plate_conf_thres, self.conf_thres)
+
+        # 使用现有的process_frame函数
+        result_frame, output_data = process_frame(
+            frame,
+            self.detector,
+            self.color_layer_classifier,
+            self.ocr_model,
+            self.character,
+            self.class_names,
+            self.colors,
+            args,
+            self.annotator_pipeline
+        )
+
+        return result_frame, output_data

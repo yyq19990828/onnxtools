@@ -78,7 +78,13 @@ def draw_detections_supervision(image: np.ndarray,
 
     # Create labels with OCR information
     if len(detections) > 0 and len(detections[0]) > 0:
-        labels = create_ocr_labels(detections[0], plate_results or [], class_names)
+        # Extract separate arrays from detection format for create_ocr_labels
+        det_array = np.array(detections[0])  # [N, 6] format
+        boxes = det_array[:, :4]              # [N, 4] xyxy
+        scores = det_array[:, 4]              # [N] confidence
+        class_ids = det_array[:, 5].astype(int)  # [N] class_id
+
+        labels = create_ocr_labels(boxes, scores, class_ids, plate_results or [], class_names)
 
         # Draw labels
         annotated_image = label_annotator.annotate(

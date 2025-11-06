@@ -1,12 +1,12 @@
 """
-Contract tests for refactored OCRONNX and ColorLayerONNX classes.
+Contract tests for refactored OcrORT and ColorLayerORT classes.
 
 This module validates that the refactored classes maintain API compatibility
 and proper behavior after migrating from utils functions to class methods.
 
 Test Coverage:
-- ColorLayerONNX __call__() interface contract
-- OCRONNX __call__() interface contract
+- ColorLayerORT __call__() interface contract
+- OcrORT __call__() interface contract
 - Backward compatible infer() methods
 - Static method accessibility
 - Type safety and return value contracts
@@ -21,9 +21,9 @@ from typing import Dict, List, Tuple, Any
 
 @pytest.fixture
 def color_layer_model(color_layer_model_path, color_map, layer_map):
-    """Create ColorLayerONNX instance for contract testing."""
-    from infer_onnx.onnx_ocr import ColorLayerONNX
-    return ColorLayerONNX(
+    """Create ColorLayerORT instance for contract testing."""
+    from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
+    return ColorLayerORT(
         str(color_layer_model_path),
         color_map=color_map,
         layer_map=layer_map
@@ -32,20 +32,20 @@ def color_layer_model(color_layer_model_path, color_map, layer_map):
 
 @pytest.fixture
 def ocr_model_refactored(ocr_model_path, ocr_character):
-    """Create refactored OCRONNX instance for contract testing."""
-    from infer_onnx.onnx_ocr import OCRONNX
-    return OCRONNX(
+    """Create refactored OcrORT instance for contract testing."""
+    from onnxtools.infer_onnx.onnx_ocr import OcrORT
+    return OcrORT(
         str(ocr_model_path),
         character=ocr_character
     )
 
 
-class TestColorLayerONNXContract:
-    """Contract tests for ColorLayerONNX refactored class."""
+class TestColorLayerORTContract:
+    """Contract tests for ColorLayerORT refactored class."""
 
     def test_initialization_contract(self, color_layer_model_path, color_map, layer_map):
         """
-        Contract: ColorLayerONNX initialization must accept required parameters.
+        Contract: ColorLayerORT initialization must accept required parameters.
 
         Required parameters:
         - onnx_path: str
@@ -57,10 +57,10 @@ class TestColorLayerONNXContract:
         - conf_thres: float (default 0.5)
         - providers: list (default ['CUDAExecutionProvider', 'CPUExecutionProvider'])
         """
-        from infer_onnx.onnx_ocr import ColorLayerONNX
+        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
 
         # Test minimal initialization
-        model = ColorLayerONNX(
+        model = ColorLayerORT(
             str(color_layer_model_path),
             color_map=color_map,
             layer_map=layer_map
@@ -74,7 +74,7 @@ class TestColorLayerONNXContract:
         assert model._requested_input_shape == (48, 168)  # User-requested shape
 
         # Test with custom parameters
-        model_custom = ColorLayerONNX(
+        model_custom = ColorLayerORT(
             str(color_layer_model_path),
             color_map=color_map,
             layer_map=layer_map,
@@ -87,7 +87,7 @@ class TestColorLayerONNXContract:
 
     def test_call_interface_contract(self, color_layer_model, sample_blue_plate):
         """
-        Contract: ColorLayerONNX.__call__() must return valid color/layer results.
+        Contract: ColorLayerORT.__call__() must return valid color/layer results.
 
         Input: np.ndarray (BGR image)
         Output: Tuple[str, str, float] = (color, layer, confidence)
@@ -115,7 +115,7 @@ class TestColorLayerONNXContract:
 
     def test_call_with_conf_threshold_override(self, color_layer_model, sample_blue_plate):
         """
-        Contract: ColorLayerONNX.__call__() must accept optional conf_thres override.
+        Contract: ColorLayerORT.__call__() must accept optional conf_thres override.
 
         When conf_thres is provided, it should override the instance default.
         """
@@ -136,13 +136,13 @@ class TestColorLayerONNXContract:
 
         This supports TensorRT engine workflow where preprocessing happens separately.
         """
-        from infer_onnx.onnx_ocr import ColorLayerONNX
+        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
 
         # Create test image
         test_img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
 
         # Call static method directly
-        preprocessed = ColorLayerONNX._image_preprocess_static(
+        preprocessed = ColorLayerORT._image_preprocess_static(
             test_img,
             image_shape=(48, 168)
         )
@@ -153,12 +153,12 @@ class TestColorLayerONNXContract:
         assert preprocessed.dtype == np.float32
 
 
-class TestOCRONNXContract:
-    """Contract tests for OCRONNX refactored class."""
+class TestOcrORTContract:
+    """Contract tests for OcrORT refactored class."""
 
     def test_initialization_contract(self, ocr_model_path, ocr_character):
         """
-        Contract: OCRONNX initialization must accept required parameters.
+        Contract: OcrORT initialization must accept required parameters.
 
         Required parameters:
         - onnx_path: str
@@ -169,10 +169,10 @@ class TestOCRONNXContract:
         - conf_thres: float (default 0.5)
         - providers: list
         """
-        from infer_onnx.onnx_ocr import OCRONNX
+        from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Test minimal initialization
-        model = OCRONNX(
+        model = OcrORT(
             str(ocr_model_path),
             character=ocr_character
         )
@@ -186,7 +186,7 @@ class TestOCRONNXContract:
         self, ocr_model_refactored, sample_single_layer_plate
     ):
         """
-        Contract: OCRONNX.__call__() must return valid OCR results for single-layer plates.
+        Contract: OcrORT.__call__() must return valid OCR results for single-layer plates.
 
         Input: np.ndarray (BGR plate image)
         Output: Tuple[str, float, List[float]] = (text, avg_conf, char_confidences)
@@ -227,7 +227,7 @@ class TestOCRONNXContract:
         self, ocr_model_refactored, sample_double_layer_plate
     ):
         """
-        Contract: OCRONNX.__call__() must handle double-layer plates.
+        Contract: OcrORT.__call__() must handle double-layer plates.
 
         Double-layer processing may fail for synthetic images, which is acceptable.
         """
@@ -263,28 +263,28 @@ class TestOCRONNXContract:
         - _split_double_layer_plate()
         - _stitch_double_layer_plate()
         """
-        from infer_onnx.onnx_ocr import OCRONNX
+        from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Test image
         test_img = np.random.randint(0, 255, (140, 440, 3), dtype=np.uint8)
 
         # Test main preprocessing
-        processed = OCRONNX._process_plate_image_static(test_img, is_double_layer=False)
+        processed = OcrORT._process_plate_image_static(test_img, is_double_layer=False)
         assert processed is not None
         assert isinstance(processed, np.ndarray)
 
         # Test resize normalization
-        normalized = OCRONNX._resize_norm_img_static(processed, [3, 48, 168])
+        normalized = OcrORT._resize_norm_img_static(processed, [3, 48, 168])
         assert normalized.shape == (1, 3, 48, 168)
         assert normalized.dtype == np.float32
 
         # Test skew detection (gray image)
         gray_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
-        angle = OCRONNX._detect_skew_angle(gray_img)
+        angle = OcrORT._detect_skew_angle(gray_img)
         assert isinstance(angle, (int, float))
 
         # Test skew correction
-        corrected = OCRONNX._correct_skew(test_img, angle)
+        corrected = OcrORT._correct_skew(test_img, angle)
         assert corrected.shape == test_img.shape
 
     def test_static_postprocessing_methods_accessibility(self, ocr_character):
@@ -295,10 +295,10 @@ class TestOCRONNXContract:
         - _get_ignored_tokens()
         - _decode_static()
         """
-        from infer_onnx.onnx_ocr import OCRONNX
+        from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Test ignored tokens
-        ignored_tokens = OCRONNX._get_ignored_tokens_static()
+        ignored_tokens = OcrORT._get_ignored_tokens_static()
         assert isinstance(ignored_tokens, list)
         # Ignored tokens are indices, not strings
         assert isinstance(ignored_tokens[0], int)
@@ -308,7 +308,7 @@ class TestOCRONNXContract:
         text_index = np.array([[0, 1, 2, 3, 4]])  # Fake indices
         text_prob = np.array([[0.9, 0.85, 0.95, 0.88, 0.92]])  # Fake probs
 
-        results = OCRONNX._decode_static(
+        results = OcrORT._decode_static(
             ocr_character,
             text_index,
             text_prob,
@@ -319,14 +319,14 @@ class TestOCRONNXContract:
 
     def test_special_character_post_processing(self, ocr_model_refactored):
         """
-        Contract: OCRONNX must apply special post-processing rules.
+        Contract: OcrORT must apply special post-processing rules.
 
         Known rules:
         - Replace leading '苏' with '京' (historical correction)
         """
         # This is tested indirectly through the decode logic
         # The actual behavior is in _decode_static()
-        from infer_onnx.onnx_ocr import OCRONNX
+        from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Simulate a decode result starting with '苏'
         # (In real scenario, this would come from model output)
@@ -340,7 +340,7 @@ class TestOCRONNXContract:
         text_index = np.array([[1, 2, 3, 4, 5, 6, 7]])  # '苏' is index 1
         text_prob = np.ones_like(text_index, dtype=np.float32) * 0.95
 
-        results = OCRONNX._decode_static(
+        results = OcrORT._decode_static(
             test_characters,
             text_index,
             text_prob,
@@ -361,12 +361,12 @@ class TestRefactoredClassesIntegration:
         self, color_layer_model, ocr_model_refactored, sample_blue_plate
     ):
         """
-        Contract: ColorLayerONNX and OCRONNX must work together in pipeline.
+        Contract: ColorLayerORT and OcrORT must work together in pipeline.
 
         Typical workflow:
         1. Detect vehicle/plate with YOLO/RT-DETR
-        2. Classify color/layer with ColorLayerONNX
-        3. Recognize text with OCRONNX
+        2. Classify color/layer with ColorLayerORT
+        3. Recognize text with OcrORT
         """
         # Step 1: Classify color and layer
         color, layer, color_conf = color_layer_model(sample_blue_plate)
@@ -392,16 +392,16 @@ class TestRefactoredClassesIntegration:
 
         This test verifies that type annotations match actual behavior.
         """
-        from infer_onnx.onnx_ocr import ColorLayerONNX, OCRONNX
+        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT, OcrORT
         import inspect
 
-        # Check ColorLayerONNX.__call__ signature
-        call_sig = inspect.signature(ColorLayerONNX.__call__)
+        # Check ColorLayerORT.__call__ signature
+        call_sig = inspect.signature(ColorLayerORT.__call__)
         assert 'image' in call_sig.parameters
         assert 'conf_thres' in call_sig.parameters
 
-        # Check OCRONNX.__call__ signature
-        ocr_call_sig = inspect.signature(OCRONNX.__call__)
+        # Check OcrORT.__call__ signature
+        ocr_call_sig = inspect.signature(OcrORT.__call__)
         assert 'image' in ocr_call_sig.parameters
         assert 'is_double_layer' in ocr_call_sig.parameters
 
@@ -439,7 +439,7 @@ class TestPerformanceContracts:
         self, color_layer_model, sample_blue_plate
     ):
         """
-        Contract: ColorLayerONNX inference must complete within acceptable time.
+        Contract: ColorLayerORT inference must complete within acceptable time.
 
         Target: < 50ms per inference (after warmup)
         """
@@ -460,7 +460,7 @@ class TestPerformanceContracts:
 
         avg_time = np.mean(times)
 
-        print(f"\n⏱️  ColorLayerONNX Performance:")
+        print(f"\n⏱️  ColorLayerORT Performance:")
         print(f"   Average: {avg_time:.2f} ms")
         print(f"   Min: {np.min(times):.2f} ms")
         print(f"   Max: {np.max(times):.2f} ms")
@@ -468,13 +468,13 @@ class TestPerformanceContracts:
         # Performance assertion (relaxed for CPU-only mode)
         # Target: < 50ms on GPU, < 150ms on CPU
         assert avg_time < 150, \
-            f"ColorLayerONNX too slow: {avg_time:.2f}ms (target < 150ms on CPU)"
+            f"ColorLayerORT too slow: {avg_time:.2f}ms (target < 150ms on CPU)"
 
     def test_ocr_inference_performance(
         self, ocr_model_refactored, sample_single_layer_plate
     ):
         """
-        Contract: OCRONNX inference must complete within acceptable time.
+        Contract: OcrORT inference must complete within acceptable time.
 
         Target: < 100ms per inference including preprocessing (after warmup)
         """
@@ -495,11 +495,11 @@ class TestPerformanceContracts:
 
         avg_time = np.mean(times)
 
-        print(f"\n⏱️  OCRONNX Performance:")
+        print(f"\n⏱️  OcrORT Performance:")
         print(f"   Average: {avg_time:.2f} ms")
         print(f"   Min: {np.min(times):.2f} ms")
         print(f"   Max: {np.max(times):.2f} ms")
 
         # Performance assertion
         assert avg_time < 100, \
-            f"OCRONNX too slow: {avg_time:.2f}ms (target < 100ms)"
+            f"OcrORT too slow: {avg_time:.2f}ms (target < 100ms)"

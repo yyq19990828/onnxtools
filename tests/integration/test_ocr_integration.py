@@ -59,8 +59,15 @@ class TestOCRIntegration:
         """Integration: OCR labels should be properly created for supervision annotator."""
         try:
             from utils.supervision_labels import create_ocr_labels
+            import numpy as np
 
-            labels = create_ocr_labels(sample_detections[0], sample_plate_results, sample_class_names)
+            # Extract separate arrays from detection format (adapted for new API)
+            det_array = np.array(sample_detections[0])  # [N, 6] format
+            boxes = det_array[:, :4]              # [N, 4] xyxy
+            scores = det_array[:, 4]              # [N] confidence
+            class_ids = det_array[:, 5].astype(int)  # [N] class_id
+
+            labels = create_ocr_labels(boxes, scores, class_ids, sample_plate_results, sample_class_names)
 
             assert isinstance(labels, list)
             assert len(labels) == len(sample_detections[0])
@@ -150,12 +157,19 @@ class TestOCRIntegration:
             from utils.supervision_converter import convert_to_supervision_detections
             from utils.supervision_labels import create_ocr_labels
             import supervision as sv
+            import numpy as np
 
             # Convert detections
             sv_detections = convert_to_supervision_detections(sample_detections, sample_class_names)
 
+            # Extract separate arrays from detection format (adapted for new API)
+            det_array = np.array(sample_detections[0])  # [N, 6] format
+            boxes = det_array[:, :4]              # [N, 4] xyxy
+            scores = det_array[:, 4]              # [N] confidence
+            class_ids = det_array[:, 5].astype(int)  # [N] class_id
+
             # Create labels
-            labels = create_ocr_labels(sample_detections[0], [None, {"plate_text": "京A12345", "color": "蓝色", "layer": "单层", "should_display_ocr": True}], sample_class_names)
+            labels = create_ocr_labels(boxes, scores, class_ids, [None, {"plate_text": "京A12345", "color": "蓝色", "layer": "单层", "should_display_ocr": True}], sample_class_names)
 
             # Create annotator
             label_annotator = create_rich_label_annotator()

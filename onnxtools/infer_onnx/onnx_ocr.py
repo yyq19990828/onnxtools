@@ -5,16 +5,20 @@ This module provides two main classes:
 - ColorLayerORT: Vehicle plate color and layer classification
 - OcrORT: Optical Character Recognition for plate numbers
 
-Both classes inherit from BaseORT and follow the unified inference pattern.
+These are independent inference classes (not inheriting BaseORT) because:
+1. They perform classification/OCR tasks, not object detection
+2. They return tuples (natural for classification) instead of Result objects
+3. No bounding box concept - incompatible with Result's boxes/scores/class_ids model
+
+See onnxtools/infer_onnx/CLAUDE.md for architecture design rationale.
 """
 
 import cv2
 import numpy as np
 import logging
+import onnxruntime
 from typing import List, Tuple, Optional, Dict, TypeAlias
 from numpy.typing import NDArray
-
-from .onnx_base import BaseORT
 
 
 # Type Aliases for OCR and Color/Layer Classification
@@ -30,11 +34,12 @@ PreprocessResult: TypeAlias = Tuple[
 OCROutput: TypeAlias = Tuple[NDArray[np.int_], Optional[NDArray[np.float32]]]
 
 
-class ColorLayerORT(BaseORT):
+class ColorLayerORT:
     """
     Vehicle plate color and layer classification inference engine.
 
-    Inherits from BaseORT and supports:
+    Independent inference class for classification tasks (does not inherit BaseORT).
+    Supports:
     - 5 color categories: blue, yellow, white, black, green
     - 2 layer categories: single, double
 
@@ -44,8 +49,8 @@ class ColorLayerORT(BaseORT):
         ...     color_map={0: 'blue', 1: 'yellow', 2: 'white', 3: 'black', 4: 'green'},
         ...     layer_map={0: 'single', 1: 'double'}
         ... )
-        >>> result, orig_shape = classifier(plate_image)
-        >>> print(result['color'], result['layer'])
+        >>> color, layer, conf = classifier(plate_image)
+        >>> print(f"Color: {color}, Layer: {layer}")
     """
 
     def __init__(
@@ -78,8 +83,21 @@ class ColorLayerORT(BaseORT):
         if not layer_map:
             raise ValueError("layer_map cannot be empty")
 
-        # Initialize base class
-        super().__init__(onnx_path, input_shape, conf_thres, providers)
+        # Initialize ONNX Runtime session
+        if providers is None:
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+        self._onnx_session = onnxruntime.InferenceSession(onnx_path, providers=providers)
+        logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
+
+        # Get input/output names from model
+        self.input_name = self._onnx_session.get_inputs()[0].name
+        self.output_names = [output.name for output in self._onnx_session.get_outputs()]
+        logging.info(f"从ONNX模型读取信息: input={self.input_name}, outputs={self.output_names}")
+
+        # Store configuration
+        self.input_shape = input_shape
+        self.conf_thres = conf_thres
 
         # Store mappings
         self.color_map = color_map
@@ -152,15 +170,6 @@ class ColorLayerORT(BaseORT):
 
         return onnx_infer_data, 1.0, original_shape
 
-    def _postprocess(
-        self,
-        prediction: NDArray[np.float32],
-        conf_thres: float,
-        **kwargs
-    ) -> Dict[str, any]:
-
-        pass
-
     def __call__(
         self,
         image: NDArray[np.uint8],
@@ -230,11 +239,12 @@ class ColorLayerORT(BaseORT):
 
 
 
-class OcrORT(BaseORT):
+class OcrORT:
     """
     Optical Character Recognition inference engine for vehicle plates.
 
-    Inherits from BaseORT and supports:
+    Independent inference class for OCR tasks (does not inherit BaseORT).
+    Supports:
     - Single-layer plate OCR
     - Double-layer plate processing (skew correction, split, stitch)
     - Chinese character and alphanumeric recognition
@@ -244,9 +254,10 @@ class OcrORT(BaseORT):
         ...     'models/ocr.onnx',
         ...     character=['京', 'A', 'B', '0', '1', '2', ...]
         ... )
-        >>> results, orig_shape = ocr_model(plate_image, is_double_layer=True)
-        >>> text, conf, char_confs = results[0]
-        >>> print(f"Plate: {text}, Confidence: {conf:.3f}")
+        >>> result = ocr_model(plate_image, is_double_layer=True)
+        >>> if result:
+        ...     text, conf, char_confs = result
+        ...     print(f"Plate: {text}, Confidence: {conf:.3f}")
     """
 
     def __init__(
@@ -275,8 +286,21 @@ class OcrORT(BaseORT):
         if not character:
             raise ValueError("character list cannot be empty")
 
-        # Initialize base class
-        super().__init__(onnx_path, input_shape, conf_thres, providers)
+        # Initialize ONNX Runtime session
+        if providers is None:
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+        self._onnx_session = onnxruntime.InferenceSession(onnx_path, providers=providers)
+        logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
+
+        # Get input/output names from model
+        self.input_name = self._onnx_session.get_inputs()[0].name
+        self.output_names = [output.name for output in self._onnx_session.get_outputs()]
+        logging.info(f"从ONNX模型读取信息: input={self.input_name}, outputs={self.output_names}")
+
+        # Store configuration
+        self.input_shape = input_shape
+        self.conf_thres = conf_thres
 
         # Store character dictionary
         self.character = character

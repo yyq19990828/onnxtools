@@ -188,9 +188,17 @@ class RfdetrORT(BaseORT):
             
             boxes_xyxy = np.column_stack([x1, y1, x2, y2])
             
-            # 缩放到输入图像尺寸（从归一化坐标[0,1]到像素坐标）
-            imgsz_w, imgsz_h = self.input_shape[1], self.input_shape[0]  # (width, height)
-            scale_fct = np.array([imgsz_w, imgsz_h, imgsz_w, imgsz_h])
+            # 缩放到原图尺寸（从归一化坐标[0,1]到像素坐标）
+            # 如果有orig_shape参数，直接缩放到原图；否则缩放到输入尺寸
+            orig_shape = kwargs.get('orig_shape', None)
+            if orig_shape is not None:
+                # 直接缩放到原图尺寸
+                orig_h, orig_w = orig_shape  # (H, W)
+                scale_fct = np.array([orig_w, orig_h, orig_w, orig_h])
+            else:
+                # 回退到输入尺寸
+                imgsz_w, imgsz_h = self.input_shape[1], self.input_shape[0]  # (width, height)
+                scale_fct = np.array([imgsz_w, imgsz_h, imgsz_w, imgsz_h])
             boxes_xyxy = boxes_xyxy * scale_fct
             
             # 置信度过滤

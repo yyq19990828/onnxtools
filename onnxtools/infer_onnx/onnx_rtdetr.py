@@ -191,7 +191,7 @@ class RtdetrORT(BaseORT):
         
         return softmax_scores
     
-    def _postprocess(self, preds: np.ndarray, conf_thres: float, **_kwargs) -> List[np.ndarray]:
+    def _postprocess(self, preds: np.ndarray, conf_thres: float, **kwargs) -> List[np.ndarray]:
         """
         RT-DETR后处理（优化版本，支持自适应分类输出归一化处理）
         
@@ -219,10 +219,21 @@ class RtdetrORT(BaseORT):
         # 智能检测和处理分类输出的归一化状态
         scores = self._smart_normalize_scores(scores)
         
-        # 缩放bbox到输入图像尺寸（复刻 ultralytics/models/rtdetr/val.py#L178）
-        # RT-DETR输出的bbox是归一化坐标[0,1]，需要乘以输入尺寸转换为像素坐标
-        imgsz = self.input_shape[0]  # ultralytics假设输入是正方形
-        bboxes = bboxes * imgsz
+        # 缩放bbox到原图尺寸（复刻 ultralytics/models/rtdetr/val.py#L178）
+        # RT-DETR输出的bbox是归一化坐标[0,1]，需要转换为像素坐标
+        # 如果有orig_shape参数，直接缩放到原图；否则缩放到输入尺寸
+        orig_shape = kwargs.get('orig_shape', None)
+        if orig_shape is not None:
+            # 直接缩放到原图尺寸
+            orig_h, orig_w = orig_shape  # (H, W)
+            # bboxes格式是[cx, cy, w, h]，需要按宽高分别缩放
+            bboxes = bboxes.copy()
+            bboxes[:, :, [0, 2]] *= orig_w  # cx, w 按宽度缩放
+            bboxes[:, :, [1, 3]] *= orig_h  # cy, h 按高度缩放
+        else:
+            # 回退到输入尺寸
+            imgsz = self.input_shape[0]  # ultralytics假设输入是正方形
+            bboxes = bboxes * imgsz
         
         # 初始化输出
         outputs = []

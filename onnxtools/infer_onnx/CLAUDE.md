@@ -202,7 +202,14 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
     """
 ```
 
-### 2. OCR和颜色分类器
+### 2. OCR和颜色分类器（独立推理类）
+
+**设计说明**: `ColorLayerORT` 和 `OcrORT` 是独立的推理类,不继承`BaseORT`,因为它们执行的是分类/OCR任务而非目标检测任务。
+
+**核心区别**:
+- **检测器类** (继承BaseORT): 返回`Result`对象,包含boxes/scores/class_ids
+- **分类器/OCR类** (独立): 返回元组,适合分类任务的自然表达
+
 ```python
 from onnxtools import ColorLayerORT, OcrORT
 import yaml
@@ -211,7 +218,7 @@ import yaml
 with open('configs/plate.yaml') as f:
     config = yaml.safe_load(f)
 
-# 车牌颜色和层级分类
+# 车牌颜色和层级分类 - 独立类,返回元组
 color_classifier = ColorLayerORT(
     onnx_path='models/color_layer.onnx',
     color_map=config['color_map'],
@@ -219,15 +226,17 @@ color_classifier = ColorLayerORT(
     input_shape=(48, 168),
     conf_thres=0.5
 )
+# 返回元组: (color: str, layer: str, confidence: float)
 color, layer, conf = color_classifier(plate_image)
 
-# 车牌OCR识别
+# 车牌OCR识别 - 独立类,返回Optional元组
 ocr_model = OcrORT(
     onnx_path='models/ocr.onnx',
     character=config['plate_dict']['character'],
     input_shape=(48, 168),
     conf_thres=0.7
 )
+# 返回Optional[(text: str, confidence: float, char_confs: List[float])]
 result = ocr_model(plate_image, is_double_layer=True)
 if result:
     text, confidence, char_confs = result
@@ -422,31 +431,69 @@ python tools/eval_ocr.py \
 
 ### 类继承关系
 ```
-BaseORT (抽象基类)
+BaseORT (抽象基类 - 目标检测)
 ├── YoloORT (YOLO系列)
 ├── RtdetrORT (RT-DETR)
-├── RfdetrORT (RF-DETR)
+└── RfdetrORT (RF-DETR)
+
+独立推理类 (分类/OCR - 不继承BaseORT)
 ├── ColorLayerORT (颜色/层级分类)
 └── OcrORT (OCR识别)
 ```
 
-### 核心抽象方法
-所有子类必须实现：
+**架构决策说明**:
+
+**为什么OCR和分类类不继承BaseORT?**
+
+1. **任务本质不同**:
+   - 检测器: 空间定位任务 → 输出boxes [N,4] + scores + class_ids
+   - 分类器/OCR: 单样本分类/序列识别 → 输出类别标签或文本序列
+
+2. **返回类型不兼容**:
+   - 检测器返回`Result`对象(包含boxes/scores/class_ids)
+   - 分类器返回元组`(color, layer, confidence)`
+   - OCR返回`Optional[(text, confidence, char_scores)]`
+   - 强行统一会造成语义混乱和性能开销
+
+3. **使用模式差异**:
+   - 检测器: 处理整图 → 返回多个目标
+   - 分类器/OCR: 处理已裁剪的单个区域 → 返回单个结果
+
+4. **符合Python惯用法**:
+   - 元组解包: `color, layer, conf = classifier(image)` (自然、简洁)
+   - 强行用Result: `result = classifier(image); color = result.boxes[0]` (别扭、误导)
+
+### 核心抽象方法 (仅BaseORT子类)
+所有BaseORT子类必须实现：
 - `_preprocess_static(img, **kwargs)` - 静态预处理方法
 - `_postprocess(outputs, **kwargs)` - 后处理输出
 
 ### 统一调用接口
 ```python
-# 所有推理类使用 __call__ 方法
-result = model(image, **kwargs)
+# 检测器类 - 返回Result对象
+detector = create_detector('yolo', 'model.onnx')
+result = detector(image)  # Result实例
+boxes = result.boxes
+scores = result.scores
 
-# 内部执行流程：
-# 1. _prepare_inference() - 准备推理（预处理）
-# 2. _execute_inference() - 执行推理（会话运行）
-# 3. _finalize_inference() - 完成推理（后处理）
+# 分类器/OCR类 - 返回元组
+classifier = ColorLayerORT('color.onnx', color_map, layer_map)
+color, layer, conf = classifier(plate_image)  # 元组解包
+
+ocr = OcrORT('ocr.onnx', character)
+ocr_result = ocr(plate_image)
+if ocr_result:
+    text, conf, char_confs = ocr_result  # 元组解包
 ```
 
 ## 变更日志 (Changelog)
+
+**2025-11-05 (阶段1.3)** - OCR/分类类架构独立化和文档更新
+- ✅ ColorLayerORT和OcrORT不再继承BaseORT
+- ✅ 添加"为什么OCR和分类类不继承BaseORT?"架构决策说明
+- ✅ 更新类继承关系图,区分检测器类和独立推理类
+- ✅ 完善OCR/分类器API文档,强调元组返回类型
+- ✅ 确认导出无变化(仍在__all__中)
 
 **2025-11-05** - 初始化完整模块文档，建立清晰的面包屑导航
 - 更新面包屑路径: [根目录] > [onnxtools] > [infer_onnx]

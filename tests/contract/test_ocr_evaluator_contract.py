@@ -94,7 +94,7 @@ class TestBasicEvaluationContract:
 
     def test_basic_evaluation_flow(self, temp_label_file, mock_ocr_model_perfect):
         """Verify basic evaluation flow contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
 
@@ -136,7 +136,7 @@ class TestBasicEvaluationContract:
 
     def test_empty_dataset_handling(self, tmp_path, mock_ocr_model_perfect):
         """Verify empty dataset handling contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         # Create empty label file
         label_file = tmp_path / "empty.txt"
@@ -154,7 +154,7 @@ class TestBasicEvaluationContract:
 
     def test_output_format_validation(self, temp_label_file, mock_ocr_model_perfect):
         """Verify output_format parameter validation contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_perfect)
@@ -188,7 +188,7 @@ class TestEditDistanceMetricsContract:
 
     def test_perfect_match_metrics(self, temp_label_file, mock_ocr_model_perfect):
         """Verify metrics for perfect matches"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_perfect)
@@ -208,7 +208,7 @@ class TestEditDistanceMetricsContract:
 
     def test_partial_match_metrics(self, temp_label_file, mock_ocr_model_partial):
         """Verify metrics for partial matches"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_partial)
@@ -228,7 +228,7 @@ class TestEditDistanceMetricsContract:
 
     def test_per_sample_results_contract(self, temp_label_file, mock_ocr_model_partial):
         """Verify per_sample_results field contains detailed metrics"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_partial)
@@ -280,7 +280,7 @@ class TestConfidenceFilteringContract:
 
     def test_confidence_threshold_filtering(self, temp_label_file):
         """Verify confidence threshold filtering contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
 
@@ -324,7 +324,7 @@ class TestConfidenceFilteringContract:
 
     def test_threshold_boundary_conditions(self, temp_label_file):
         """Verify threshold boundary conditions"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
 
@@ -370,7 +370,7 @@ class TestJSONExportContract:
 
     def test_json_export_format(self, temp_label_file, mock_ocr_model_perfect, capsys):
         """Verify JSON export format contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_perfect)
@@ -401,7 +401,7 @@ class TestJSONExportContract:
 
     def test_json_structure_consistency(self, temp_label_file):
         """Verify JSON structure matches table format"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
 
@@ -443,7 +443,7 @@ class TestTableFormattingContract:
 
     def test_table_format_alignment(self, temp_label_file, mock_ocr_model_perfect, capsys):
         """Verify table format alignment contract"""
-        from infer_onnx import OCRDatasetEvaluator
+        from onnxtools.infer_onnx import OCRDatasetEvaluator
 
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_perfect)

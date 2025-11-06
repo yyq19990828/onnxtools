@@ -322,6 +322,7 @@ class BaseORT(ABC):
         scale: float,
         ratio_pad: Optional[tuple],
         conf_thres: Optional[float],
+        orig_shape: Optional[tuple] = None,
         **kwargs
     ) -> List[np.ndarray]:
         """
@@ -350,7 +351,11 @@ class BaseORT(ABC):
 
         # RF-DETR needs full outputs, other models use first output
         if type(self).__name__ == 'RfdetrORT':
-            detections = self._postprocess(outputs, effective_conf_thres, **kwargs)
+            detections = self._postprocess(outputs, effective_conf_thres, scale=scale, orig_shape=orig_shape, **kwargs)
+        elif type(self).__name__ == 'RtdetrORT':
+            # RT-DETR also needs orig_shape for coordinate scaling
+            prediction = outputs[0]
+            detections = self._postprocess(prediction, effective_conf_thres, scale=scale, orig_shape=orig_shape, ratio_pad=ratio_pad, **kwargs)
         else:
             prediction = outputs[0]
             detections = self._postprocess(prediction, effective_conf_thres, scale=scale, ratio_pad=ratio_pad, **kwargs)
@@ -381,7 +386,7 @@ class BaseORT(ABC):
         outputs, expected_batch_size = self._execute_inference(input_tensor)
 
         # Phase 3: Finalize inference
-        detections = self._finalize_inference(outputs, expected_batch_size, scale, ratio_pad, conf_thres, **kwargs)
+        detections = self._finalize_inference(outputs, expected_batch_size, scale, ratio_pad, conf_thres, orig_shape=original_shape, **kwargs)
 
         # Convert list format to Result object (T014)
         # detections is List[np.ndarray] where each array has shape [N, 6] (x1,y1,x2,y2,conf,class_id)
