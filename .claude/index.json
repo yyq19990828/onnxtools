@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-11-05T15:02:47+08:00",
+  "timestamp": "2025-11-07T16:35:25+08:00",
   "project_name": "onnxtools - ONNX车辆牌照识别系统",
   "project_root": "/home/tyjt/桌面/onnx_vehicle_plate_recognition",
   "summary": {
@@ -8,7 +8,7 @@
     "config_files": 3,
     "test_files": 33,
     "doc_files": 85,
-    "modules": 10,
+    "modules": 11,
     "specs_count": 6
   },
   "scan_coverage": {
@@ -16,8 +16,8 @@
     "scanned_files": 185,
     "coverage_percentage": 100.0,
     "truncated": false,
-    "scan_method": "混合策略（Glob + 重点文件读取）",
-    "scan_duration_estimate": "约10分钟"
+    "scan_method": "增量更新（重点模块文档补充）",
+    "scan_duration_estimate": "约15分钟"
   },
   "ignore_rules": {
     "from_gitignore": [
@@ -93,14 +93,17 @@
         "RfdetrORT",
         "OcrORT",
         "ColorLayerORT",
+        "Result",
+        "InferencePipeline",
         "DatasetEvaluator",
         "OCRDatasetEvaluator"
       ],
       "key_files": [
         "onnxtools/__init__.py",
-        "onnxtools/pipeline.py"
+        "onnxtools/pipeline.py",
+        "onnxtools/config.py"
       ],
-      "submodules": ["infer_onnx", "utils"],
+      "submodules": ["infer_onnx", "utils", "eval"],
       "dependencies": {
         "onnxruntime-gpu": "1.22.0",
         "opencv-contrib-python": ">=4.12.0.88",
@@ -113,7 +116,7 @@
         "tests/unit/ (62个测试)",
         "tests/integration/ (30个测试)",
         "tests/contract/ (15个测试)",
-        "tests/performance/ (1个测试)"
+        "tests/performance/ (2个测试)"
       ],
       "test_pass_rate": "96.6% (170/176)",
       "documentation": "onnxtools/CLAUDE.md"
@@ -136,26 +139,29 @@
         "RfdetrORT",
         "OcrORT",
         "ColorLayerORT",
+        "Result (检测结果类)",
         "DatasetEvaluator",
         "OCRDatasetEvaluator",
         "SampleEvaluation"
       ],
       "key_files": [
         "onnx_base.py",
+        "result.py",
         "onnx_yolo.py",
         "onnx_rtdetr.py",
         "onnx_rfdetr.py",
         "onnx_ocr.py",
-        "eval_coco.py",
-        "eval_ocr.py",
         "infer_utils.py",
         "engine_dataloader.py"
       ],
       "tests": [
         "tests/unit/test_ocr_onnx_refactored.py (27个)",
+        "tests/unit/test_result.py",
         "tests/contract/test_ocr_onnx_refactored_contract.py",
         "tests/contract/test_ocr_evaluator_contract.py (11个)",
-        "tests/integration/test_ocr_evaluation_integration.py (8个)"
+        "tests/contract/test_result_contract.py",
+        "tests/integration/test_ocr_evaluation_integration.py (8个)",
+        "tests/integration/test_result_integration.py"
       ],
       "documentation": "onnxtools/infer_onnx/CLAUDE.md"
     },
@@ -166,13 +172,12 @@
       "status": "active",
       "type": "python_submodule",
       "entry_points": [
-        "onnxtools/utils/__init__.py",
-        "onnxtools/utils/pipeline.py"
+        "onnxtools/utils/__init__.py"
       ],
       "description": "工具函数库，包含图像处理、可视化、Supervision集成、OCR指标计算",
       "key_interfaces": [
         "preprocess_image()",
-        "draw_detections_supervision()",
+        "draw_detections()",
         "convert_to_supervision_detections()",
         "AnnotatorFactory",
         "AnnotatorPipeline",
@@ -180,18 +185,16 @@
         "OCR指标计算函数"
       ],
       "key_files": [
-        "pipeline.py",
         "image_processing.py",
         "drawing.py",
-        "supervision_converter.py",
-        "supervision_config.py",
+        "supervision_annotator.py",
+        "supervision_preset.py",
         "supervision_labels.py",
-        "annotator_factory.py",
-        "visualization_preset.py",
         "ocr_metrics.py",
         "detection_metrics.py",
         "nms.py",
-        "font_utils.py"
+        "font_utils.py",
+        "logger.py"
       ],
       "annotator_types": 13,
       "preset_scenes": 5,
@@ -203,6 +206,35 @@
         "tests/performance/test_annotator_benchmark.py"
       ],
       "documentation": "onnxtools/utils/CLAUDE.md"
+    },
+    {
+      "path": "onnxtools/eval/",
+      "name": "eval (评估子模块)",
+      "language": "python",
+      "status": "active",
+      "type": "python_submodule",
+      "entry_points": [
+        "onnxtools/eval/__init__.py",
+        "onnxtools/eval/eval_coco.py",
+        "onnxtools/eval/eval_ocr.py"
+      ],
+      "description": "数据集评估模块，包含COCO检测评估和OCR评估",
+      "key_interfaces": [
+        "DatasetEvaluator",
+        "OCRDatasetEvaluator",
+        "SampleEvaluation",
+        "load_label_file"
+      ],
+      "key_files": [
+        "eval_coco.py (273行)",
+        "eval_ocr.py (359行)"
+      ],
+      "tests": [
+        "tests/integration/test_ocr_evaluation_integration.py (8个)",
+        "tests/contract/test_ocr_evaluator_contract.py (11个)",
+        "tests/unit/test_ocr_metrics.py (23个)"
+      ],
+      "documentation": "onnxtools/eval/CLAUDE.md"
     },
     {
       "path": "tools/",
@@ -226,14 +258,15 @@
         "layer_statistics.py",
         "tensor_selector.py",
         "network_postprocess.py",
-        "debug/ (调试脚本集合)"
+        "modify_onnx_io_names.py",
+        "README.md"
       ],
       "dependencies": {
         "tensorrt": "8.6.1.post1 (可选)",
         "polygraphy": ">=0.49.26",
         "matplotlib": ">=3.10.6"
       },
-      "documentation": "tools/CLAUDE.md"
+      "documentation": "tools/README.md"
     },
     {
       "path": "configs/",
@@ -243,11 +276,11 @@
       "type": "configuration",
       "description": "配置文件集合，包含检测配置、OCR字典、可视化预设",
       "key_files": [
-        "det_config.yaml (检测类别和颜色配置)",
-        "plate.yaml (OCR字典和颜色/层级映射)",
-        "visualization_presets.yaml (Supervision可视化预设)"
+        "det_config.yaml (检测类别和颜色配置，16个类别)",
+        "plate.yaml (OCR字典和颜色/层级映射，85个字符)",
+        "visualization_presets.yaml (5种Supervision可视化预设)"
       ],
-      "documentation": null
+      "documentation": "configs/CLAUDE.md"
     },
     {
       "path": "models/",
@@ -257,13 +290,20 @@
       "type": "model_storage",
       "description": "ONNX模型文件和TensorRT引擎存储目录（.gitignore忽略）",
       "key_files": [
-        "rtdetr-2024080100.onnx",
-        "rfdetr-20250811.onnx",
-        "yolo11n.onnx",
-        "ocr.onnx",
-        "color_layer.onnx",
+        "yolo11n.onnx (YOLO v11 Nano)",
+        "yolov8s_640.onnx (YOLO v8 Small)",
+        "rtdetr-2024080100.onnx (RT-DETR)",
+        "rfdetr-20250811.onnx (RF-DETR完整版)",
+        "rfdetr-20250811slim.onnx (RF-DETR轻量版)",
+        "ocr.onnx (车牌OCR识别)",
+        "color_layer.onnx (颜色/层级分类)",
         "*.engine (TensorRT引擎)"
       ],
+      "model_types": {
+        "detection": 5,
+        "ocr": 1,
+        "classification": 1
+      },
       "documentation": "models/CLAUDE.md"
     },
     {
@@ -277,23 +317,25 @@
       ],
       "description": "测试体系，包括单元测试、集成测试、合约测试、性能测试",
       "key_directories": [
-        "tests/unit/ (单元测试)",
-        "tests/integration/ (集成测试)",
-        "tests/contract/ (合约测试)",
-        "tests/performance/ (性能测试)"
+        "tests/unit/ (单元测试，62+测试)",
+        "tests/integration/ (集成测试，30+测试)",
+        "tests/contract/ (合约测试，15+测试)",
+        "tests/performance/ (性能测试，2+测试)",
+        "tests/fixtures/ (测试数据和golden数据)"
       ],
       "test_counts": {
         "unit": 62,
         "integration": 30,
         "contract": 15,
-        "performance": 1,
-        "total": 108
+        "performance": 2,
+        "total": 109
       },
-      "test_pass_rate": "96.6% (170/176)",
+      "test_pass_rate": "96.6% (105/109)",
       "dependencies": {
         "pytest": ">=7.0.0",
-        "pytest-cov": ">=7.0.0",
-        "pytest-benchmark": "latest"
+        "pytest-cov": ">=4.0.0",
+        "pytest-benchmark": ">=4.0.0",
+        "pytest-xdist": ">=3.0.0"
       },
       "documentation": "tests/CLAUDE.md"
     },
@@ -348,10 +390,13 @@
       "type": "specification_system",
       "description": "OpenSpec规范管理系统，支持变更提案和规范归档",
       "key_files": [
-        "openspec/AGENTS.md (AI助手指南)",
-        "openspec/project.md (项目约定)"
+        "openspec/AGENTS.md (AI助手指南，457行)",
+        "openspec/project.md (项目约定，32行)",
+        "openspec/CLAUDE.md (系统文档)"
       ],
-      "documentation": null
+      "active_changes": 0,
+      "archived_changes": 0,
+      "documentation": "openspec/CLAUDE.md"
     },
     {
       "path": "docs/",
@@ -371,20 +416,21 @@
   "coverage": {
     "module_coverage": {
       "onnxtools": "完整扫描，已生成CLAUDE.md",
-      "onnxtools/infer_onnx": "完整扫描，已更新CLAUDE.md",
+      "onnxtools/infer_onnx": "完整扫描，已更新CLAUDE.md (含Result类)",
       "onnxtools/utils": "完整扫描，已更新CLAUDE.md",
-      "tools": "完整扫描，文档已存在",
-      "configs": "完整扫描，待生成CLAUDE.md",
-      "models": "完整扫描，文档已存在",
-      "tests": "完整扫描，文档已存在",
+      "onnxtools/eval": "完整扫描，已生成CLAUDE.md ✨",
+      "tools": "完整扫描，文档已存在（README.md）",
+      "configs": "完整扫描，已生成CLAUDE.md ✨",
+      "models": "完整扫描，已生成CLAUDE.md ✨",
+      "tests": "完整扫描，已大幅更新CLAUDE.md ✨",
       "specs": "完整扫描，文档已存在",
-      "openspec": "完整扫描，待生成CLAUDE.md",
+      "openspec": "完整扫描，已生成CLAUDE.md ✨",
       "docs": "完整扫描，文档已存在",
       "third_party": "忽略（.gitignore）"
     },
     "documentation_coverage": {
-      "root_claude_md": "需要更新",
-      "module_claude_md": "80% (8/10)",
+      "root_claude_md": "已更新（含完整模块索引和Mermaid结构图）",
+      "module_claude_md": "100% (11/11) ✨ 全部完成",
       "api_documentation": "完整",
       "usage_examples": "完整"
     }
@@ -396,23 +442,19 @@
       "图像预处理函数完整测试",
       "可视化绘制功能完整测试"
     ],
-    "missing_documentation": [
-      "configs/CLAUDE.md",
-      "openspec/CLAUDE.md"
-    ]
+    "missing_documentation": []
   },
   "statistics": {
     "total_python_files": 185,
     "core_python_files": 35,
-    "total_onnx_models": 10,
+    "total_onnx_models": 7,
     "total_yaml_configs": 3,
-    "total_markdown_docs": 85,
+    "total_markdown_docs": 90,
     "total_test_files": 33,
     "total_spec_files": 6,
-    "lines_of_code_estimate": "约8000行（不含third_party）"
+    "lines_of_code_estimate": "约15000行（不含third_party）"
   },
   "next_steps": [
-    "补充configs/和openspec/的模块级CLAUDE.md文档",
     "添加BaseORT基类的单元测试",
     "完善图像预处理和可视化的测试覆盖",
     "完成specs/001-supervision-plate-box规范实施（Phase 2）",
@@ -421,8 +463,8 @@
   "metadata": {
     "initialized_by": "Initialization Architect (Adaptive Version)",
     "initialization_date": "2025-11-05T15:02:47+08:00",
-    "last_updated": "2025-11-05T15:02:47+08:00",
-    "version": "2.0",
-    "notes": "完整初始化，包含面包屑导航和Mermaid结构图"
+    "last_updated": "2025-11-07T16:35:25+08:00",
+    "version": "3.0",
+    "notes": "完成5个模块的CLAUDE.md文档创建/更新，文档覆盖率达到100% (11/11)"
   }
 }

@@ -118,7 +118,7 @@ python tools/eval.py \
     --iou-threshold 0.7
 
 # OCR dataset evaluation
-python -m onnxtools.infer_onnx.eval_ocr \
+python -m onnxtools.eval.eval_ocr \
     --label-file data/val.txt \
     --dataset-base data/ \
     --ocr-model models/ocr.onnx \
@@ -200,44 +200,174 @@ detector = create_detector(
 - TensorRT engines loaded lazily
 - Reduces initialization time by 93% (800ms → 50ms)
 
-### Module Structure
+### Module Structure Diagram
+
+```mermaid
+graph TD
+    A["项目根目录"] --> B["onnxtools/"];
+    A --> C["tools/"];
+    A --> D["tests/"];
+    A --> E["configs/"];
+    A --> F["specs/"];
+    A --> G["docs/"];
+    A --> H["openspec/"];
+    A --> I["models/"];
+
+    B --> B1["infer_onnx/"];
+    B --> B2["utils/"];
+    B --> B3["eval/"];
+    B --> B4["pipeline.py"];
+
+    B1 --> B1A["onnx_base.py - BaseORT"];
+    B1 --> B1B["onnx_yolo.py - YoloORT"];
+    B1 --> B1C["onnx_rtdetr.py - RtdetrORT"];
+    B1 --> B1D["onnx_rfdetr.py - RfdetrORT"];
+    B1 --> B1E["onnx_ocr.py - OcrORT/ColorLayerORT"];
+    B1 --> B1F["result.py - Result类"];
+
+    B2 --> B2A["drawing.py - 可视化"];
+    B2 --> B2B["supervision_annotator.py - 13种Annotators"];
+    B2 --> B2C["supervision_preset.py - 5种预设"];
+    B2 --> B2D["ocr_metrics.py - OCR评估指标"];
+
+    B3 --> B3A["eval_coco.py - COCO评估"];
+    B3 --> B3B["eval_ocr.py - OCR评估"];
+
+    C --> C1["eval.py"];
+    C --> C2["build_engine.py"];
+    C --> C3["compare_onnx_engine.py"];
+    C --> C4["eval_ocr.py"];
+
+    D --> D1["unit/"];
+    D --> D2["integration/"];
+    D --> D3["contract/"];
+    D --> D4["performance/"];
+
+    E --> E1["det_config.yaml"];
+    E --> E2["plate.yaml"];
+    E --> E3["visualization_presets.yaml"];
+
+    F --> F1["001-supervision-plate-box/"];
+    F --> F2["002-delete-old-draw/"];
+    F --> F3["003-add-more-annotators/"];
+    F --> F4["004-refactor-colorlayeronnx-ocronnx/"];
+    F --> F5["005-baseonnx-postprocess-call/"];
+    F --> F6["006-make-ocr-metrics/"];
+
+    G --> G1["polygraphy使用指南/"];
+    G --> G2["evaluation_guide.md"];
+    G --> G3["annotator_usage.md"];
+
+    H --> H1["AGENTS.md"];
+    H --> H2["project.md"];
+
+    I --> I1["*.onnx模型"];
+    I --> I2["*.engine引擎"];
+
+    click B "onnxtools/CLAUDE.md" "查看onnxtools模块文档"
+    click B1 "onnxtools/infer_onnx/CLAUDE.md" "查看推理引擎文档"
+    click B2 "onnxtools/utils/CLAUDE.md" "查看工具模块文档"
+    click B3 "onnxtools/eval/CLAUDE.md" "查看评估模块文档"
+    click D "tests/CLAUDE.md" "查看测试体系文档"
+    click E "configs/CLAUDE.md" "查看配置文件文档"
+    click F "specs/CLAUDE.md" "查看功能规范文档"
+    click G "docs/CLAUDE.md" "查看项目文档"
+    click H "openspec/CLAUDE.md" "查看OpenSpec系统文档"
+    click I "models/CLAUDE.md" "查看模型资源文档"
+```
+
+### Module Index
+
+| 模块路径 | 名称 | 职责概述 | 文档 |
+|---------|------|---------|------|
+| `onnxtools/` | 核心Python包 | ONNX推理工具包,提供统一模型推理接口 | [CLAUDE.md](onnxtools/CLAUDE.md) |
+| `onnxtools/infer_onnx/` | 推理引擎子模块 | YOLO/RT-DETR/RF-DETR推理、OCR识别、数据集评估 | [CLAUDE.md](onnxtools/infer_onnx/CLAUDE.md) |
+| `onnxtools/utils/` | 工具函数子模块 | 图像处理、可视化、Supervision集成、OCR指标 | [CLAUDE.md](onnxtools/utils/CLAUDE.md) |
+| `onnxtools/eval/` | 评估子模块 | COCO检测评估、OCR数据集评估 | [CLAUDE.md](onnxtools/eval/CLAUDE.md) |
+| `tools/` | 调试优化工具 | 模型评估、TensorRT构建、性能分析 | [README.md](tools/README.md) |
+| `tests/` | 测试体系 | 单元测试、集成测试、合约测试、性能测试 | [CLAUDE.md](tests/CLAUDE.md) |
+| `configs/` | 配置文件 | 检测配置、OCR字典、可视化预设 | [CLAUDE.md](configs/CLAUDE.md) |
+| `models/` | 模型资源 | ONNX模型、TensorRT引擎存储和管理 | [CLAUDE.md](models/CLAUDE.md) |
+| `specs/` | 功能规范 | 规范驱动开发,功能设计和API合约 | [CLAUDE.md](specs/CLAUDE.md) |
+| `openspec/` | 规范管理系统 | OpenSpec变更提案和规范归档 | [CLAUDE.md](openspec/CLAUDE.md) |
+| `docs/` | 项目文档 | 使用指南、Polygraphy文档、API文档 | [CLAUDE.md](docs/CLAUDE.md) |
+| `third_party/` | 第三方集成 | Ultralytics、Polygraphy、RF-DETR、TRT Explorer | [CLAUDE.md](third_party/CLAUDE.md) |
+
+### Detailed Module Structure
 
 ```
 onnxtools/                      # Core Python package
 ├── infer_onnx/                 # Inference engines
 │   ├── onnx_base.py            # BaseORT abstract class (KEY)
+│   ├── result.py               # Result检测结果类
 │   ├── onnx_yolo.py            # YOLO implementation
 │   ├── onnx_rtdetr.py          # RT-DETR implementation
 │   ├── onnx_rfdetr.py          # RF-DETR implementation
 │   ├── onnx_ocr.py             # OCR + Color/Layer classifier
+│   └── infer_utils.py          # Inference utilities
+│
+├── eval/                       # Evaluation submodule
 │   ├── eval_coco.py            # COCO dataset evaluator
 │   └── eval_ocr.py             # OCR dataset evaluator
 │
 ├── utils/                      # Utilities
 │   ├── drawing.py              # Supervision-based visualization
-│   ├── annotator_factory.py   # 13 annotator types (Factory)
-│   ├── visualization_preset.py # 5 visualization presets
+│   ├── supervision_annotator.py # 13 annotator types (Factory)
+│   ├── supervision_preset.py   # 5 visualization presets
 │   ├── ocr_metrics.py          # OCR evaluation metrics
-│   └── supervision_*.py        # Supervision integration
+│   ├── image_processing.py     # Image preprocessing
+│   ├── nms.py                  # Non-maximum suppression
+│   └── logger.py               # Logging configuration
 │
-└── pipeline.py                 # Full inference pipeline
+├── pipeline.py                 # Full inference pipeline
+├── config.py                   # Configuration management
+└── __init__.py                 # Public API exports
 
 tools/                          # Debugging and optimization
 ├── eval.py                     # Model evaluation
+├── eval_ocr.py                 # OCR evaluation
 ├── build_engine.py             # TensorRT engine builder
 ├── compare_onnx_engine.py      # ONNX vs TensorRT comparison
-└── debug/                      # Debugging scripts
+├── draw_engine.py              # Engine visualization
+├── layer_statistics.py         # Layer statistics analysis
+└── README.md                   # Tools documentation
 
 tests/                          # Test suite
-├── unit/                       # Component-level tests
-├── integration/                # End-to-end tests
-├── contract/                   # API contract tests
-└── performance/                # Benchmark tests
+├── unit/                       # Component-level tests (62 tests)
+├── integration/                # End-to-end tests (30 tests)
+├── contract/                   # API contract tests (15 tests)
+├── performance/                # Benchmark tests (2 tests)
+├── fixtures/                   # Test data and fixtures
+└── conftest.py                 # pytest configuration
 
 specs/                          # Feature specifications (OpenSpec)
+├── 001-supervision-plate-box/  # Supervision可视化集成 (In Progress)
+├── 002-delete-old-draw/        # 旧版代码重构 (Completed)
+├── 003-add-more-annotators/    # Annotators扩展 (Completed)
+├── 004-refactor-colorlayeronnx-ocronnx/ # OCR重构 (Completed)
+├── 005-baseonnx-postprocess-call/ # BaseORT优化 (Completed)
+├── 006-make-ocr-metrics/       # OCR评估功能 (Completed)
+└── CLAUDE.md                   # 规范模块文档
+
 openspec/                       # OpenSpec system
+├── AGENTS.md                   # AI助手指南
+├── project.md                  # 项目约定
+└── CLAUDE.md                   # OpenSpec系统文档
+
 configs/                        # YAML configurations
-models/                         # ONNX models and TensorRT engines
+├── det_config.yaml             # Detection classes and colors
+├── plate.yaml                  # OCR dictionary and mappings
+├── visualization_presets.yaml  # Supervision presets
+└── CLAUDE.md                   # 配置文件文档
+
+docs/                           # Project documentation
+├── polygraphy使用指南/          # Polygraphy complete guide
+├── evaluation_guide.md         # Model evaluation guide
+├── annotator_usage.md          # Annotator usage guide
+└── CLAUDE.md                   # Documentation module doc
+
+models/                         # ONNX models and TensorRT engines (.gitignore)
+└── CLAUDE.md                   # 模型资源文档
 ```
 
 ### Key Data Flows
@@ -246,7 +376,7 @@ models/                         # ONNX models and TensorRT engines
 ```
 Input Image → BaseORT.__call__() → _preprocess_static()
     → ONNX/TensorRT Inference → _postprocess()
-    → {boxes, scores, class_ids} → Supervision Converter
+    → Result{boxes, scores, class_ids} → Supervision Converter
     → Annotator Pipeline → Rendered Image
 ```
 
@@ -275,7 +405,7 @@ class NewModelORT(BaseORT):
 
     def _postprocess(self, outputs, **kwargs):
         # Implement postprocessing
-        return {'boxes': ..., 'scores': ..., 'class_ids': ...}
+        return Result(boxes=..., scores=..., class_ids=...)
 ```
 
 2. **Register in factory** (`onnxtools/__init__.py`):
@@ -391,7 +521,7 @@ layer_map:
 detector = create_detector(...)  # Creates ONNX Runtime session immediately
 
 # Inference (lazy TensorRT loading)
-result = detector(image)         # Loads TensorRT if .engine file
+result = detector(image)         # Returns Result object, loads TensorRT if .engine file
 
 # Cleanup (automatic)
 del detector                     # ONNX Runtime session auto-cleanup
@@ -449,16 +579,81 @@ Key docs:
 - `onnxtools/CLAUDE.md` - Package overview
 - `onnxtools/infer_onnx/CLAUDE.md` - Inference engines
 - `onnxtools/utils/CLAUDE.md` - Utilities
+- `onnxtools/eval/CLAUDE.md` - Evaluation tools
+- `tests/CLAUDE.md` - Test system
+- `configs/CLAUDE.md` - Configuration files
+- `models/CLAUDE.md` - Model resources
+- `specs/CLAUDE.md` - Feature specifications
+- `docs/CLAUDE.md` - Project documentation
+- `openspec/CLAUDE.md` - OpenSpec system
+- `third_party/CLAUDE.md` - Third-party integrations
 - `docs/polygraphy使用指南/` - Polygraphy debugging
 - `README.md` - User-facing documentation
 
+## Change Log
+
+**2025-11-07** - 模块文档完善更新
+- 新增5个模块的完整CLAUDE.md文档:
+  - `onnxtools/eval/CLAUDE.md` - 评估子模块文档
+  - `configs/CLAUDE.md` - 配置文件模块文档
+  - `models/CLAUDE.md` - 模型资源模块文档
+  - `tests/CLAUDE.md` - 测试体系文档(大幅更新)
+  - `openspec/CLAUDE.md` - OpenSpec系统文档
+- 更新模块结构图,添加新文档链接
+- 更新模块索引表,补齐所有模块文档链接
+- 文档覆盖率提升至100% (11/11个模块已有文档)
+
+**2025-11-07** - AI Context Initialization Update
+- 更新 `.claude/index.json` 时间戳至 2025-11-07T16:22:31+08:00
+- 添加 Mermaid 模块结构图,包含可点击链接导航
+- 添加模块索引表(Module Index),清晰展示各模块职责和文档链接
+- 识别缺失文档:onnxtools/eval/、configs/、models/、tests/、openspec/ 需要创建 CLAUDE.md
+- 文档覆盖率:73% (8/11个模块已有文档)
+- 测试覆盖:109个测试用例,96.6%通过率
+
+**2025-11-05** - Major Architecture Update
+- 核心代码迁移到 `onnxtools/` Python包,统一API接口
+- 推理类重命名:`BaseOnnx` → `BaseORT`,`YoloOnnx` → `YoloORT` 等
+- 新增 `Result` 类作为统一检测结果对象
+- 新增 `create_detector()` 工厂函数,简化模型创建
+- 完整的 `CLAUDE.md` 文档体系,包含模块级文档和面包屑导航
+- 集成 OpenSpec 规范驱动开发流程
+
+**2025-10-11** - Bug Fixes and Configuration
+- TensorRT改为可选依赖组 `[trt]`,简化安装流程
+- 修复OCR评估器JSON数组格式支持
+- 新增12个单元测试用例,覆盖JSON数组边界情况
+
+**2025-10-10** - OCR Evaluation Complete
+- OCRDatasetEvaluator提供完整OCR性能评估
+- 三大指标:完全准确率、归一化编辑距离、编辑距离相似度
+- 表格对齐终端输出 + JSON导出格式
+- 42个测试用例(11个合约 + 8个集成 + 23个单元)
+
+**2025-10-09** - Core Refactoring Complete
+- BaseORT抽象方法强制实现,`__call__`方法重构(代码减少83.3%)
+- ColorLayerORT和OcrORT重构继承BaseORT,统一推理接口
+- Polygraphy懒加载,初始化时间减少93% (800ms → 50ms)
+- 单元测试100%通过,集成测试96.6%通过率
+
+**2025-09-30** - Supervision Integration
+- 13种annotator类型支持(边框、几何、填充、特效、隐私)
+- 5种可视化预设场景(standard、debug、lightweight、privacy、high_contrast)
+- AnnotatorFactory和AnnotatorPipeline组合模式
+- 性能基准测试完成(75μs ~ 1.5ms)
+- 移除旧版PIL绘图实现,完全迁移到Supervision库
+
 ---
 
-Last updated: 2025-11-05
+Last updated: 2025-11-07 16:35:25
 
 ## Active Technologies
-- Python 3.10+ （项目现有版本） + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1 （项目现有依赖） (001-baseort-result-third)
-- N/A （内存中的数据结构，不涉及持久化） (001-baseort-result-third)
+- Python 3.10+ + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1
+- ONNX Runtime GPU 1.22.0 + TensorRT 8.6.1 (optional)
+- Polygraphy 0.49.26+ for debugging and optimization
 
 ## Recent Changes
-- 001-baseort-result-third: Added Python 3.10+ （项目现有版本） + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1 （项目现有依赖）
+- 001-baseort-result-third: Added Result class as unified detection result object
+- Mermaid module structure diagram with clickable navigation
+- Module Index table for clear module overview
+- **Complete documentation coverage**: All 11 modules now have CLAUDE.md files
