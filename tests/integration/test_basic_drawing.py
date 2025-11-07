@@ -186,7 +186,7 @@ class TestBasicDrawingIntegration:
         """Integration: Format conversion should work seamlessly in drawing pipeline."""
         # This test ensures the full pipeline works
         try:
-            from onnxtools.utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             from onnxtools.utils.drawing import draw_detections
             import supervision as sv
 

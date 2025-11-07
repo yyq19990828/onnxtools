@@ -232,10 +232,9 @@ A: OCR预处理和后处理函数已迁移到 `onnxtools.infer_onnx.OcrORT` 类�
 
 ### Supervision集成
 - `supervision_converter.py` - 数据格式转换为Supervision
-- `supervision_config.py` - Supervision配置管理
 - `supervision_labels.py` - OCR标签创建
-- `annotator_factory.py` - Annotator工厂和管道
-- `visualization_preset.py` - 可视化预设加载器
+- `supervision_annotator.py` - Annotator工厂和管道
+- `supervision_preset.py` - 可视化预设加载器
 
 ### OCR和度量
 - `ocr_metrics.py` - OCR评估指标计算函数

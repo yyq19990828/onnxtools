@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 import supervision as sv
-from onnxtools.utils.visualization_preset import VisualizationPreset, Presets
+from onnxtools.utils.supervision_preset import VisualizationPreset, Presets
 
 
 @pytest.fixture

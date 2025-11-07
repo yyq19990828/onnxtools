@@ -6,8 +6,8 @@ This test MUST FAIL before implementation (TDD approach).
 
 import pytest
 from pathlib import Path
-from onnxtools.utils.visualization_preset import VisualizationPreset, Presets
-from onnxtools.utils.annotator_factory import AnnotatorPipeline, AnnotatorType
+from onnxtools.utils.supervision_preset import VisualizationPreset, Presets
+from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
 
 
 class TestVisualizationPresetContract:

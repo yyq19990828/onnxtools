@@ -157,10 +157,9 @@ onnxtools/
     ├── image_processing.py     # 图像预处理
     ├── drawing.py              # 可视化绘制
     ├── supervision_converter.py  # Supervision转换
-    ├── supervision_config.py   # Supervision配置
     ├── supervision_labels.py   # 标签创建
-    ├── annotator_factory.py    # Annotator工厂
-    ├── visualization_preset.py # 可视化预设
+    ├── supervision_annotator.py  # Annotator工厂和管道
+    ├── supervision_preset.py   # 可视化预设
     ├── ocr_metrics.py          # OCR指标计算
     ├── detection_metrics.py    # 检测指标
     ├── nms.py                  # NMS算法

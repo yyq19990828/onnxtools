@@ -462,24 +462,17 @@ def test_rtdetr_compare_engine(args):
         
         logging.info(f"成功创建检测器: {type(detector).__name__}")
         logging.info(f"检测器实际输入形状: {detector.input_shape}")
+
+        # 创建数据加载器
         detector.create_engine_dataloader(image_paths=test_image_paths)
-        
+
         # 确保数据加载器已创建
         if detector.engine_dataloader is None:
             logging.error("数据加载器未成功创建")
             return False
-        # 加载测试图像（使用修改后的engine_dataloader的路径处理逻辑）
-        from onnxtools.infer_onnx.engine_dataloader import CustomEngineDataLoader
-        temp_loader = CustomEngineDataLoader(
-            detector_class=type(detector),
-            input_shape=detector.input_shape,
-            input_name=detector.input_name,
-            image_paths=test_image_paths,
-            iterations=1
-        )
-        
-        # 获取处理后的图片路径
-        processed_image_paths = temp_loader.image_paths
+
+        # 获取处理后的图片路径（直接使用已创建的engine_dataloader）
+        processed_image_paths = detector.engine_dataloader.image_paths
         
         if not processed_image_paths:
             logging.error("未找到任何有效的测试图像")

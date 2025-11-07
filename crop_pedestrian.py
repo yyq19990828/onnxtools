@@ -43,7 +43,7 @@ def crop_pedestrian_from_frame(frame, detector, class_names, args, frame_name="f
         Tuple of (cropped_images_count, detection_data)
     """
     # 目标类别ID (根据det_config.yaml, pedestrain是第10个类别,索引为9)
-    target_classes = ['pedestrain', 'cyclist']  # 可以扩展到其他行人相关类别
+    target_classes = ['pedestrain', 'person']  # 可以扩展到其他行人相关类别
     target_class_ids = [i for i, name in enumerate(class_names) if name in target_classes]
 
     # 1. 目标检测
@@ -279,13 +279,13 @@ if __name__ == '__main__':
                        help='保存检测结果JSON文件')
 
     # 检测参数
-    parser.add_argument('--conf-thres', type=float, default=0.8,
+    parser.add_argument('--conf-thres', type=float, default=0.5,
                        help='检测置信度阈值')
     parser.add_argument('--iou-thres', type=float, default=0.5,
                        help='NMS的IoU阈值')
 
     # 裁剪参数
-    parser.add_argument('--expand-ratio', type=float, default=0.1,
+    parser.add_argument('--expand-ratio', type=float, default=0.,
                        help='边界框扩展比例(0.1表示扩展10%%)')
     parser.add_argument('--min-width', type=int, default=20,
                        help='最小检测框宽度(像素)')

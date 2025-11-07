@@ -323,10 +323,9 @@ onnx_vehicle_plate_recognition/
 │   └── utils/                      # 工具函数子模块
 │       ├── __init__.py
 │       ├── drawing.py              # Supervision可视化绘制
-│       ├── annotator_factory.py   # Annotator工厂（13种类型）
-│       ├── visualization_preset.py # 可视化预设（5种场景）
+│       ├── supervision_annotator.py # Annotator工厂和管道（13种类型）
+│       ├── supervision_preset.py   # 可视化预设（5种场景）
 │       ├── supervision_converter.py # Supervision数据转换
-│       ├── supervision_config.py   # Supervision配置
 │       ├── supervision_labels.py   # 标签创建
 │       ├── ocr_metrics.py          # OCR评估指标
 │       ├── detection_metrics.py    # 检测指标计算

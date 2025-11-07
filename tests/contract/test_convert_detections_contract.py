@@ -15,7 +15,7 @@ class TestConvertDetectionsContract:
     def test_convert_function_exists(self):
         """Contract: convert_to_supervision_detections function must exist."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             assert callable(convert_to_supervision_detections), "Function must be callable"
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -24,7 +24,7 @@ class TestConvertDetectionsContract:
         """Contract: Function must accept correct parameters."""
         try:
             import inspect
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             sig = inspect.signature(convert_to_supervision_detections)
             params = list(sig.parameters.keys())
@@ -38,7 +38,7 @@ class TestConvertDetectionsContract:
     def test_convert_empty_detections(self, sample_class_names):
         """Contract: Must handle empty detection arrays gracefully."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
 
             # Test empty detection list
@@ -54,7 +54,7 @@ class TestConvertDetectionsContract:
     def test_convert_valid_detections_format(self, sample_detections, sample_class_names):
         """Contract: Must convert current detection format to supervision format correctly."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
@@ -80,7 +80,7 @@ class TestConvertDetectionsContract:
     def test_convert_xyxy_coordinates(self, sample_detections, sample_class_names):
         """Contract: Bounding box coordinates must be correctly extracted."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -97,7 +97,7 @@ class TestConvertDetectionsContract:
     def test_convert_confidence_scores(self, sample_detections, sample_class_names):
         """Contract: Confidence scores must be correctly extracted."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -114,7 +114,7 @@ class TestConvertDetectionsContract:
     def test_convert_class_ids(self, sample_detections, sample_class_names):
         """Contract: Class IDs must be correctly extracted and converted."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -131,7 +131,7 @@ class TestConvertDetectionsContract:
     def test_convert_class_names_metadata(self, sample_detections, sample_class_names):
         """Contract: Class names must be included in data metadata."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -149,7 +149,7 @@ class TestConvertDetectionsContract:
     def test_convert_data_types(self, sample_detections, sample_class_names):
         """Contract: Output arrays must have correct data types."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -167,7 +167,7 @@ class TestConvertDetectionsContract:
     def test_convert_multiple_batches(self, sample_class_names):
         """Contract: Must handle multiple detection batches correctly."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Create multi-batch detections (should take first batch)
             multi_batch_detections = [
@@ -187,7 +187,7 @@ class TestConvertDetectionsContract:
     def test_convert_invalid_class_id_handling(self, sample_class_names):
         """Contract: Must handle invalid class IDs gracefully."""
         try:
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Create detection with invalid class ID
             invalid_detections = [
@@ -205,7 +205,7 @@ class TestConvertDetectionsContract:
         """Contract: Conversion must be fast enough for real-time processing."""
         try:
             import time
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Create larger detection set
             large_detections = []

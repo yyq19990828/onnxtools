@@ -463,7 +463,7 @@ class Result:
             )
 
         # Import visualization utilities
-        from onnxtools.utils.visualization_preset import create_preset_pipeline
+        from onnxtools.utils.supervision_preset import create_preset_pipeline
 
         # Handle empty results - return original image copy
         if len(self) == 0:

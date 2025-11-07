@@ -6,12 +6,13 @@ This module provides predefined annotator combinations for common use cases.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from functools import lru_cache
 import yaml
 import supervision as sv
 
-from .annotator_factory import AnnotatorPipeline, AnnotatorType
+from .supervision_annotator import AnnotatorPipeline, AnnotatorType
+from .. import config
 
 
 class Presets:
@@ -22,7 +23,6 @@ class Presets:
     DEBUG = "debug"
     HIGH_CONTRAST = "high_contrast"
 
-#TODO load default presets from config.py
 @dataclass
 class VisualizationPreset:
     """Visualization preset configuration."""
@@ -34,28 +34,32 @@ class VisualizationPreset:
     def from_yaml(
         cls,
         preset_name: str,
-        preset_file: str = "configs/visualization_presets.yaml"
+        config_path: Optional[str] = None
     ) -> 'VisualizationPreset':
         """
-        Load preset from YAML file.
+        Load preset configuration.
+
+        优先级:
+        1. config_path显式指定的外部YAML文件(如果提供)
+        2. config模块的硬编码配置(默认)
 
         Args:
             preset_name: Name of the preset to load
-            preset_file: Path to YAML file (default: configs/visualization_presets.yaml)
+            config_path: Optional external config file path (YAML format)
 
         Returns:
             VisualizationPreset instance
 
         Raises:
             ValueError: Unknown preset name
-            FileNotFoundError: YAML file not found
-        """
-        preset_path = Path(preset_file)
-        if not preset_path.exists():
-            raise FileNotFoundError(f"Preset file not found: {preset_file}")
+            FileNotFoundError: YAML file not found (if config_path provided)
 
-        with open(preset_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+        Note:
+            configs/visualization_presets.yaml仅作为外部配置示例保留,
+            默认情况下使用config模块的硬编码常量。
+        """
+        # 使用config模块加载配置（默认硬编码或外部YAML）
+        data = config.load_visualization_config(config_path)
 
         if 'presets' not in data or preset_name not in data['presets']:
             raise ValueError(f"Unknown preset: {preset_name}")
@@ -126,37 +130,45 @@ class VisualizationPreset:
 
 
 @lru_cache(maxsize=32)
-def load_preset_cached(preset_name: str, preset_file: str = "configs/visualization_presets.yaml") -> VisualizationPreset:
+def load_preset_cached(preset_name: str, config_path: Optional[str] = None) -> VisualizationPreset:
     """
-    Load preset from YAML file with caching.
+    Load preset with caching.
 
     This is a cached version of VisualizationPreset.from_yaml() that avoids
-    repeated YAML parsing for the same presets.
+    repeated config loading for the same presets.
+
+    优先级:
+    1. config_path显式指定的外部YAML文件(如果提供)
+    2. config模块的硬编码配置(默认)
 
     Args:
         preset_name: Name of the preset to load
-        preset_file: Path to YAML file
+        config_path: Optional external config file path (YAML format)
 
     Returns:
         Cached VisualizationPreset instance
 
     Raises:
         ValueError: Unknown preset name
-        FileNotFoundError: YAML file not found
+        FileNotFoundError: YAML file not found (if config_path provided)
     """
-    return VisualizationPreset.from_yaml(preset_name, preset_file)
+    return VisualizationPreset.from_yaml(preset_name, config_path)
 
 
-def create_preset_pipeline(preset_name: str, preset_file: str = "configs/visualization_presets.yaml") -> AnnotatorPipeline:
+def create_preset_pipeline(preset_name: str, config_path: Optional[str] = None) -> AnnotatorPipeline:
     """
     Create AnnotatorPipeline from preset with caching.
 
     This convenience function combines preset loading and pipeline creation
     with automatic caching to improve performance for repeated calls.
 
+    优先级:
+    1. config_path显式指定的外部YAML文件(如果提供)
+    2. config模块的硬编码配置(默认)
+
     Args:
         preset_name: Name of the preset to use
-        preset_file: Path to YAML file
+        config_path: Optional external config file path (YAML format)
 
     Returns:
         Configured AnnotatorPipeline instance
@@ -165,5 +177,5 @@ def create_preset_pipeline(preset_name: str, preset_file: str = "configs/visuali
         >>> pipeline = create_preset_pipeline(Presets.DEBUG)
         >>> annotated = pipeline.annotate(image, detections)
     """
-    preset = load_preset_cached(preset_name, preset_file)
+    preset = load_preset_cached(preset_name, config_path)
     return preset.create_pipeline()

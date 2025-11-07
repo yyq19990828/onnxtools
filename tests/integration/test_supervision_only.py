@@ -25,7 +25,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_basic_rendering(self):
         """Test that supervision renders basic detections correctly."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480, (255, 255, 255))
         detections = [[[100, 100, 200, 200, 0.9, 0]]]
@@ -40,7 +40,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_multiple_detections(self):
         """Test supervision rendering with multiple detections."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480)
         detections = [[
@@ -58,7 +58,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_chinese_rendering(self):
         """Test Chinese character rendering for plate OCR with supervision."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480)
         detections = [[[200, 150, 450, 220, 0.93, 1]]]
@@ -84,7 +84,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_empty_detections(self):
         """Test handling of empty detection list."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480)
         detections = [[]]  # Empty detection list
@@ -99,7 +99,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_large_detection_count(self):
         """Test supervision performance with many detections (50+ boxes)."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(1920, 1080)
 
@@ -126,7 +126,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_font_missing_fallback(self):
         """Test behavior when font file is missing (supervision should use fallback)."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480)
         detections = [[[100, 100, 200, 200, 0.9, 0]]]
@@ -145,7 +145,7 @@ class TestSupervisionOnlyRendering:
 
     def test_supervision_only_with_plate_ocr_full(self):
         """Test full integration with vehicle detection and plate OCR."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(800, 600)
         detections = [[
@@ -191,8 +191,8 @@ class TestSupervisionOnlyRendering:
     def test_supervision_annotators_integration(self):
         """Test that supervision annotators are properly integrated."""
         try:
-            from utils.supervision_config import create_box_annotator, create_rich_label_annotator
-            from utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import create_box_annotator, create_rich_label_annotator
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Test annotator creation
             box_annotator = create_box_annotator(thickness=3)

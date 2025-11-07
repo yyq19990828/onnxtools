@@ -15,7 +15,7 @@ class TestOCRIntegration:
     def test_plate_ocr_display_integration(self, sample_image, sample_detections,
                                          sample_class_names, sample_colors, sample_plate_results):
         """Integration: OCR results should be properly overlaid on plate detections."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, sample_detections, sample_class_names,
@@ -45,7 +45,7 @@ class TestOCRIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, chinese_detections, sample_class_names,
@@ -58,7 +58,7 @@ class TestOCRIntegration:
     def test_supervision_ocr_label_creation(self, sample_detections, sample_plate_results, sample_class_names):
         """Integration: OCR labels should be properly created for supervision annotator."""
         try:
-            from utils.supervision_labels import create_ocr_labels
+            from onnxtools.utils.supervision_labels import create_ocr_labels
             import numpy as np
 
             # Extract separate arrays from detection format (adapted for new API)
@@ -97,7 +97,7 @@ class TestOCRIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, detections_with_long_text, sample_class_names,
@@ -126,7 +126,7 @@ class TestOCRIntegration:
             {"plate_text": "京A004", "color": "蓝色", "layer": "单层", "should_display_ocr": True},
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, edge_positions, sample_class_names,
@@ -138,7 +138,7 @@ class TestOCRIntegration:
 
     def test_ocr_without_font_fallback(self, sample_image, sample_detections, sample_class_names, sample_colors, sample_plate_results):
         """Integration: OCR should handle missing font gracefully."""
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         # Test with non-existent font path
         result = draw_detections(
@@ -153,9 +153,9 @@ class TestOCRIntegration:
     def test_supervision_rich_label_annotator_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Supervision RichLabelAnnotator should work with OCR data."""
         try:
-            from utils.supervision_config import create_rich_label_annotator
-            from utils.supervision_converter import convert_to_supervision_detections
-            from utils.supervision_labels import create_ocr_labels
+            from onnxtools.utils.drawing import create_rich_label_annotator
+            from onnxtools.utils.drawing import convert_to_supervision_detections
+            from onnxtools.utils.supervision_labels import create_ocr_labels
             import supervision as sv
             import numpy as np
 
@@ -205,7 +205,7 @@ class TestOCRIntegration:
             {"plate_text": "沪B002", "color": "黄色", "layer": "单层", "should_display_ocr": True}   # plate
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, mixed_detections, sample_class_names,
@@ -228,7 +228,7 @@ class TestOCRIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result_disabled = draw_detections(
             sample_image, sample_detections, sample_class_names,
@@ -267,7 +267,7 @@ class TestOCRIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, sample_detections, sample_class_names,
@@ -297,7 +297,7 @@ class TestOCRIntegration:
 
         many_plate_detections.append(detection_list)
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
         import time
 
         start_time = time.time()
@@ -322,7 +322,7 @@ class TestOCRIntegration:
             }
         ]
 
-        from utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
             sample_image, sample_detections, sample_class_names,

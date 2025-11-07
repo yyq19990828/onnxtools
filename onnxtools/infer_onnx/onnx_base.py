@@ -443,6 +443,7 @@ class BaseORT(ABC):
         self.engine_dataloader = dataloader
         return dataloader
     
+    #TODO 输出结果加上后处理，以及一些图像变换的中间超参
     def compare_engine(
         self, 
         engine_path: Optional[str] = None,

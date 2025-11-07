@@ -45,7 +45,7 @@ class TestPipelineIntegration:
 
         # Test conversion compatibility
         try:
-            from onnxtools.utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
 
             sv_detections = convert_to_supervision_detections(pipeline_detections, pipeline_class_names)

@@ -44,6 +44,55 @@ LAYER_MAP: Dict[int, str] = {
     0: "single", 1: "double",
 }
 
+# ============================================================================
+# 可视化预设配置
+# ============================================================================
+
+# 5种预定义的可视化预设
+VISUALIZATION_PRESETS: Dict[str, Dict[str, Any]] = {
+    "standard": {
+        "name": "标准检测模式",
+        "description": "默认边框+标签，适用于通用检测场景",
+        "annotators": [
+            {"type": "box_corner", "thickness": 2},
+            {"type": "rich_label", "font_size": 25},
+        ]
+    },
+    "lightweight": {
+        "name": "简洁轻量模式",
+        "description": "点标记+简单标签，最小视觉干扰",
+        "annotators": [
+            {"type": "dot", "radius": 5, "position": "CENTER"},
+            {"type": "rich_label", "font_size": 14},
+        ]
+    },
+    "privacy": {
+        "name": "隐私保护模式",
+        "description": "边框+车牌模糊，保护敏感信息",
+        "annotators": [
+            {"type": "box", "thickness": 2},
+            {"type": "blur", "kernel_size": 15},
+        ]
+    },
+    "debug": {
+        "name": "调试分析模式",
+        "description": "圆角框+置信度条+详细标签，展示所有信息",
+        "annotators": [
+            {"type": "round_box", "thickness": 3, "roundness": 0.3},
+            {"type": "percentage_bar", "height": 16, "width": 80},
+            {"type": "rich_label", "font_size": 18},
+        ]
+    },
+    "high_contrast": {
+        "name": "高对比展示模式",
+        "description": "光晕效果+背景变暗，突出检测对象",
+        "annotators": [
+            {"type": "halo", "opacity": 0.8},
+            {"type": "background_overlay", "opacity": 0.5, "color": "black"},
+        ]
+    },
+}
+
 
 # ============================================================================
 # 配置加载工具函数
@@ -117,10 +166,40 @@ def get_ocr_character_list(
     """获取OCR字符列表"""
     plate_config = load_plate_config(config_path)
     character = plate_config['ocr_dict']
-    
+
     if add_blank:
         character = ["blank"] + character
     if add_space:
         character = character + [" "]
-    
+
     return character
+
+
+def load_visualization_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    加载可视化预设配置
+
+    优先级:
+    1. config_path显式指定的外部YAML文件(如果提供)
+    2. 硬编码的配置常量(VISUALIZATION_PRESETS)
+
+    Args:
+        config_path: 可选的外部配置文件路径(YAML格式)
+
+    Returns:
+        包含presets字典的配置
+
+    Note:
+        configs/visualization_presets.yaml仅作为外部配置示例保留,
+        默认情况下使用本模块的硬编码常量。
+    """
+    if config_path:
+        path = Path(config_path)
+        if path.exists():
+            with open(path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+        else:
+            raise FileNotFoundError(f"可视化配置文件不存在: {config_path}")
+
+    # 默认使用硬编码配置
+    return {'presets': VISUALIZATION_PRESETS}

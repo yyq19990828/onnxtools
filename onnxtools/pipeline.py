@@ -19,8 +19,8 @@ from onnxtools.utils.drawing import draw_detections
 
 # Import annotator functionality
 try:
-    from .utils.annotator_factory import AnnotatorType, AnnotatorPipeline
-    from .utils.visualization_preset import VisualizationPreset
+    from .utils.supervision_annotator import AnnotatorType, AnnotatorPipeline
+    from .utils.supervision_preset import VisualizationPreset
     ANNOTATOR_AVAILABLE = True
 except ImportError:
     ANNOTATOR_AVAILABLE = False

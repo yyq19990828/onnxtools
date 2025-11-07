@@ -100,7 +100,7 @@ class TestDrawDetectionsContract:
         """Contract: Format conversion function must be available and work correctly."""
         # This test will fail initially and pass after implementation
         try:
-            from onnxtools.utils.supervision_converter import convert_to_supervision_detections
+            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
