@@ -23,20 +23,21 @@ class RfdetrORT(BaseORT):
     输出格式：两个独立的输出 - pred_boxes 和 pred_logits
     """
     
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (576, 576), 
+    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (576, 576),
                  conf_thres: float = 0.001, iou_thres: float = 0.5,
-                 providers: Optional[List[str]] = None):
+                 providers: Optional[List[str]] = None, **kwargs):
         """
         初始化RF-DETR检测器
-        
+
         Args:
             onnx_path (str): ONNX模型文件路径
             input_shape (Tuple[int, int]): 输入图像尺寸，默认576x576
             conf_thres (float): 置信度阈值
             iou_thres (float): IoU阈值，RF-DETR不使用，保持接口统一
             providers (Optional[List[str]]): ONNX Runtime执行提供程序
+            **kwargs: 其他参数（如 det_config）
         """
-        super().__init__(onnx_path, input_shape, conf_thres, providers)
+        super().__init__(onnx_path, input_shape, conf_thres, providers, **kwargs)
         
         # RF-DETR输出格式验证延迟到模型初始化时进行
     

@@ -1,19 +1,19 @@
 class_names:
-  - car
-  - truck
-  - heavy_truck
-  - van
-  - bus
-  - bicycle
-  - cyclist
-  - tricycle
-  - trolley
-  - pedestrain
-  - cone
-  - animal
-  - other
-  - plate
-  - motorcycle
+  0: car
+  1: truck
+  2: heavy_truck
+  3: van
+  4: bus
+  5: bicycle
+  6: cyclist
+  7: tricycle
+  8: trolley
+  9: pedestrain
+  10: cone
+  11: animal
+  12: other
+  13: plate
+  14: motorcycle
 
 visual_colors:
   - "#FF3838" # 鲜红

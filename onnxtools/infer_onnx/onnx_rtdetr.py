@@ -122,21 +122,22 @@ class RtdetrORT(BaseORT):
     模型输出格式: [batch, 300, 19] = [batch, queries, (4_bbox + 15_classes)]
     """
     
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640), 
-                 conf_thres: float = 0.001, iou_thres: float = 0.5, 
-                 providers: Optional[List[str]] = None):
+    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
+                 conf_thres: float = 0.001, iou_thres: float = 0.5,
+                 providers: Optional[List[str]] = None, **kwargs):
         """
         初始化RT-DETR检测器
-        
+
         Args:
             onnx_path (str): ONNX模型文件路径
             input_shape (Tuple[int, int]): 输入图像尺寸
             conf_thres (float): 置信度阈值，默认0.001
             iou_thres (float): IoU阈值，RT-DETR不使用，保持接口统一
             providers (Optional[List[str]]): ONNX Runtime执行提供程序
+            **kwargs: 其他参数（如 det_config）
         """
         # 调用BaseOnnx初始化
-        super().__init__(onnx_path, input_shape, conf_thres, providers)
+        super().__init__(onnx_path, input_shape, conf_thres, providers, **kwargs)
         
         # RT-DETR输出格式验证延迟到模型初始化时进行
     

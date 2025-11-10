@@ -11,17 +11,126 @@ import yaml
 
 
 # 检测模型配置
-DET_CLASS_NAMES: List[str] = [
-    "car", "truck", "heavy_truck", "van", "bus",
-    "bicycle", "cyclist", "tricycle", "trolley", "pedestrain",
-    "cone", "animal", "other", "plate", "motorcycle",
-]
+DET_CLASSES: Dict[int, str] = {
+    0: "car",
+    1: "truck",
+    2: "heavy_truck",
+    3: "van",
+    4: "bus",
+    5: "bicycle",
+    6: "cyclist",
+    7: "tricycle",
+    8: "trolley",
+    9: "pedestrain",
+    10: "cone",
+    11: "animal",
+    12: "other",
+    13: "plate",
+    14: "motorcycle",
+}
 
-DET_VISUAL_COLORS: List[str] = [
+DET_COLORS: List[str] = [
     "#FF3838", "#FF9D97", "#FF701F", "#FFB21D", "#CFD231",
     "#48F90A", "#92CC17", "#3DDB86", "#1A9334", "#00D4BB",
     "#2C99A8", "#00C2FF", "#344593", "#6473FF", "#8763DE", "#FF00FF",
 ]
+
+COCO_CLASSES: Dict[int, str] = {
+    0: "person",
+    1: "bicycle",
+    2: "car",
+    3: "motorcycle",
+    4: "airplane",
+    5: "bus",
+    6: "train",
+    7: "truck",
+    8: "boat",
+    9: "traffic light",
+    10: "fire hydrant",
+    11: "stop sign",
+    12: "parking meter",
+    13: "bench",
+    14: "bird",
+    15: "cat",
+    16: "dog",
+    17: "horse",
+    18: "sheep",
+    19: "cow",
+    20: "elephant",
+    21: "bear",
+    22: "zebra",
+    23: "giraffe",
+    24: "backpack",
+    25: "umbrella",
+    26: "handbag",
+    27: "tie",
+    28: "suitcase",
+    29: "frisbee",
+    30: "skis",
+    31: "snowboard",
+    32: "sports ball",
+    33: "kite",
+    34: "baseball bat",
+    35: "baseball glove",
+    36: "skateboard",
+    37: "surfboard",
+    38: "tennis racket",
+    39: "bottle",
+    40: "wine glass",
+    41: "cup",
+    42: "fork",
+    43: "knife",
+    44: "spoon",
+    45: "bowl",
+    46: "banana",
+    47: "apple",
+    48: "sandwich",
+    49: "orange",
+    50: "broccoli",
+    51: "carrot",
+    52: "hot dog",
+    53: "pizza",
+    54: "donut",
+    55: "cake",
+    56: "chair",
+    57: "couch",
+    58: "potted plant",
+    59: "bed",
+    60: "dining table",
+    61: "toilet",
+    62: "tv",
+    63: "laptop",
+    64: "mouse",
+    65: "remote",
+    66: "keyboard",
+    67: "cell phone",
+    68: "microwave",
+    69: "oven",
+    70: "toaster",
+    71: "sink",
+    72: "refrigerator",
+    73: "book",
+    74: "clock",
+    75: "vase",
+    76: "scissors",
+    77: "teddy bear",
+    78: "hair drier",
+    79: "toothbrush",
+}
+
+COCO_COLORS: List[str] = [
+    "#F21818", "#1857F2", "#97F218", "#F218D7", "#18F2CD", "#F28E18", "#4E18F2", "#21F218",
+    "#F21861", "#18A0F2", "#E0F218", "#C418F2", "#18F284", "#F24518", "#182AF2", "#6AF218",
+    "#F218AA", "#18E9F2", "#F2BB18", "#7B18F2", "#18F23B", "#F21834", "#1873F2", "#B3F218",
+    "#F118F2", "#18F2B1", "#F27218", "#3218F2", "#3DF218", "#F2187C", "#18BCF2", "#F2E818",
+    "#A818F2", "#18F269", "#F22918", "#1846F2", "#86F218", "#F218C5", "#18F2DF", "#F29F18",
+    "#5F18F2", "#18F220", "#F2184F", "#188FF2", "#CFF218", "#D518F2", "#18F296", "#F25618",
+    "#1819F2", "#59F218", "#F21898", "#18D8F2", "#F2CC18", "#8C18F2", "#18F24D", "#F21822",
+    "#1862F2", "#A2F218", "#F218E1", "#18F2C3", "#F28318", "#4318F2", "#2CF218", "#F2186B",
+    "#18ABF2", "#EAF218", "#B918F2", "#18F27A", "#F23A18", "#1835F2", "#75F218", "#F218B4",
+    "#18F2F0", "#F2B018", "#7018F2", "#18F231", "#F2183E", "#187EF2", "#BDF218", "#E618F2",
+]
+
 
 # OCR配置
 OCR_CHARACTER_DICT: List[str] = [
@@ -104,28 +213,33 @@ def load_det_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     优先级:
     1. config_path显式指定的外部YAML文件(如果提供)
-    2. 硬编码的配置常量(DET_CLASS_NAMES, DET_VISUAL_COLORS)
+    2. 硬编码的配置常量(DET_CLASSES, DET_COLORS)
 
     Args:
         config_path: 可选的外部配置文件路径(YAML格式)
 
     Returns:
-        包含class_names和visual_colors的字典
+        包含class_names(Dict[int, str])和visual_colors的字典
 
     Note:
         configs/det_config.yaml仅作为外部配置示例保留,
         默认情况下使用本模块的硬编码常量。
+        class_names 格式已改为字典 {class_id: class_name}
     """
     if config_path:
         path = Path(config_path)
         if path.exists():
             with open(path, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
+                config = yaml.safe_load(f)
+                # 兼容处理：如果 class_names 是列表，转换为字典
+                if 'class_names' in config and isinstance(config['class_names'], list):
+                    config['class_names'] = {i: name for i, name in enumerate(config['class_names'])}
+                return config
         else:
             raise FileNotFoundError(f"检测配置文件不存在: {config_path}")
 
     # 默认使用硬编码配置
-    return {'class_names': DET_CLASS_NAMES, 'visual_colors': DET_VISUAL_COLORS}
+    return {'class_names': DET_CLASSES, 'visual_colors': DET_COLORS}
 
 
 def load_plate_config(config_path: Optional[str] = None) -> Dict[str, Any]:

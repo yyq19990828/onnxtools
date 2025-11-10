@@ -25,7 +25,7 @@ class YoloORT(BaseORT):
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
                  conf_thres: float = 0.5, iou_thres: float = 0.5,
                  multi_label: bool = True, has_objectness: bool = False,
-                 providers: Optional[List[str]] = None):
+                 providers: Optional[List[str]] = None, **kwargs):
         """
         初始化YOLO检测器
 
@@ -37,11 +37,12 @@ class YoloORT(BaseORT):
             multi_label (bool): 是否允许多标签检测，默认True
             has_objectness (bool): 模型是否有objectness分支，默认False（适应现代YOLO）
             providers (Optional[List[str]]): ONNX Runtime执行提供程序
+            **kwargs: 其他参数（如 det_config）
 
         Note:
             统一使用Ultralytics风格的预处理(LetterBox)
         """
-        super().__init__(onnx_path, input_shape, conf_thres, providers)
+        super().__init__(onnx_path, input_shape, conf_thres, providers, **kwargs)
         self.iou_thres = iou_thres
         self.multi_label = multi_label
         self.has_objectness = has_objectness

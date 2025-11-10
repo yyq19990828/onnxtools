@@ -21,7 +21,7 @@ sys.path.insert(0, str(project_root))
 
 from onnxtools import create_detector, RUN
 from onnxtools.utils.drawing import draw_detections
-from onnxtools.config import DET_CLASS_NAMES, DET_VISUAL_COLORS
+from onnxtools.config import DET_CLASSES, DET_COLORS, COCO_CLASSES, COCO_COLORS
 
 def parse_arguments():
     """解析命令行参数"""
@@ -114,7 +114,7 @@ def parse_arguments():
 
 def load_colors_and_class_names():
     """加载类别名称和颜色配置（使用onnxtools.config的硬编码配置）"""
-    return DET_CLASS_NAMES, DET_VISUAL_COLORS
+    return DET_CLASSES, DET_COLORS
 
 def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
     """对 compare_engine 返回的原始输出进行后处理，参考 __call__ 方法"""
@@ -464,7 +464,8 @@ def test_rtdetr_compare_engine(args):
         logging.info(f"检测器实际输入形状: {detector.input_shape}")
 
         # 创建数据加载器
-        detector.create_engine_dataloader(image_paths=test_image_paths)
+        detector.create_engine_dataloader(image_paths=test_image_paths,
+                                          iterations=4)
 
         # 确保数据加载器已创建
         if detector.engine_dataloader is None:

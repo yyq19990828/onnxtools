@@ -13,7 +13,7 @@ import numpy as np
 import yaml
 import logging
 import warnings
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional, Union
 
 from onnxtools.utils.drawing import draw_detections
 
@@ -175,7 +175,14 @@ def initialize_models(args):
         logging.info("ONNX模型metadata中未找到names字段，回退到YAML配置文件")
         with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
-        class_names = config["class_names"]
+        # 兼容处理：支持列表和字典两种格式
+        class_names_data = config["class_names"]
+        if isinstance(class_names_data, dict):
+            max_class_id = max(class_names_data.keys())
+            class_names = [class_names_data.get(i, f"class_{i}") for i in range(max_class_id + 1)]
+        else:
+            # 列表格式（向后兼容）
+            class_names = class_names_data
 
     # colors始终从YAML配置文件读取
     with open("configs/det_config.yaml", "r", encoding="utf-8") as f:
@@ -407,7 +414,7 @@ class InferencePipeline:
         color_layer_model: str = 'models/color_layer.onnx',
         ocr_model: str = 'models/ocr.onnx',
         plate_yaml_path: str = 'configs/plate.yaml',
-        det_config_path: str = 'configs/det_config.yaml',
+        det_config: Optional[Union[str, Dict[int, str]]] = None,
         annotator_preset: Optional[str] = None,
         annotator_types: Optional[List[str]] = None,
         **kwargs
@@ -424,7 +431,10 @@ class InferencePipeline:
             color_layer_model: 颜色/层级分类模型路径
             ocr_model: OCR模型路径
             plate_yaml_path: 车牌配置文件路径
-            det_config_path: 检测配置文件路径
+            det_config: 检测配置，可以是：
+                - str: 配置文件路径
+                - Dict[int, str]: 类别名称字典 {class_id: class_name}
+                - None: 使用默认的 DET_CLASSES
             annotator_preset: 可视化预设名称
             annotator_types: 自定义annotator类型列表
             **kwargs: 其他参数
@@ -465,7 +475,20 @@ class InferencePipeline:
 
         # 加载类别名称和颜色(使用新API)
         from onnxtools.config import load_det_config
-        det_config = load_det_config(det_config_path if det_config_path != 'configs/det_config.yaml' else None)
+
+        # 处理 det_config 参数（支持字典和路径）
+        if isinstance(det_config, dict):
+            # 直接使用传入的字典（已经是 Dict[int, str] 格式）
+            det_config_data = {"class_names": det_config, "visual_colors": []}
+            logging.info(f"使用传入的类别名称字典")
+        elif isinstance(det_config, str):
+            # 从文件加载
+            det_config_data = load_det_config(det_config)
+            logging.info(f"从配置文件加载: {det_config}")
+        else:
+            # 使用默认配置
+            det_config_data = load_det_config(None)
+            logging.info("使用默认检测配置")
 
         if self.detector.class_names:
             logging.info(f"从ONNX模型metadata读取到类别名称: {self.detector.class_names}")
@@ -473,10 +496,16 @@ class InferencePipeline:
             self.class_names = [self.detector.class_names.get(i, f"class_{i}") for i in range(max_class_id + 1)]
         else:
             logging.info("ONNX模型metadata中未找到names字段,回退到配置")
-            self.class_names = det_config.get("class_names", [])
+            # det_config_data["class_names"] 现在是 Dict[int, str] 格式，需要转换为列表
+            class_names_dict = det_config_data.get("class_names", {})
+            if class_names_dict:
+                max_class_id = max(class_names_dict.keys())
+                self.class_names = [class_names_dict.get(i, f"class_{i}") for i in range(max_class_id + 1)]
+            else:
+                self.class_names = []
 
         # colors始终从配置读取
-        self.colors = det_config.get("visual_colors", [])
+        self.colors = det_config_data.get("visual_colors", [])
 
         # 初始化annotator管道
         self.annotator_pipeline = None

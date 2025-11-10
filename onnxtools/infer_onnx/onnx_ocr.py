@@ -130,8 +130,20 @@ class ColorLayerORT:
         self.output_names = [output.name for output in self._onnx_session.get_outputs()]
         logging.info(f"从ONNX模型读取信息: input={self.input_name}, outputs={self.output_names}")
 
-        # Store configuration
-        self.input_shape = input_shape
+        # Read actual input shape from ONNX model (highest priority)
+        model_input_shape = self._onnx_session.get_inputs()[0].shape
+        if len(model_input_shape) == 4 and model_input_shape[2] is not None and model_input_shape[3] is not None:
+            # Shape format: [batch, channels, height, width]
+            actual_height = int(model_input_shape[2])
+            actual_width = int(model_input_shape[3])
+            # Override input_shape with actual model requirements
+            self.input_shape = (actual_height, actual_width)
+            logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}")
+        else:
+            # Fallback to provided input_shape
+            self.input_shape = input_shape
+            logging.info(f"使用默认输入形状: {self.input_shape}")
+
         self.conf_thres = conf_thres
 
         # Store mappings
@@ -356,8 +368,20 @@ class OcrORT:
         self.output_names = [output.name for output in self._onnx_session.get_outputs()]
         logging.info(f"从ONNX模型读取信息: input={self.input_name}, outputs={self.output_names}")
 
-        # Store configuration
-        self.input_shape = input_shape
+        # Read actual input shape from ONNX model
+        model_input_shape = self._onnx_session.get_inputs()[0].shape
+        if len(model_input_shape) == 4 and model_input_shape[2] is not None and model_input_shape[3] is not None:
+            # Shape format: [batch, channels, height, width]
+            actual_height = int(model_input_shape[2])
+            actual_width = int(model_input_shape[3])
+            # Override input_shape with actual model requirements
+            self.input_shape = (actual_height, actual_width)
+            logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}")
+        else:
+            # Fallback to provided input_shape
+            self.input_shape = input_shape
+            logging.info(f"使用默认输入形状: {self.input_shape}")
+
         self.conf_thres = conf_thres
 
         # Store character dictionary

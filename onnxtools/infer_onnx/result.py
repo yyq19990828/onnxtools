@@ -11,6 +11,7 @@ Version: 1.0.0
 
 from typing import Optional, Union, List, Dict, Any
 import warnings
+from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 
@@ -36,6 +37,7 @@ class Result:
     - Indexing and slicing operations
     - Visualization methods (plot, show, save)
     - Filtering and data conversion utilities
+    - Cropping methods (crop, save_crop) for extracting detection regions
 
     The class implements shallow immutability: attributes are read-only,
     but internal numpy array elements can be modified.
@@ -49,6 +51,16 @@ class Result:
         names: Mapping from class ID to class name
         path: Image file path (optional)
 
+    Methods:
+        crop: Extract cropped detection regions with metadata
+        save_crop: Save cropped detection regions to disk
+        filter: Filter detections by confidence and/or class
+        plot: Plot detections on image with annotations
+        show: Display annotated image
+        save: Save annotated image to file
+        summary: Get summary statistics of detections
+        to_supervision: Convert to supervision.Detections format
+
     Example:
         >>> result = Result(
         ...     boxes=np.array([[10, 20, 100, 150]]),
@@ -60,6 +72,14 @@ class Result:
         >>> print(len(result))  # 1
         >>> print(result.boxes)  # [[10 20 100 150]]
         >>> first_det = result[0]  # Index access
+        >>>
+        >>> # Crop detection regions
+        >>> crops = result.crop(conf_threshold=0.8)
+        >>> for crop_data in crops:
+        ...     cv2.imshow('crop', crop_data['image'])
+        >>>
+        >>> # Save crops to disk
+        >>> saved_paths = result.save_crop('output/crops')
     """
 
     def __init__(
@@ -549,9 +569,9 @@ class Result:
     def filter(
         self,
         conf_threshold: Optional[float] = None,
-        classes: Optional[List[int]] = None
+        classes: Optional[List[Union[int, str]]] = None
     ) -> "Result":
-        """Filter detections by confidence threshold and/or class IDs.
+        """Filter detections by confidence threshold and/or class IDs/names.
 
         Creates a new Result object containing only detections that match
         the specified filter criteria. Original Result remains unchanged.
@@ -559,14 +579,15 @@ class Result:
         Args:
             conf_threshold: Minimum confidence threshold (0.0 - 1.0).
                           If None, no confidence filtering is applied.
-            classes: List of class IDs to keep. If None, no class filtering.
+            classes: List of class IDs (int) or class names (str) to keep.
+                    If None, no class filtering is applied.
 
         Returns:
             Result: New Result object with filtered detections.
 
         Raises:
-            ValueError: If conf_threshold is not in [0, 1] range or classes
-                       contains non-integer values.
+            ValueError: If conf_threshold is not in [0, 1] range, classes
+                       contains invalid types, or class names not found.
 
         Examples:
             >>> # Filter by confidence threshold
@@ -575,8 +596,14 @@ class Result:
             >>> # Filter by class IDs
             >>> vehicles_only = result.filter(classes=[0])
             >>>
+            >>> # Filter by class names
+            >>> plates_only = result.filter(classes=['plate'])
+            >>>
+            >>> # Filter by mixed IDs and names
+            >>> mixed = result.filter(classes=[0, 'plate'])
+            >>>
             >>> # Combined filtering
-            >>> high_conf_plates = result.filter(conf_threshold=0.7, classes=[1])
+            >>> high_conf_plates = result.filter(conf_threshold=0.7, classes=['plate'])
         """
         # T039: Parameter validation
         if conf_threshold is not None:
@@ -589,15 +616,36 @@ class Result:
                     f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}"
                 )
 
+        # Convert class names to IDs if needed
+        class_ids_to_filter = None
         if classes is not None:
             if not isinstance(classes, (list, tuple)):
                 raise ValueError(
                     f"classes must be a list or tuple, got {type(classes).__name__}"
                 )
-            if not all(isinstance(c, (int, np.integer)) for c in classes):
-                raise ValueError(
-                    "classes must contain only integer values"
-                )
+
+            class_ids_to_filter = []
+            for c in classes:
+                if isinstance(c, (int, np.integer)):
+                    # Already an ID
+                    class_ids_to_filter.append(int(c))
+                elif isinstance(c, str):
+                    # Convert name to ID
+                    found = False
+                    for cls_id, cls_name in self.names.items():
+                        if cls_name == c:
+                            class_ids_to_filter.append(cls_id)
+                            found = True
+                            break
+                    if not found:
+                        raise ValueError(
+                            f"Class name '{c}' not found in names dict. "
+                            f"Available classes: {list(self.names.values())}"
+                        )
+                else:
+                    raise ValueError(
+                        f"classes must contain int or str values, got {type(c).__name__}"
+                    )
 
         # Start with all True mask
         mask = np.ones(len(self), dtype=bool)
@@ -607,8 +655,8 @@ class Result:
             mask &= (self.scores >= conf_threshold)
 
         # T037: Apply class filter
-        if classes is not None and len(self) > 0:
-            mask &= np.isin(self.class_ids, classes)
+        if class_ids_to_filter is not None and len(self) > 0:
+            mask &= np.isin(self.class_ids, class_ids_to_filter)
 
         # T038: Create new Result with filtered data
         if not mask.any():
@@ -682,4 +730,270 @@ class Result:
             'min_confidence': float(np.min(self.scores)),
             'max_confidence': float(np.max(self.scores))
         }
+
+    # ===== Phase 6: Cropping Methods (US4) =====
+
+    def crop(
+        self,
+        conf_threshold: Optional[float] = None,
+        classes: Optional[List[Union[int, str]]] = None,
+        gain: float = 1.02,
+        pad: int = 10,
+        square: bool = False
+    ) -> List[Dict[str, Any]]:
+        """裁剪检测区域，返回图像数组及元数据。
+
+        此方法提取每个检测框对应的图像区域，支持边界框扩展和过滤。
+        与 filter() 方法结合使用可以灵活筛选目标对象。
+
+        Args:
+            conf_threshold: 最小置信度阈值 (0.0 - 1.0)。
+                          若为 None，则不进行置信度过滤。
+            classes: 要保留的类别ID (int) 或类别名称 (str) 列表。
+                    若为 None，则不进行类别过滤。
+            gain: 边界框扩展增益系数 (默认: 1.02，即扩展2%)。
+            pad: 边界框填充像素 (默认: 10)。
+            square: 是否强制裁剪为正方形 (默认: False)。
+
+        Returns:
+            List[Dict[str, Any]]: 裁剪结果列表，每个字典包含:
+                - image (np.ndarray): 裁剪后的图像数组 (BGR格式)
+                - box (np.ndarray): 原始边界框 [x1, y1, x2, y2]
+                - crop_box (np.ndarray): 扩展后的裁剪框 [x1, y1, x2, y2]
+                - class_id (int): 类别ID
+                - class_name (str): 类别名称
+                - confidence (float): 置信度分数
+                - index (int): 在原结果中的索引
+
+        Raises:
+            ValueError: 如果 orig_img 为 None。
+            ValueError: 如果参数验证失败（gain, pad, conf_threshold 范围）。
+            ValueError: 如果类别名称未找到。
+
+        Examples:
+            >>> # 基础裁剪
+            >>> result = detector(image)
+            >>> crops = result.crop()
+            >>> for crop_data in crops:
+            ...     print(f"Class: {crop_data['class_name']}, "
+            ...           f"Conf: {crop_data['confidence']:.2f}")
+            ...     cv2.imshow('crop', crop_data['image'])
+            >>>
+            >>> # 使用类别ID过滤
+            >>> vehicle_crops = result.crop(conf_threshold=0.8, classes=[0])
+            >>>
+            >>> # 使用类别名称过滤
+            >>> plate_crops = result.crop(classes=['plate'])
+            >>>
+            >>> # 混合使用ID和名称
+            >>> mixed_crops = result.crop(classes=[0, 'plate'])
+            >>>
+            >>> # 扩展边界框并裁剪为正方形
+            >>> square_crops = result.crop(gain=1.1, pad=20, square=True)
+        """
+        # 验证 orig_img 不为 None
+        if self.orig_img is None:
+            raise ValueError(
+                "Cannot crop detections: orig_img is None. "
+                "Ensure the image was provided when creating the Result object."
+            )
+
+        # 参数验证
+        if gain <= 0:
+            raise ValueError(f"gain must be positive, got {gain}")
+        if pad < 0:
+            raise ValueError(f"pad must be non-negative, got {pad}")
+        if conf_threshold is not None and not (0.0 <= conf_threshold <= 1.0):
+            raise ValueError(
+                f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}"
+            )
+
+        # 使用 filter() 方法进行过滤（复用现有逻辑）
+        filtered_result = self.filter(conf_threshold=conf_threshold, classes=classes)
+
+        # 空结果直接返回
+        if len(filtered_result) == 0:
+            return []
+
+        h, w = self.orig_shape
+        crops = []
+
+        # 遍历每个检测
+        for idx in range(len(filtered_result)):
+            box = filtered_result.boxes[idx]
+            class_id = int(filtered_result.class_ids[idx])
+            confidence = float(filtered_result.scores[idx])
+            class_name = self.names.get(class_id, f"class_{class_id}")
+
+            # 计算边界框中心和尺寸
+            x1, y1, x2, y2 = box
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
+            bw = x2 - x1
+            bh = y2 - y1
+
+            # 正方形化：取长边
+            if square:
+                bw = bh = max(bw, bh)
+
+            # 应用增益和填充
+            bw = bw * gain + pad
+            bh = bh * gain + pad
+
+            # 转回 xyxy 格式并裁剪到图像边界
+            x1_new = int(np.clip(cx - bw / 2, 0, w))
+            y1_new = int(np.clip(cy - bh / 2, 0, h))
+            x2_new = int(np.clip(cx + bw / 2, 0, w))
+            y2_new = int(np.clip(cy + bh / 2, 0, h))
+
+            # 跳过无效边界框
+            if x2_new <= x1_new or y2_new <= y1_new:
+                continue
+
+            # 裁剪图像（BGR格式，无需通道转换）
+            crop_img = self.orig_img[y1_new:y2_new, x1_new:x2_new]
+
+            # 构造返回字典
+            crops.append({
+                'image': crop_img,
+                'box': box,
+                'crop_box': np.array([x1_new, y1_new, x2_new, y2_new], dtype=np.float32),
+                'class_id': class_id,
+                'class_name': class_name,
+                'confidence': confidence,
+                'index': idx
+            })
+
+        return crops
+
+    def save_crop(
+        self,
+        save_dir: Union[str, Path],
+        file_name: Union[str, Path] = "im.jpg",
+        conf_threshold: Optional[float] = None,
+        classes: Optional[List[Union[int, str]]] = None,
+        gain: float = 1.02,
+        pad: int = 10,
+        square: bool = False,
+        save_class_dirs: bool = True
+    ) -> List[Path]:
+        """保存裁剪的检测区域到文件。
+
+        按类别保存每个检测框对应的裁剪图像，支持边界框扩展、过滤和目录自动创建。
+        文件名自动添加索引后缀以避免冲突 (例如: im_0.jpg, im_1.jpg)。
+
+        Args:
+            save_dir: 保存根目录路径。
+            file_name: 基础文件名 (默认: "im.jpg")。
+            conf_threshold: 最小置信度阈值 (0.0 - 1.0)。
+                          若为 None，则不进行置信度过滤。
+            classes: 要保留的类别ID (int) 或类别名称 (str) 列表。
+                    若为 None，则不进行类别过滤。
+            gain: 边界框扩展增益系数 (默认: 1.02，即扩展2%)。
+            pad: 边界框填充像素 (默认: 10)。
+            square: 是否强制裁剪为正方形 (默认: False)。
+            save_class_dirs: 是否按类别创建子目录 (默认: True)。
+
+        Returns:
+            List[Path]: 保存的文件路径列表。
+
+        Raises:
+            ValueError: 如果 orig_img 为 None。
+            ValueError: 如果 save_dir 无法创建。
+            ValueError: 如果类别名称未找到。
+            RuntimeError: 如果图像保存失败。
+
+        Examples:
+            >>> result = detector(image)
+            >>>
+            >>> # 保存到 crops/vehicle/im_0.jpg, crops/plate/im_1.jpg
+            >>> saved_paths = result.save_crop('crops')
+            >>> print(f"Saved {len(saved_paths)} crops")
+            >>>
+            >>> # 不按类别分目录，直接保存到 output/
+            >>> result.save_crop('output', save_class_dirs=False)
+            >>>
+            >>> # 使用类别ID过滤
+            >>> result.save_crop('crops', conf_threshold=0.8, classes=[0])
+            >>>
+            >>> # 使用类别名称过滤
+            >>> result.save_crop('crops', classes=['vehicle', 'plate'])
+            >>>
+            >>> # 混合使用ID和名称
+            >>> result.save_crop('crops', classes=[0, 'plate'])
+            >>>
+            >>> # 扩展边界框并裁剪为正方形
+            >>> result.save_crop('crops', gain=1.1, pad=20, square=True)
+        """
+        # 验证并创建保存目录
+        save_dir_path = Path(save_dir)
+        try:
+            save_dir_path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            raise ValueError(f"Cannot create directory {save_dir}: {e}")
+
+        # 调用 crop() 方法获取裁剪结果
+        crops = self.crop(
+            conf_threshold=conf_threshold,
+            classes=classes,
+            gain=gain,
+            pad=pad,
+            square=square
+        )
+
+        # 空结果直接返回
+        if len(crops) == 0:
+            return []
+
+        # 准备文件名
+        base_name = Path(file_name).stem
+        suffix = Path(file_name).suffix or ".jpg"
+
+        saved_paths = []
+
+        # 遍历每个裁剪结果
+        for idx, crop_data in enumerate(crops):
+            crop_img = crop_data['image']
+            class_name = crop_data['class_name']
+
+            # 构造保存路径
+            if save_class_dirs:
+                # 清理类别名称中的非法字符
+                safe_class_name = _sanitize_filename(class_name)
+                class_dir = save_dir_path / safe_class_name
+                class_dir.mkdir(parents=True, exist_ok=True)
+                save_path = class_dir / f"{base_name}_{idx}{suffix}"
+            else:
+                save_path = save_dir_path / f"{base_name}_{idx}{suffix}"
+
+            # 保存图像
+            success = cv2.imwrite(str(save_path), crop_img)
+            if not success:
+                raise RuntimeError(f"Failed to save crop to {save_path}")
+
+            saved_paths.append(save_path)
+
+        return saved_paths
+
+
+def _sanitize_filename(name: str) -> str:
+    """移除文件名中的非法字符。
+
+    保留字母、数字、下划线和连字符，删除空格，其他字符替换为下划线。
+
+    Args:
+        name: 原始文件名。
+
+    Returns:
+        str: 清理后的文件名。
+
+    Examples:
+        >>> _sanitize_filename("vehicle/plate")
+        'vehicle_plate'
+        >>> _sanitize_filename("class:0")
+        'class_0'
+        >>> _sanitize_filename("test 123")
+        'test123'
+    """
+    return "".join(c if c.isalnum() or c in ('_', '-') else '' if c == ' ' else '_' for c in name)
 

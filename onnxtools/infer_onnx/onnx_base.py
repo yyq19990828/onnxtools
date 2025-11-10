@@ -9,25 +9,26 @@ ONNX Runtime 模型推理基类
 import numpy as np
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Union
 from .result import Result
 from pathlib import Path
 
 # Polygraphy懒加载导入
 from polygraphy.backend.onnxrt import OnnxrtRunner
-from polygraphy.backend.trt import (TrtRunner, 
+from polygraphy.backend.trt import (TrtRunner,
                                     EngineFromNetwork, EngineFromPath,
-                                    NetworkFromOnnxPath, 
+                                    NetworkFromOnnxPath,
                                     SaveEngine)
 from polygraphy.comparator import Comparator, CompareFunc
 
+from onnxtools.config import DET_CLASSES
 
 class BaseORT(ABC):
     """ONNX Runtime模型推理基类 - 使用Polygraphy懒加载"""
     
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
                  conf_thres: float = 0.5, providers: Optional[List[str]] = None,
-                 det_config_path: Optional[str] = None):
+                 det_config: Optional[Union[str, Dict[int, str]]] = None):
         """
         初始化ONNX模型推理器
 
@@ -36,14 +37,17 @@ class BaseORT(ABC):
             input_shape (Tuple[int, int]): 输入图像尺寸 (height, width)
             conf_thres (float): 置信度阈值
             providers (Optional[List[str]]): ONNX Runtime执行提供程序
-            det_config_path (Optional[str]): 检测配置文件路径(可选)
+            det_config (Optional[Union[str, Dict[int, str]]]): 检测配置，可以是：
+                - str: 配置文件路径
+                - Dict[int, str]: 类别名称字典 {class_id: class_name}
+                - None: 使用默认的 DET_CLASSES
         """
         self.onnx_path = onnx_path
         self.conf_thres = conf_thres
         self._requested_input_shape = input_shape  # 用户请求的输入形状
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
-        self.det_config_path = det_config_path  # 保存配置文件路径
+        self.det_config = det_config  # 保存配置（路径或字典）
         
         # 创建ONNX Runtime会话（立即创建并缓存，后续复用）
         import onnxruntime
@@ -172,34 +176,45 @@ class BaseORT(ABC):
         从配置加载类别名称（回退方案）
 
         优先级:
-        1. self.det_config_path显式指定的外部YAML文件
-        2. onnxtools.config.DET_CLASS_NAMES 硬编码常量（默认）
+        1. self.det_config 是字典 - 直接使用
+        2. self.det_config 是路径 - 从YAML文件加载
+        3. onnxtools.config.DET_CLASSES 硬编码常量（默认）
 
         Returns:
             Dict[int, str]: 类别ID到类别名称的映射
         """
         try:
-            # 如果指定了外部配置文件，使用load_det_config加载
-            if self.det_config_path:
-                from onnxtools.config import load_det_config
-                config = load_det_config(self.det_config_path)
-                class_names = config.get('class_names')
+            # 如果指定了配置
+            if self.det_config is not None:
+                # 情况1: det_config 是字典，直接使用
+                if isinstance(self.det_config, dict):
+                    logging.info(f"使用传入的类别名称字典: {len(self.det_config)} 个类别")
+                    return self.det_config
 
-                if not class_names:
-                    logging.warning("外部配置中没有class_names字段")
-                    return {}
+                # 情况2: det_config 是字符串路径，从文件加载
+                elif isinstance(self.det_config, str):
+                    from onnxtools.config import load_det_config
+                    config = load_det_config(self.det_config)
+                    class_names = config.get('class_names')
 
-                if isinstance(class_names, list):
-                    logging.info(f"从外部配置加载 {len(class_names)} 个类别")
-                    return {i: name for i, name in enumerate(class_names)}
+                    if not class_names:
+                        logging.warning("外部配置中没有class_names字段")
+                        return {}
+
+                    # load_det_config 已经处理了兼容性，返回的 class_names 一定是字典
+                    if isinstance(class_names, dict):
+                        logging.info(f"从外部配置文件加载 {len(class_names)} 个类别")
+                        return class_names
+                    else:
+                        logging.warning(f"class_names字段格式错误: {type(class_names)}")
+                        return {}
                 else:
-                    logging.warning(f"class_names字段格式错误: {type(class_names)}")
+                    logging.warning(f"det_config类型不支持: {type(self.det_config)}")
                     return {}
 
-            # 默认直接使用硬编码常量
-            from onnxtools.config import DET_CLASS_NAMES
-            logging.info(f"使用硬编码类别名称: {len(DET_CLASS_NAMES)} 个类别")
-            return {i: name for i, name in enumerate(DET_CLASS_NAMES)}
+            # 默认直接使用硬编码常量（已经是字典格式）
+            logging.info(f"使用硬编码类别名称: {len(DET_CLASSES)} 个类别")
+            return DET_CLASSES
 
         except Exception as e:
             logging.error(f"加载配置失败: {e}")
