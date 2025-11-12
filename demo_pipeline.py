@@ -217,15 +217,15 @@ def process_video(pipeline, video_source, output_dir, output_mode, frame_skip=0,
             break
 
         if frame_count % (frame_skip + 1) == 0:
-            # Save original frame if requested
-            if save_frame and output_mode == 'save':
-                frame_filename = f"{source_name}_{frame_count:06d}.jpg"
-                frame_path = os.path.join(frames_dir, frame_filename)
-                cv2.imwrite(frame_path, frame)
-
             # Run inference
             result_frame, output_data = pipeline(frame)
             last_result_frame = result_frame.copy()
+
+            # Save result frame with annotations if requested
+            if save_frame and output_mode == 'save':
+                frame_filename = f"{source_name}_{frame_count:06d}.jpg"
+                frame_path = os.path.join(frames_dir, frame_filename)
+                cv2.imwrite(frame_path, result_frame)
 
             # Save JSON if requested
             if save_json and output_mode == 'save':
@@ -343,7 +343,7 @@ Examples:
     parser.add_argument('--model-type', type=str, default='rtdetr',
                         choices=['rtdetr', 'yolo', 'rfdetr'],
                         help='Model type (default: rtdetr)')
-    parser.add_argument('--conf-thres', type=float, default=0.25,
+    parser.add_argument('--conf-thres', type=float, default=0.5,
                         help='Confidence threshold for detection (default: 0.25)')
     parser.add_argument('--iou-thres', type=float, default=0.5,
                         help='IoU threshold for NMS (default: 0.5)')

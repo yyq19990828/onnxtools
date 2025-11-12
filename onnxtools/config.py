@@ -163,8 +163,8 @@ VISUALIZATION_PRESETS: Dict[str, Dict[str, Any]] = {
         "name": "标准检测模式",
         "description": "默认边框+标签，适用于通用检测场景",
         "annotators": [
-            {"type": "box_corner", "thickness": 2},
-            {"type": "rich_label", "font_size": 25},
+            {"type": "box_corner", "thickness": 1},
+            {"type": "rich_label", "font_size": 15},
         ]
     },
     "lightweight": {
