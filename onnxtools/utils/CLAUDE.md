@@ -4,31 +4,39 @@
 
 ## 模块职责
 
-提供图像处理、可视化绘制、Supervision集成、OCR指标计算和推理管道等通用工具函数，为整个项目提供核心的数据处理和可视化支持。
+提供图像处理、可视化绘制、Supervision集成、OCR指标计算等通用工具函数,为整个项目提供核心的数据处理和可视化支持。
 
 ## 入口和启动
 
-- **主处理管道**: `pipeline.py::initialize_models()`, `pipeline.py::process_frame()`
 - **模块导入**: `__init__.py` 导出常用工具函数
-- **日志配置**: `logging_config.py::setup_logger()`
+- **日志配置**: `logger.py::setup_logger()`
+- **可视化**: `drawing.py::draw_detections()`, `drawing.py::convert_to_supervision_detections()`
 
 ### 快速开始
 ```python
-from onnxtools.pipeline import initialize_models, process_frame
 from onnxtools import setup_logger
+from onnxtools.utils import (
+    preprocess_image,
+    draw_detections,
+    convert_to_supervision_detections,
+    create_ocr_labels,
+    get_chinese_font_path,
+    non_max_suppression
+)
 
 # 设置日志
 setup_logger('INFO')
 
-# 初始化所有模型
-models = initialize_models(args)
-detector, color_classifier, ocr_model, character, class_names, colors, annotator_pipeline = models
+# 图像预处理
+processed_img = preprocess_image(image, target_size=(640, 640))
 
-# 处理单帧图像
-result_img, output_data = process_frame(
-    frame, detector, color_classifier, ocr_model,
-    character, class_names, colors, args, annotator_pipeline
+# Supervision可视化
+sv_detections = convert_to_supervision_detections(
+    detections=result,
+    original_shape=(h, w),
+    class_names=class_names
 )
+result_img = draw_detections(image, sv_detections)
 ```
 
 ## 外部接口
@@ -37,44 +45,85 @@ result_img, output_data = process_frame(
 ```python
 from onnxtools.utils import preprocess_image
 
-# 标准图像预处理
-processed_img, scale_factor = preprocess_image(image, target_size=(640, 640))
+def preprocess_image(
+    image: np.ndarray,
+    target_size: Tuple[int, int] = (640, 640),
+    keep_ratio: bool = True,
+    pad_color: Tuple[int, int, int] = (114, 114, 114)
+) -> np.ndarray:
+    """图像预处理,调整尺寸并保持宽高比
+
+    Args:
+        image: 输入图像 BGR格式
+        target_size: 目标尺寸 (width, height)
+        keep_ratio: 是否保持宽高比
+        pad_color: 填充颜色
+
+    Returns:
+        np.ndarray: 预处理后的图像
+    """
+    pass
 ```
 
-### 2. 结果可视化（Supervision集成）
+### 2. 结果可视化(Supervision集成)
 ```python
-from onnxtools.utils import draw_detections_supervision, convert_to_supervision_detections
+from onnxtools.utils import draw_detections, convert_to_supervision_detections
 import supervision as sv
 
-# 转换为Supervision格式
-sv_detections = convert_to_supervision_detections(
-    detections=detections,
-    original_shape=(h, w),
-    class_names=class_names
-)
+def convert_to_supervision_detections(
+    detections: Union[Result, Dict],
+    original_shape: Tuple[int, int],
+    class_names: Optional[Dict[int, str]] = None
+) -> sv.Detections:
+    """转换检测结果为Supervision格式
 
-# 使用Supervision绘制
-result_img = draw_detections_supervision(
-    image, sv_detections, annotator_pipeline
-)
+    Args:
+        detections: Result对象或检测结果字典
+        original_shape: 原图尺寸 (H, W)
+        class_names: 类别名称映射
+
+    Returns:
+        sv.Detections: Supervision检测对象
+    """
+    pass
+
+def draw_detections(
+    image: np.ndarray,
+    sv_detections: sv.Detections,
+    annotator_pipeline: Optional[AnnotatorPipeline] = None
+) -> np.ndarray:
+    """使用Supervision绘制检测结果
+
+    Args:
+        image: 输入图像
+        sv_detections: Supervision检测对象
+        annotator_pipeline: Annotator管道(可选)
+
+    Returns:
+        np.ndarray: 标注后的图像
+    """
+    pass
 ```
 
 ### 3. Annotator工厂和管道
 ```python
-from onnxtools.utils import AnnotatorFactory, AnnotatorPipeline
-from onnxtools.utils import load_visualization_preset
+from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorPipeline, AnnotatorType
+from onnxtools.utils.supervision_preset import load_visualization_preset
 
 # 使用预设场景
-annotators = load_visualization_preset('debug')  # standard, lightweight, privacy, debug, high_contrast
+annotators = load_visualization_preset('debug')  # standard, lightweight, privacy, high_contrast
 pipeline = AnnotatorPipeline(annotators)
 
 # 或自定义创建
 factory = AnnotatorFactory()
 pipeline = AnnotatorPipeline([
-    factory.create('round_box', roundness=0.4, thickness=3),
-    factory.create('percentage_bar'),
-    factory.create('rich_label')
+    factory.create(AnnotatorType.ROUND_BOX, roundness=0.4, thickness=3),
+    factory.create(AnnotatorType.PERCENTAGE_BAR),
+    factory.create(AnnotatorType.RICH_LABEL)
 ])
+
+# 应用标注
+annotated_image = pipeline.annotate(image, sv_detections)
 ```
 
 ### 4. OCR指标计算
@@ -95,12 +144,85 @@ ned = calculate_normalized_edit_distance(pred, label)
 similarity = calculate_edit_distance_similarity(pred, label)
 ```
 
-### 5. 日志配置
+### 5. OCR标签创建
+```python
+from onnxtools.utils import create_ocr_labels
+
+def create_ocr_labels(
+    detections: sv.Detections,
+    ocr_results: List[Optional[Tuple[str, float, List[float]]]],
+    color_results: List[Tuple[str, str, float]]
+) -> List[str]:
+    """创建包含OCR和颜色信息的标签
+
+    Args:
+        detections: Supervision检测对象
+        ocr_results: OCR识别结果列表
+        color_results: 颜色分类结果列表
+
+    Returns:
+        List[str]: 格式化的标签列表
+    """
+    pass
+```
+
+### 6. 非极大值抑制(NMS)
+```python
+from onnxtools.utils import non_max_suppression
+
+def non_max_suppression(
+    boxes: np.ndarray,
+    scores: np.ndarray,
+    iou_threshold: float = 0.5
+) -> np.ndarray:
+    """执行NMS算法
+
+    Args:
+        boxes: 边界框数组 [N, 4] xyxy格式
+        scores: 置信度数组 [N]
+        iou_threshold: IoU阈值
+
+    Returns:
+        np.ndarray: 保留的索引数组
+    """
+    pass
+```
+
+### 7. 字体工具
+```python
+from onnxtools.utils import get_chinese_font_path, get_fallback_font_path
+
+# 获取中文字体路径
+font_path = get_chinese_font_path()
+
+# 获取备用字体路径
+fallback_font = get_fallback_font_path()
+```
+
+### 8. 日志配置
 ```python
 from onnxtools import setup_logger
 
 # 设置日志级别
 setup_logger('INFO')  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
+
+## 模块结构
+
+```
+onnxtools/utils/
+├── __init__.py                  # 导出公共API
+├── drawing.py                   # 可视化绘制和Supervision转换
+├── image_processing.py          # 图像预处理
+├── supervision_labels.py        # OCR标签创建
+├── supervision_annotator.py     # Annotator工厂和管道(13种类型)
+├── supervision_preset.py        # 可视化预设(5种场景)
+├── ocr_metrics.py               # OCR评估指标
+├── detection_metrics.py         # 检测指标计算
+├── nms.py                       # 非极大值抑制算法
+├── font_utils.py                # 字体工具
+├── logger.py                    # 日志配置
+└── CLAUDE.md                    # 本文档
 ```
 
 ## 关键依赖和配置
@@ -123,16 +245,6 @@ setup_logger('INFO')  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 ## 数据模型
 
-### 预处理输出格式
-```python
-preprocess_result = {
-    'image': np.ndarray,      # [C, H, W] 预处理后图像
-    'scale_factor': float,    # 缩放比例
-    'padding': tuple,         # (pad_w, pad_h) 填充尺寸
-    'original_shape': tuple   # (H, W) 原始图像尺寸
-}
-```
-
 ### Supervision转换格式
 ```python
 sv_detections = sv.Detections(
@@ -148,7 +260,7 @@ sv_detections = sv.Detections(
 ### Annotator配置
 ```python
 annotator_config = {
-    'type': str,              # 'round_box', 'box', 'label', etc.
+    'type': AnnotatorType,    # 枚举类型
     'params': dict,           # 特定annotator的参数
     'enabled': bool           # 是否启用
 }
@@ -169,7 +281,7 @@ ocr_metrics = {
 
 ### 单元测试覆盖
 - [x] `test_ocr_metrics.py` - OCR指标计算23个单元测试
-  - 边界情况：空字符串、长度差异、插入删除替换
+  - 边界情况:空字符串、长度差异、插入删除替换
   - 中文字符处理和真实OCR场景
 - [x] `test_load_label_file.py` - 标签文件加载12个单元测试
 - [ ] 图像预处理函数测试
@@ -178,7 +290,7 @@ ocr_metrics = {
 ### 集成测试覆盖
 - [x] `test_supervision_only.py` - Supervision库集成测试
 - [x] `test_basic_drawing.py` - 基础绘制测试
-- [x] Annotator集成测试（round_box, box_corner, geometric, fill, privacy等）
+- [x] Annotator集成测试(round_box, box_corner, geometric, fill, privacy等)
 - [x] `test_preset_scenarios.py` - 预设场景测试
 
 ### 合约测试覆盖
@@ -196,60 +308,58 @@ ocr_metrics = {
 ## 常见问题 (FAQ)
 
 ### Q: 图像预处理为什么要保持宽高比？
-A: 保持宽高比避免目标变形，提高检测精度。使用padding填充到目标尺寸，后处理时根据scale_factor还原坐标。
+A: 保持宽高比避免目标变形,提高检测精度。使用padding填充到目标尺寸,后处理时根据scale_factor还原坐标。
 
 ### Q: 如何自定义可视化风格？
-A: 1) 修改 `configs/visualization_presets.yaml` 添加新预设; 2) 使用AnnotatorFactory自定义参数; 3) 继承Supervision的Annotator基类创建自定义annotator
+A:
+1. 修改 `configs/visualization_presets.yaml` 添加新预设
+2. 使用AnnotatorFactory自定义参数
+3. 继承Supervision的Annotator基类创建自定义annotator
 
 ### Q: OCR指标中的归一化编辑距离和相似度有什么区别？
 A:
-- 归一化编辑距离(NED): 范围[0,1]，0表示完全匹配，1表示完全不同，值越小越好
-- 编辑距离相似度(EDS): 范围[0,1]，0表示完全不同，1表示完全匹配，值越大越好
-- 关系: EDS = 1 - NED
+- **归一化编辑距离(NED)**: 范围[0,1],0表示完全匹配,1表示完全不同,值越小越好
+- **编辑距离相似度(EDS)**: 范围[0,1],0表示完全不同,1表示完全匹配,值越大越好
+- **关系**: EDS = 1 - NED
 
 ### Q: 如何选择合适的Annotator预设？
 A:
-- `standard`: 通用场景，默认边框+标签
-- `lightweight`: 低资源场景，简化可视化
-- `privacy`: 隐私保护，模糊化处理
-- `debug`: 开发调试，详细信息显示
-- `high_contrast`: 高对比度场景，增强视觉效果
+- `standard`: 通用场景,默认边框+标签
+- `lightweight`: 低资源场景,简化可视化
+- `privacy`: 隐私保护,模糊化处理
+- `debug`: 开发调试,详细信息显示(OCR文本、置信度条)
+- `high_contrast`: 高对比度场景,增强视觉效果
 
-### Q: 旧版OCR处理函数去哪了？
-A: OCR预处理和后处理函数已迁移到 `onnxtools.infer_onnx.OcrORT` 类的静态方法：
-- `process_plate_image()` → `OcrORT._process_plate_image_static()`
-- `decode()` → `OcrORT._decode_static()`
-详见重构规范 `specs/004-refactor-colorlayeronnx-ocronnx/`
+### Q: drawing.py中包含哪些函数？
+A:
+- `draw_detections()`: 使用Supervision绘制检测结果
+- `convert_to_supervision_detections()`: 转换Result/字典为sv.Detections格式
+- 注意: 没有单独的 `supervision_converter.py` 文件,转换函数集成在 `drawing.py` 中
 
 ## 相关文件列表
 
 ### 核心处理文件
-- `pipeline.py` - 主处理管道和模型初始化
+- `drawing.py` - 可视化绘制和Supervision数据转换
 - `image_processing.py` - 通用图像预处理工具
-- `output_transforms.py` - 输出格式转换工具
 - `detection_metrics.py` - 检测性能评估指标
 - `nms.py` - 非极大值抑制算法实现
 
 ### Supervision集成
-- `supervision_converter.py` - 数据格式转换为Supervision
 - `supervision_labels.py` - OCR标签创建
-- `supervision_annotator.py` - Annotator工厂和管道
-- `supervision_preset.py` - 可视化预设加载器
+- `supervision_annotator.py` - Annotator工厂和管道(13种类型)
+- `supervision_preset.py` - 可视化预设加载器(5种场景)
 
 ### OCR和度量
 - `ocr_metrics.py` - OCR评估指标计算函数
 - `font_utils.py` - 中文字体路径查找
 
-### 可视化和工具
-- `drawing.py` - 检测结果可视化绘制（传统方式+Supervision方式）
-- `logging_config.py` - 日志系统配置
-
-### 配置和接口
+### 系统工具
+- `logger.py` - 日志系统配置
 - `__init__.py` - 模块导入和API定义
 
 ## 架构设计
 
-### Annotator类型支持（13种）
+### Annotator类型支持(13种)
 ```
 边框类:
   - Box (标准边框)
@@ -278,8 +388,8 @@ A: OCR预处理和后处理函数已迁移到 `onnxtools.infer_onnx.OcrORT` 类�
 ### 预设场景配置
 ```yaml
 standard:      # 标准模式
-  - box
-  - rich_label
+  - box_corner
+  - label
 
 lightweight:   # 轻量级
   - dot
@@ -303,7 +413,14 @@ high_contrast: # 高对比度
 
 ## 变更日志 (Changelog)
 
-**2025-11-05** - 初始化完整模块文档，建立清晰的面包屑导航
+**2025-11-13** - 文档全面更新和结构修正
+- ✅ 修正模块结构:明确 `drawing.py` 包含转换函数,无单独的 `supervision_converter.py`
+- ✅ 更新文件列表,反映实际文件组织(`logger.py` 而非 `logging_config.py`)
+- ✅ 补充 `AnnotatorType` 枚举类型说明
+- ✅ 完善API文档,增加函数签名和返回值说明
+- ✅ 更新时间戳至 2025-11-13
+
+**2025-11-05** - 初始化完整模块文档,建立清晰的面包屑导航
 - 更新面包屑路径: [根目录] > [onnxtools] > [utils]
 - 添加Supervision集成详细文档
 - 补充Annotator工厂和预设使用指南
@@ -323,7 +440,6 @@ high_contrast: # 高对比度
 **2025-10-09** - OCR模块重构
 - ❌ 删除 `ocr_image_processing.py` - 迁移到infer_onnx
 - ❌ 删除 `ocr_post_processing.py` - 迁移到infer_onnx
-- ✅ 更新 `pipeline.py` - 使用新的OCRORT接口
 - ✅ 更新 `__init__.py` - 移除OCR函数导出
 
 **2025-09-15** - 初始化工具模块文档
@@ -331,4 +447,4 @@ high_contrast: # 高对比度
 ---
 
 *模块路径: `/home/tyjt/桌面/onnx_vehicle_plate_recognition/onnxtools/utils/`*
-*最后更新: 2025-11-05 15:02:47*
+*最后更新: 2025-11-13 20:55:00*

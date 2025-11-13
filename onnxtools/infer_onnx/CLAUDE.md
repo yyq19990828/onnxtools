@@ -420,8 +420,7 @@ python tools/eval_ocr.py \
 
 ### 专用功能模块
 - `onnx_ocr.py` - OcrORT和ColorLayerORT，OCR识别和颜色分类
-- `eval_coco.py` - DatasetEvaluator，COCO数据集评估
-- `eval_ocr.py` - OCRDatasetEvaluator，OCR数据集评估
+- `result.py` - Result类，检测结果包装器
 - `engine_dataloader.py` - TensorRT引擎数据加载器
 
 ### 配置和接口
@@ -528,4 +527,4 @@ if ocr_result:
 ---
 
 *模块路径: `/home/tyjt/桌面/onnx_vehicle_plate_recognition/onnxtools/infer_onnx/`*
-*最后更新: 2025-11-05 15:02:47*
+*最后更新: 2025-11-13 20:50:00*
