@@ -24,7 +24,7 @@ import logging
 import time
 import cv2
 
-__all__ = ['OCRDatasetEvaluator', 'SampleEvaluation', 'load_label_file']
+__all__ = ['OCRDatasetEvaluator', 'SampleEvaluation']
 
 
 @dataclass
@@ -62,84 +62,6 @@ class SampleEvaluation:
     normalized_edit_distance: float
 
 
-def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, str]]:
-    """Load label file with tab-separated format
-
-    Supports two formats:
-    1. Single image: image_path<TAB>ground_truth
-    2. Multiple images (JSON): ["img1.jpg", "img2.jpg"]<TAB>ground_truth
-
-    Args:
-        label_file: Path to label file (e.g., train.txt, val.txt)
-        dataset_base_path: Dataset root directory for resolving relative paths
-
-    Returns:
-        List of (image_path, ground_truth_text) tuples
-        For multiple images per label, expands to multiple entries
-
-    Raises:
-        FileNotFoundError: If label file does not exist
-        IOError: If label file cannot be read
-
-    Examples:
-        >>> dataset = load_label_file('data/train.txt', 'data/')
-        >>> len(dataset) > 0
-        True
-        >>> dataset[0][1]  # ground truth text
-        '京A12345'
-    """
-    import json
-
-    label_path = Path(label_file)
-    if not label_path.exists():
-        raise FileNotFoundError(f"Label file not found: {label_file}")
-
-    dataset = []
-    base_path = Path(dataset_base_path)
-
-    with open(label_file, 'r', encoding='utf-8') as f:
-        for line_num, line in enumerate(f, 1):
-            line = line.strip()
-            if not line:  # Skip empty lines
-                continue
-
-            parts = line.split('\t')
-            if len(parts) != 2:
-                logging.warning(f"Skipping line {line_num}: Invalid format (expected tab-separated)")
-                continue
-
-            image_path_str, gt_text = parts
-
-            # Check if image_path is a JSON array (multiple images)
-            image_paths = []
-            if image_path_str.startswith('[') and image_path_str.endswith(']'):
-                try:
-                    # Parse JSON array of image paths
-                    image_paths = json.loads(image_path_str)
-                    if not isinstance(image_paths, list):
-                        logging.warning(f"Line {line_num}: Invalid JSON array format")
-                        continue
-                except json.JSONDecodeError as e:
-                    logging.warning(f"Line {line_num}: Failed to parse JSON array: {e}")
-                    continue
-            else:
-                # Single image path
-                image_paths = [image_path_str]
-
-            # Expand multiple images to individual entries
-            for img_path in image_paths:
-                full_path = base_path / img_path
-
-                if not full_path.exists():
-                    logging.warning(f"Skipping image: File not found {full_path}")
-                    continue
-
-                dataset.append((str(full_path), gt_text))
-
-    logging.info(f"Loaded {len(dataset)} valid samples from {label_file}")
-    return dataset
-
-
 class OCRDatasetEvaluator:
     """OCR Dataset Evaluator
 
@@ -164,6 +86,84 @@ class OCRDatasetEvaluator:
         ... )
         >>> print(f"Accuracy: {results['accuracy']:.3f}")
     """
+
+    @staticmethod
+    def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, str]]:
+        """Load label file with tab-separated format
+
+        Supports two formats:
+        1. Single image: image_path<TAB>ground_truth
+        2. Multiple images (JSON): ["img1.jpg", "img2.jpg"]<TAB>ground_truth
+
+        Args:
+            label_file: Path to label file (e.g., train.txt, val.txt)
+            dataset_base_path: Dataset root directory for resolving relative paths
+
+        Returns:
+            List of (image_path, ground_truth_text) tuples
+            For multiple images per label, expands to multiple entries
+
+        Raises:
+            FileNotFoundError: If label file does not exist
+            IOError: If label file cannot be read
+
+        Examples:
+            >>> dataset = OCRDatasetEvaluator.load_label_file('data/train.txt', 'data/')
+            >>> len(dataset) > 0
+            True
+            >>> dataset[0][1]  # ground truth text
+            '京A12345'
+        """
+        import json
+
+        label_path = Path(label_file)
+        if not label_path.exists():
+            raise FileNotFoundError(f"Label file not found: {label_file}")
+
+        dataset = []
+        base_path = Path(dataset_base_path)
+
+        with open(label_file, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line:  # Skip empty lines
+                    continue
+
+                parts = line.split('\t')
+                if len(parts) != 2:
+                    logging.warning(f"Skipping line {line_num}: Invalid format (expected tab-separated)")
+                    continue
+
+                image_path_str, gt_text = parts
+
+                # Check if image_path is a JSON array (multiple images)
+                image_paths = []
+                if image_path_str.startswith('[') and image_path_str.endswith(']'):
+                    try:
+                        # Parse JSON array of image paths
+                        image_paths = json.loads(image_path_str)
+                        if not isinstance(image_paths, list):
+                            logging.warning(f"Line {line_num}: Invalid JSON array format")
+                            continue
+                    except json.JSONDecodeError as e:
+                        logging.warning(f"Line {line_num}: Failed to parse JSON array: {e}")
+                        continue
+                else:
+                    # Single image path
+                    image_paths = [image_path_str]
+
+                # Expand multiple images to individual entries
+                for img_path in image_paths:
+                    full_path = base_path / img_path
+
+                    if not full_path.exists():
+                        logging.warning(f"Skipping image: File not found {full_path}")
+                        continue
+
+                    dataset.append((str(full_path), gt_text))
+
+        logging.info(f"Loaded {len(dataset)} valid samples from {label_file}")
+        return dataset
 
     def __init__(self, ocr_model):
         """Initialize evaluator
@@ -232,7 +232,7 @@ class OCRDatasetEvaluator:
         )
 
         # Load dataset
-        dataset = load_label_file(label_file, dataset_base_path)
+        dataset = self.load_label_file(label_file, dataset_base_path)
         if max_images:
             dataset = dataset[:max_images]
 

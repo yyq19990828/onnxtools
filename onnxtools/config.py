@@ -153,6 +153,37 @@ LAYER_MAP: Dict[int, str] = {
     0: "single", 1: "double",
 }
 
+# Vehicle Attribute Classification (multi-label: 13 types + 11 colors = 24 outputs)
+VEHICLE_TYPE_MAP: Dict[int, str] = {
+    0: "car",
+    1: "truck",
+    2: "bus",
+    3: "tanker",
+    4: "slagcar",
+    5: "fire_engine",
+    6: "mixer",
+    7: "ambulance",
+    8: "police_car",
+    9: "engineering_truck",
+    10: "hazardous_goods_vehicle",
+    11: "manned_sweeping_vehicle",
+    12: "school_bus",
+}
+
+VEHICLE_COLOR_MAP: Dict[int, str] = {
+    0: "black",
+    1: "white",
+    2: "gray",
+    3: "red",
+    4: "yellow",
+    5: "green",
+    6: "blue",
+    7: "purple",
+    8: "brown",
+    9: "pink",
+    10: "other",
+}
+
 # ============================================================================
 # 可视化预设配置
 # ============================================================================

@@ -35,20 +35,30 @@ detector = create_detector('rtdetr', 'models/rtdetr.onnx', conf_thres=0.5)
 result = detector(image)  # 返回Result对象
 
 # 方式3: OCR识别
-from onnxtools import OcrORT, ColorLayerORT
-import yaml
+from onnxtools import OcrORT
 
-with open('configs/plate.yaml') as f:
-    config = yaml.safe_load(f)
+ocr_model = OcrORT('models/ocr.onnx')  # 自动加载默认配置
+result = ocr_model(plate_image)
+if result:
+    text, conf, char_scores = result
 
-ocr_model = OcrORT('models/ocr.onnx', character=config['plate_dict']['character'])
-text, conf, char_scores = ocr_model(plate_image)
+# 方式4: 分类器 (NEW - 2025-11-25)
+from onnxtools import ColorLayerORT, VehicleAttributeORT
 
-# 方式4: 数据集评估
-from onnxtools import DatasetEvaluator, OCRDatasetEvaluator
+# 车牌颜色/层级分类
+color_classifier = ColorLayerORT('models/color_layer.onnx')
+result = color_classifier(plate_image)
+print(f"Color: {result.labels[0]}, Layer: {result.labels[1]}")
+
+# 车辆属性分类
+vehicle_classifier = VehicleAttributeORT('models/vehicle_attribute.onnx')
+vehicle_type, color, conf = vehicle_classifier(vehicle_image)
+
+# 方式5: 数据集评估
+from onnxtools import DetDatasetEvaluator, OCRDatasetEvaluator
 
 # COCO评估
-evaluator = DatasetEvaluator(detector)
+evaluator = DetDatasetEvaluator(detector)
 metrics = evaluator.evaluate_dataset(dataset_path)
 
 # OCR评估
@@ -72,6 +82,7 @@ class InferencePipeline:
         model_path: str,
         ocr_model_path: Optional[str] = None,
         color_model_path: Optional[str] = None,
+        vehicle_attr_model_path: Optional[str] = None,  # NEW: 车辆属性模型
         config_path: str = 'configs/det_config.yaml',
         plate_config_path: str = 'configs/plate.yaml',
         conf_thres: float = 0.5,
@@ -85,6 +96,7 @@ class InferencePipeline:
             model_path: 检测模型路径
             ocr_model_path: OCR模型路径(可选)
             color_model_path: 颜色分类模型路径(可选)
+            vehicle_attr_model_path: 车辆属性模型路径(可选,NEW)
             conf_thres: 置信度阈值
             iou_thres: NMS IoU阈值
             annotator_preset: 可视化预设 ('standard', 'debug', 'lightweight', 'privacy', 'high_contrast')
@@ -142,9 +154,10 @@ stats = result.summary()
 
 ### 3. 核心推理接口
 
-**架构说明**: onnxtools提供两类推理类:
+**架构说明 (2025-11-25更新)**: onnxtools提供三类推理类:
 - **检测器类** (继承BaseORT): 目标检测任务,返回`Result`对象
-- **分类器/OCR类** (独立): 分类/序列识别任务,返回元组
+- **分类器类** (继承BaseClsORT): 分类任务,返回`ClsResult`对象 **(NEW)**
+- **OCR类** (独立): 序列识别任务,返回Optional[Tuple]
 
 ```python
 from onnxtools import (
@@ -154,8 +167,13 @@ from onnxtools import (
     RtdetrORT,         # RT-DETR检测器
     RfdetrORT,         # RF-DETR检测器
 
-    # 独立分类器/OCR类 - 返回元组
-    ColorLayerORT,     # 颜色/层级分类器
+    # 分类器类 (继承BaseClsORT) - 返回ClsResult (NEW)
+    BaseClsORT,        # 分类抽象基类
+    ClsResult,         # 分类结果类
+    ColorLayerORT,     # 车牌颜色/层级分类器
+    VehicleAttributeORT,  # 车辆属性分类器(车型+颜色)
+
+    # OCR类 (独立) - 返回Optional[Tuple]
     OcrORT,            # OCR识别器
 
     # 其他
@@ -164,15 +182,25 @@ from onnxtools import (
     InferencePipeline, # 推理管道类(推荐)
 )
 
-# 检测器使用(推荐) - 返回Result对象
+# 检测器使用 - 返回Result对象
 detector = create_detector('yolo', 'models/yolo11n.onnx')
 result = detector(image)  # Result实例
 boxes = result.boxes
 scores = result.scores
 
-# 分类器/OCR使用 - 返回元组
-classifier = ColorLayerORT('color.onnx', color_map, layer_map)
-color, layer, conf = classifier(plate_image)  # 元组解包
+# 分类器使用 - 返回ClsResult对象 (NEW)
+color_classifier = ColorLayerORT('color_layer.onnx')
+result = color_classifier(plate_image)  # ClsResult实例
+color = result.labels[0]
+layer = result.labels[1]
+# 或元组解包(向后兼容)
+color, layer, conf = color_classifier(plate_image)
+
+# OCR使用 - 返回Optional[Tuple]
+ocr = OcrORT('ocr.onnx')
+ocr_result = ocr(plate_image)
+if ocr_result:
+    text, conf, char_confs = ocr_result
 
 # 或直接实例化检测器
 detector = RtdetrORT('models/rtdetr.onnx', conf_thres=0.5, iou_thres=0.7)
@@ -182,7 +210,7 @@ result = detector(image)  # Result实例
 ### 4. 评估工具
 ```python
 from onnxtools import (
-    DatasetEvaluator,      # COCO数据集评估
+    DetDatasetEvaluator,   # COCO数据集评估 (更名自DatasetEvaluator)
     OCRDatasetEvaluator,   # OCR数据集评估
     SampleEvaluation       # OCR样本评估数据类
 )
@@ -209,23 +237,24 @@ from onnxtools.utils import (
 onnxtools/
 ├── __init__.py                 # 根模块，导出公共API
 ├── pipeline.py                 # InferencePipeline类和遗留函数
-├── config.py                   # 配置管理
+├── config.py                   # 配置管理 (扩展: VEHICLE_TYPE_MAP, VEHICLE_COLOR_MAP)
 │
 ├── infer_onnx/                 # 推理引擎子模块
-│   ├── __init__.py
+│   ├── __init__.py             # 导出BaseORT/BaseClsORT/Result/ClsResult等
 │   ├── onnx_base.py            # BaseORT抽象基类
 │   ├── onnx_yolo.py            # YOLO推理
 │   ├── onnx_rtdetr.py          # RT-DETR推理
 │   ├── onnx_rfdetr.py          # RF-DETR推理
-│   ├── onnx_ocr.py             # OCR和颜色分类
+│   ├── onnx_cls.py             # **NEW: BaseClsORT, ClsResult, ColorLayerORT, VehicleAttributeORT**
+│   ├── onnx_ocr.py             # OcrORT (ColorLayerORT已迁移到onnx_cls.py)
 │   ├── result.py               # Result检测结果类
 │   ├── infer_utils.py          # 推理工具
 │   ├── engine_dataloader.py   # TensorRT数据加载
 │   └── CLAUDE.md               # 推理引擎模块文档
 │
 ├── eval/                       # 评估子模块
-│   ├── __init__.py
-│   ├── eval_coco.py            # COCO评估
+│   ├── __init__.py             # 导出DetDatasetEvaluator, OCRDatasetEvaluator
+│   ├── eval_coco.py            # DetDatasetEvaluator (更名自DatasetEvaluator)
 │   ├── eval_ocr.py             # OCR评估
 │   └── CLAUDE.md               # 评估模块文档
 │
@@ -286,6 +315,14 @@ result.scores       # np.ndarray [N] 置信度
 result.class_ids    # np.ndarray [N] 类别ID
 result.orig_shape   # Tuple[int, int] 原图尺寸
 
+# 分类器输出(BaseClsORT子类) - ClsResult对象 (NEW)
+result = classifier(image)
+result.labels          # List[str] - 分类标签
+result.confidences     # List[float] - 置信度列表
+result.avg_confidence  # float - 平均置信度
+# 向后兼容元组解包:
+color, layer, conf = classifier(plate_image)
+
 # OCR输出 - Optional[Tuple]
 ocr_result = ocr_model(plate_image)
 if ocr_result:
@@ -293,12 +330,6 @@ if ocr_result:
     # text: str - 识别文本
     # confidence: float - 平均置信度
     # char_scores: List[float] - 字符置信度列表
-
-# 颜色分类输出 - Tuple
-color, layer, confidence = classifier(plate_image)
-# color: str - 颜色类别
-# layer: str - 层级类别
-# confidence: float - 置信度
 
 # InferencePipeline输出
 result_img, output_data = pipeline(image)
@@ -346,6 +377,19 @@ A:
 - **InferencePipeline**: 封装完整流程(检测+OCR+颜色分类+可视化),开箱即用,推荐用于应用开发
 - **create_detector**: 仅创建检测器,灵活性更高,推荐用于自定义流程或研究
 
+### Q: 2025-11-25更新了什么？
+A: 新增分类器架构:
+- **BaseClsORT**: 分类模型抽象基类
+- **ClsResult**: 统一分类结果对象,支持元组解包
+- **VehicleAttributeORT**: 车辆属性分类器(车型+颜色多标签)
+- **ColorLayerORT**: 迁移到`onnx_cls.py`,现在继承BaseClsORT
+- API保持向后兼容,元组解包仍然支持
+
+### Q: DatasetEvaluator改名了吗？
+A: 是的,为了语义清晰:
+- `DatasetEvaluator` → `DetDatasetEvaluator` (检测数据集评估)
+- 旧名称仍然可用但建议使用新名称
+
 ### Q: 如何进行完整的推理流程？
 A: 参考 `demo_pipeline.py` 示例:
 ```bash
@@ -359,9 +403,9 @@ python demo_pipeline.py \
 
 ### Q: 如何扩展新的模型架构？
 A:
-1. 在 `infer_onnx/` 创建新的推理类,继承 `BaseORT`
-2. 实现 `_preprocess_static()` 和 `_postprocess()` 方法
-3. 在 `onnxtools/__init__.py` 的 `create_detector()` 中注册
+1. 在 `infer_onnx/` 创建新的推理类,继承 `BaseORT` 或 `BaseClsORT`
+2. 实现相应的抽象方法
+3. 在 `onnxtools/__init__.py` 中导出(检测器还需在 `create_detector()` 中注册)
 
 ### Q: 如何使用TensorRT加速？
 A:
@@ -418,35 +462,55 @@ annotators = [
 
 ### 模块分层
 ```
-┌─────────────────────────────────────────┐
-│        onnxtools (根模块)                │
-│  create_detector(), InferencePipeline   │
-├─────────────┬──────────┬────────────────┤
-│  infer_onnx │   eval   │     utils      │
-│  (推理引擎)  │  (评估)   │   (工具函数)    │
-├─────────────┼──────────┼────────────────┤
-│ • BaseORT   │ • COCO   │ • pipeline     │
-│ • YoloORT   │ • OCR    │ • supervision  │
-│ • RtdetrORT │          │ • annotator    │
-│ • RfdetrORT │          │ • ocr_metrics  │
-│ • OcrORT    │          │ • drawing      │
-│ • Result    │          │ • logger       │
-└─────────────┴──────────┴────────────────┘
+┌─────────────────────────────────────────────────────┐
+│            onnxtools (根模块)                        │
+│    create_detector(), InferencePipeline             │
+├───────────────┬────────────┬───────────────────────┤
+│  infer_onnx   │    eval    │        utils          │
+│  (推理引擎)    │   (评估)    │     (工具函数)         │
+├───────────────┼────────────┼───────────────────────┤
+│ • BaseORT     │ • DetDS    │ • supervision         │
+│ • YoloORT     │ • OCR      │ • annotator           │
+│ • RtdetrORT   │            │ • ocr_metrics         │
+│ • BaseClsORT  │            │ • drawing             │
+│ • ColorLayer  │            │ • logger              │
+│ • VehicleAttr │            │                       │
+│ • OcrORT      │            │                       │
+│ • Result      │            │                       │
+│ • ClsResult   │            │                       │
+└───────────────┴────────────┴───────────────────────┘
 ```
 
 ### 工作流程
 ```mermaid
 graph LR
     A[输入图像] --> B[InferencePipeline / create_detector]
-    B --> C[BaseORT子类]
-    C --> D[__call__ 推理]
-    D --> E[后处理]
-    E --> F[Result对象]
-    F --> G[可视化/保存]
-    G --> H[输出结果]
+    B --> C{推理类型}
+    C -->|检测| D[BaseORT子类]
+    C -->|分类| E[BaseClsORT子类]
+    C -->|OCR| F[OcrORT]
+    D --> G[Result对象]
+    E --> H[ClsResult对象]
+    F --> I[Optional Tuple]
+    G --> J[可视化/保存]
+    H --> J
+    I --> J
+    J --> K[输出结果]
 ```
 
 ## 变更日志 (Changelog)
+
+**2025-11-25** - 分类架构重大升级和API更新
+- ✅ **新增**: `infer_onnx/onnx_cls.py` - 分类模型架构
+  - `BaseClsORT` 抽象基类
+  - `ClsResult` 统一结果类
+  - `VehicleAttributeORT` 车辆属性分类器
+- ✅ **迁移**: `ColorLayerORT` 从 `onnx_ocr.py` 迁移到 `onnx_cls.py`
+- ✅ **重构**: `ColorLayerORT` 现在继承 `BaseClsORT`,返回 `ClsResult`
+- ✅ **更名**: `DatasetEvaluator` → `DetDatasetEvaluator` (旧名称仍可用)
+- ✅ **扩展**: `config.py` 新增 `VEHICLE_TYPE_MAP`, `VEHICLE_COLOR_MAP`
+- ✅ **更新**: 文档完整记录新架构、API变更和迁移说明
+- ✅ **保持**: 所有API保持向后兼容,元组解包仍然支持
 
 **2025-11-13** - 文档全面更新和结构调整
 - ✅ 新增 InferencePipeline 类文档(推荐使用方式)
@@ -489,4 +553,4 @@ graph LR
 ---
 
 *模块路径: `/home/tyjt/桌面/onnx_vehicle_plate_recognition/onnxtools/`*
-*最后更新: 2025-11-13 20:45:00*
+*最后更新: 2025-11-25 14:42:10*

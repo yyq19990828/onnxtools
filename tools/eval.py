@@ -6,7 +6,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 from onnxtools import create_detector
-from onnxtools import DatasetEvaluator
+from onnxtools import DetDatasetEvaluator
 from onnxtools import setup_logger
 
 
@@ -37,7 +37,7 @@ def main():
     detector = create_detector(args.model_type, args.model_path)
     
     # 使用统一的评估器
-    evaluator = DatasetEvaluator(detector)
+    evaluator = DetDatasetEvaluator(detector)
     
     # 构建evaluate_dataset的参数字典
     eval_kwargs = {
