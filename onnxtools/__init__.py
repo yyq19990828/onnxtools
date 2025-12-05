@@ -6,19 +6,27 @@ onnxtools - ONNX模型推理工具集
 
 # 从 infer_onnx 子模块导入推理引擎类
 from .infer_onnx import (
+    # Detection base and implementations
     BaseORT,
     YoloORT,
     RtdetrORT,
     RfdetrORT,
+    # Classification base and implementations
+    BaseClsORT,
+    ClsResult,
     ColorLayerORT,
+    VehicleAttributeORT,
+    # OCR
     OcrORT,
+    # Result classes
     Result,
+    # Constants
     RUN,
 )
 
 # 从 eval 子模块导入评估工具
 from .eval import (
-    DatasetEvaluator,
+    DetDatasetEvaluator,
     OCRDatasetEvaluator,
     SampleEvaluation,
 )
@@ -71,23 +79,30 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
 __version__ = "0.1.0"
 
 __all__ = [
-    # 推理引擎
+    # Detection base and implementations
     'BaseORT',
     'YoloORT',
     'RtdetrORT',
     'RfdetrORT',
+    # Classification base and implementations
+    'BaseClsORT',
+    'ClsResult',
     'ColorLayerORT',
+    'VehicleAttributeORT',
+    # OCR
     'OcrORT',
+    # Result classes
     'Result',
+    # Factory function
     'create_detector',
-    # 推理管道
+    # Inference pipeline
     'InferencePipeline',
-    # 评估工具
-    'DatasetEvaluator',
+    # Evaluation tools
+    'DetDatasetEvaluator',
     'OCRDatasetEvaluator',
     'SampleEvaluation',
-    # 工具函数
+    # Utilities
     'setup_logger',
-    # 常量
+    # Constants
     'RUN',
 ]

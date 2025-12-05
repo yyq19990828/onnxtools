@@ -2,7 +2,7 @@
 数据集评估模块
 
 包含:
-- DatasetEvaluator: 通用数据集评估器
+- DetDatasetEvaluator: 检测数据集评估器
 用于评估ONNX模型在YOLO格式数据集上的性能
 """
 
@@ -18,8 +18,8 @@ from ..infer_onnx import BaseORT
 from ..utils.detection_metrics import evaluate_detection, print_metrics
 
 
-class DatasetEvaluator:
-    """通用数据集评估器"""
+class DetDatasetEvaluator:
+    """检测数据集评估器"""
     
     def __init__(self, detector: BaseORT):
         """
