@@ -224,7 +224,7 @@ class OCRDatasetEvaluator:
             raise ValueError(f"Invalid output_format: {output_format}. Must be 'table' or 'json'")
 
         # Import utility functions
-        from utils.ocr_metrics import (
+        from onnxtools.utils.ocr_metrics import (
             calculate_accuracy,
             calculate_edit_distance_metrics,
             print_ocr_metrics,

@@ -2,9 +2,10 @@
 """OCR Dataset Evaluation CLI Tool
 
 Command-line interface for evaluating OCR model performance on labeled datasets.
-Supports multiple output formats, confidence thresholds, and detailed analysis.
+Supports multiple output formats, confidence thresholds, detailed analysis, and badcase saving.
 
 Usage:
+    # Basic evaluation with default output directory (runs/{dataset_name})
     python tools/eval_ocr.py \\
         --label-file data/ocr_rec_dataset_examples/val.txt \\
         --dataset-base data/ocr_rec_dataset_examples \\
@@ -13,21 +14,34 @@ Usage:
         --conf-threshold 0.5 \\
         --output-format table
 
-    # JSON export for model comparison
+    # Save badcase images and error analysis report
+    python tools/eval_ocr.py \\
+        --label-file data/val.txt \\
+        --dataset-base data/ \\
+        --ocr-model models/ocr.onnx \\
+        --config configs/plate.yaml \\
+        --save-badcase-images \\
+        --error-analysis
+
+    # Custom output directory
     python tools/eval_ocr.py \\
         --label-file data/val.txt \\
         --dataset-base data/ \\
         --ocr-model models/ocr_v2.onnx \\
         --config configs/plate.yaml \\
-        --output-format json > results_v2.json
+        --output-dir runs/ocr_v2_experiment \\
+        --save-badcase-images \\
+        --error-analysis
 """
 
 import argparse
 import json
 import sys
 import yaml
+import shutil
 from pathlib import Path
 from typing import Dict, Any, List
+from datetime import datetime
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -314,6 +328,77 @@ def save_detailed_report(results: Dict[str, Any], output_path: str) -> None:
     print(f"\n💾 Detailed error report saved to: {output_path}")
 
 
+def save_badcase_images(results: Dict[str, Any], output_dir: Path) -> None:
+    """Save original images of incorrect predictions (badcases)
+
+    Args:
+        results: Evaluation results dictionary containing per_sample_results
+        output_dir: Output directory for saving badcase images
+
+    Creates:
+        output_dir/badcases/ directory containing:
+        - Original images of failed predictions
+        - Images named with format: {idx}_{gt_text}_pred_{pred_text}_{conf:.3f}.jpg
+    """
+    if 'per_sample_results' not in results:
+        logging.warning("Cannot save badcase images: no per-sample results available")
+        return
+
+    # Convert to SampleEvaluation objects
+    per_sample_objs = [
+        SampleEvaluation(**sample) for sample in results['per_sample_results']
+    ]
+    incorrect_samples = [s for s in per_sample_objs if not s.is_correct]
+
+    if not incorrect_samples:
+        logging.info("No badcases to save (perfect accuracy!)")
+        return
+
+    # Create badcases directory
+    badcase_dir = output_dir / "badcases"
+    badcase_dir.mkdir(parents=True, exist_ok=True)
+
+    # Sort by normalized edit distance (worst first)
+    incorrect_samples.sort(key=lambda x: x.normalized_edit_distance, reverse=True)
+
+    saved_count = 0
+    failed_count = 0
+
+    for idx, sample in enumerate(incorrect_samples, 1):
+        src_path = Path(sample.image_path)
+
+        if not src_path.exists():
+            logging.warning(f"Source image not found: {src_path}")
+            failed_count += 1
+            continue
+
+        # Create safe filename
+        gt_text = sample.ground_truth.replace('/', '_').replace('\\', '_')
+        pred_text = sample.predicted_text.replace('/', '_').replace('\\', '_')
+        conf = sample.confidence
+
+        # Format: {idx}_{gt_text}_pred_{pred_text}_{conf:.3f}{ext}
+        filename = f"{idx:04d}_gt_{gt_text}_pred_{pred_text}_{conf:.3f}{src_path.suffix}"
+        dst_path = badcase_dir / filename
+
+        try:
+            shutil.copy2(src_path, dst_path)
+            saved_count += 1
+            logging.debug(f"Saved badcase image: {dst_path.name}")
+        except Exception as e:
+            logging.warning(f"Failed to copy {src_path}: {e}")
+            failed_count += 1
+
+    logging.info(f"Badcase images saved: {saved_count}/{len(incorrect_samples)}")
+    if failed_count > 0:
+        logging.warning(f"Failed to save {failed_count} badcase images")
+
+    print(f"\n📸 Badcase images saved to: {badcase_dir}")
+    print(f"   - Saved: {saved_count}/{len(incorrect_samples)} images")
+    if failed_count > 0:
+        print(f"   - Failed: {failed_count} images")
+
+
 def load_character_dict(config_path: str) -> list:
     """Load character dictionary from configuration file
 
@@ -431,13 +516,24 @@ Examples:
         help='Logging level (default: INFO)'
     )
 
-    # Error analysis argument
+    # Output and analysis arguments
     parser.add_argument(
-        '--error-analysis',
+        '--output-dir',
         type=str,
         default=None,
-        metavar='REPORT_FILE',
-        help='Enable deep error analysis and save detailed report to JSON file (e.g., error_report.json)'
+        help='Output directory for saving results (default: runs/{dataset_name})'
+    )
+
+    parser.add_argument(
+        '--save-badcase-images',
+        action='store_true',
+        help='Save original images of incorrect predictions (badcases) to output-dir/badcases/'
+    )
+
+    parser.add_argument(
+        '--error-analysis',
+        action='store_true',
+        help='Enable deep error analysis and save detailed report to output-dir/error_report.json'
     )
 
     return parser.parse_args()
@@ -467,6 +563,20 @@ def main():
         if not Path(args.config).exists():
             logging.error(f"Config file not found: {args.config}")
             sys.exit(1)
+
+        # Determine output directory
+        if args.output_dir:
+            output_dir = Path(args.output_dir)
+        else:
+            # Default: runs/{dataset_name}
+            # Infer dataset name from label file parent directory name or filename
+            label_path = Path(args.label_file)
+            dataset_name = label_path.parent.name if label_path.parent.name else label_path.stem
+            output_dir = Path("runs") / dataset_name
+
+        # Create output directory
+        output_dir.mkdir(parents=True, exist_ok=True)
+        logging.info(f"Output directory: {output_dir}")
 
         # Load OCR model (使用新API,自动加载配置)
         logging.info(f"Loading OCR model: {args.ocr_model}")
@@ -511,10 +621,16 @@ def main():
             analyze_errors(results, top_n=15)
             analyze_confidence_distribution(results)
             find_common_mistakes(results, top_n=10)
-            
-            # Save detailed report
-            logging.info(f"Saving detailed report to {args.error_analysis}...")
-            save_detailed_report(results, args.error_analysis)
+
+            # Save detailed report to output_dir/error_report.json
+            error_report_path = output_dir / "error_report.json"
+            logging.info(f"Saving detailed report to {error_report_path}...")
+            save_detailed_report(results, str(error_report_path))
+
+        # Save badcase images if requested
+        if args.save_badcase_images:
+            logging.info("Saving badcase images...")
+            save_badcase_images(results, output_dir)
 
         sys.exit(0)
 
