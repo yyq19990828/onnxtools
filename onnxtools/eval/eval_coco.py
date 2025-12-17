@@ -12,7 +12,7 @@ import time
 import cv2
 import yaml
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, Union, Tuple
 
 from ..infer_onnx import BaseORT
 from ..utils.detection_metrics import evaluate_detection, print_metrics
@@ -31,18 +31,19 @@ class DetDatasetEvaluator:
         self.detector = detector
     
     def evaluate_dataset(
-        self, 
+        self,
         dataset_path: str,
         output_transform: Optional[Callable] = None,
         conf_threshold: float = 0.25,  # 与Ultralytics验证模式对齐，避免过低阈值产生大量误检
         iou_threshold: float = 0.7,  # 保留参数以保持一致性
         max_images: Optional[int] = None,
         exclude_files: Optional[List[str]] = None,  # 允许用户指定需要排除的文件
-        exclude_labels_containing: Optional[List[str]] = None  # 允许用户指定需要排除的标签内容
+        exclude_labels_containing: Optional[List[str]] = None,  # 允许用户指定需要排除的标签内容
+        class_mapping: Optional[Dict[Union[int, str], List[Union[int, str]]]] = None  # 类别映射
     ) -> Dict[str, Any]:
         """
         在YOLO格式数据集上评估模型性能
-        
+
         Args:
             dataset_path (str): 数据集路径
             output_transform (Optional[Callable]): 输出转换函数
@@ -53,8 +54,14 @@ class DetDatasetEvaluator:
             iou_threshold (float): IoU阈值
             max_images (Optional[int]): 最大评估图像数量
             exclude_files (Optional[List[str]]): 需要排除的文件名列表
-            exclude_labels_containing (Optional[List[str]]): 排除包含指定内容的标签文件
-            
+            exclude_labels_containing (Optional[List[str]]): 要排除的类别（检测目标级别过滤）
+                支持类别名称或数字ID，例如：["other", "plate"] 或 ["12", "13"]
+            class_mapping (Optional[Dict]): 类别映射，格式为 {目标类别: [源类别列表]}
+                支持字符串或数字形式，例如：
+                - {"vehicle": ["car", "truck", "bus"]}
+                - {0: [0, 1, 2, 3, 4]}
+                未在映射中的类别将被过滤掉，不参与评估
+
         Returns:
             Dict[str, Any]: 评估结果
         """
@@ -117,32 +124,21 @@ class DetDatasetEvaluator:
         # 检查图像文件是否可访问，过滤损坏或无效的文件
         valid_image_files = []
         exclude_files = exclude_files or []
-        exclude_labels_containing = exclude_labels_containing or []
-        
+
         for image_file in image_files:
             # 检查是否在排除列表中
             if image_file.name in exclude_files:
                 continue
-                
+
             # 基本有效性检查：文件存在且大小大于0
             if not (image_file.exists() and image_file.stat().st_size > 0):
                 continue
-                
+
             # 检查是否有对应的标签文件
             label_file = labels_dir / f"{image_file.stem}.txt"
             if not label_file.exists():
                 continue
-                
-            # 检查标签文件内容是否包含需要排除的内容
-            if exclude_labels_containing:
-                try:
-                    with open(label_file, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        if any(exclude_text in content for exclude_text in exclude_labels_containing):
-                            continue
-                except Exception:
-                    continue
-                    
+
             valid_image_files.append(image_file)
         
         image_files = valid_image_files
@@ -192,31 +188,46 @@ class DetDatasetEvaluator:
             
             # 测量预处理时间
             preprocess_start = time.time()
-            # 进行检测
-            detections, original_shape = self.detector(image, conf_thres=conf_threshold)
+            # 进行检测 - BaseORT.__call__() 返回 Result 对象
+            result = self.detector(image, conf_thres=conf_threshold)
             inference_end = time.time()
-            
-            # 应用输出转换（如果提供）
+
+            # 从 Result 对象提取检测结果
+            original_shape = result.orig_shape
+
+            # 应用输出转换（如果提供）- 需要将 Result 转换为旧格式传递
             if output_transform is not None:
+                # 构造旧格式的 detections 用于 output_transform
+                if len(result) > 0:
+                    old_format_det = np.column_stack([
+                        result.boxes,
+                        result.scores,
+                        result.class_ids
+                    ])
+                    detections = [old_format_det]
+                else:
+                    detections = [np.zeros((0, 6))]
                 detections = output_transform(detections, original_shape)
-            
+
             postprocess_end = time.time()
-            
+
             # 记录时间
             times['preprocess'].append((preprocess_start - start_time) * 1000)
             times['inference'].append((inference_end - preprocess_start) * 1000)
             times['postprocess'].append((postprocess_end - inference_end) * 1000)
-            
-            # 处理检测结果（坐标已在模型后处理中正确缩放）
-            if detections and len(detections[0]) > 0:
-                pred = detections[0].copy()  # [N, 6] format: [x1, y1, x2, y2, conf, class]
-                
-                # 对于使用了新坐标处理逻辑的YOLO模型，检测结果已经在原图坐标系
-                # 对于RT-DETR和RF-DETR等特殊模型，仍需要额外缩放
-                if type(self.detector).__name__ in ['RtdetrORT', 'RfdetrORT']:
-                    pred[:, [0, 2]] = pred[:, [0, 2]] * img_width / self.detector.input_shape[1]   # x坐标缩放
-                    pred[:, [1, 3]] = pred[:, [1, 3]] * img_height / self.detector.input_shape[0]  # y坐标缩放
-                # YoloOnnx使用新的坐标处理逻辑，坐标已正确缩放，无需额外处理
+
+            # 处理检测结果
+            # 注意：Result 对象中的 boxes 坐标已经是原图坐标系
+            # - YOLO: postprocess 中通过 scale_boxes() 缩放到原图
+            # - RT-DETR/RF-DETR: postprocess 中通过 orig_shape 参数直接缩放到原图
+            # 因此这里无需额外缩放
+            if len(result) > 0:
+                # 从 Result 对象构造 [N, 6] 格式: [x1, y1, x2, y2, conf, class]
+                pred = np.column_stack([
+                    result.boxes,
+                    result.scores,
+                    result.class_ids
+                ]).copy()
             else:
                 pred = np.zeros((0, 6))
             
@@ -226,7 +237,25 @@ class DetDatasetEvaluator:
             label_file = labels_dir / f"{image_file.stem}.txt"
             gt = self._load_yolo_labels_safe(str(label_file), img_width, img_height)
             ground_truths.append(gt)
-        
+
+        # 应用类别过滤（排除指定类别，检测目标级别）
+        if exclude_labels_containing:
+            exclude_class_ids = self._parse_exclude_classes(exclude_labels_containing, names)
+            if exclude_class_ids:
+                predictions, ground_truths = self._apply_class_exclusion(
+                    predictions, ground_truths, exclude_class_ids
+                )
+                logging.info(f"类别排除已应用: 排除了 {len(exclude_class_ids)} 个类别")
+
+        # 应用类别映射（如果提供）
+        if class_mapping is not None:
+            id_mapping, new_names = self._parse_class_mapping(class_mapping, names)
+            predictions, ground_truths = self._apply_class_mapping(
+                predictions, ground_truths, id_mapping
+            )
+            names = new_names
+            logging.info(f"类别映射已应用: {len(id_mapping)} 个源类别 -> {len(new_names)} 个目标类别")
+
         # 计算指标
         results = evaluate_detection(predictions, ground_truths, names)
         
@@ -271,3 +300,208 @@ class DetDatasetEvaluator:
                         continue
         
         return np.array(labels) if labels else np.zeros((0, 5))
+
+    def _parse_class_mapping(
+        self,
+        class_mapping: Dict[Union[int, str], List[Union[int, str]]],
+        names: Dict[int, str]
+    ) -> Tuple[Dict[int, int], Dict[int, str]]:
+        """
+        解析类别映射，将 {目标: [源列表]} 转换为 {原ID: 新ID} 格式
+
+        Args:
+            class_mapping: {目标类别: [源类别列表]}，支持字符串或数字
+            names: 原始类别名称字典 {id: name}
+
+        Returns:
+            (id_mapping, new_names)
+            - id_mapping: {原始class_id: 新class_id}
+            - new_names: {新class_id: 新类别名称}
+        """
+        # 构建 name -> id 的反向映射
+        name_to_id = {v: k for k, v in names.items()}
+
+        id_mapping = {}  # {原始ID: 新ID}
+        new_names = {}   # {新ID: 新名称}
+
+        for new_idx, (target, sources) in enumerate(class_mapping.items()):
+            # 确定目标类别名称
+            if isinstance(target, int):
+                target_name = names.get(target, f"class_{target}")
+            else:
+                target_name = str(target)
+
+            new_names[new_idx] = target_name
+
+            # 处理源类别列表
+            for src in sources:
+                if isinstance(src, int):
+                    src_id = src
+                elif isinstance(src, str):
+                    # 尝试将字符串解析为数字
+                    if src.isdigit():
+                        src_id = int(src)
+                    else:
+                        # 通过名称查找ID
+                        src_id = name_to_id.get(src)
+                        if src_id is None:
+                            logging.warning(f"类别名称 '{src}' 未找到，跳过")
+                            continue
+                else:
+                    continue
+
+                id_mapping[src_id] = new_idx
+
+        return id_mapping, new_names
+
+    def _apply_class_mapping(
+        self,
+        predictions: List[np.ndarray],
+        ground_truths: List[np.ndarray],
+        id_mapping: Dict[int, int]
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """
+        对 pred 和 gt 应用类别ID映射
+
+        未在映射中的类别将被过滤掉（不参与评估）
+
+        Args:
+            predictions: 预测结果列表，每个元素 [N, 6] (x1,y1,x2,y2,conf,class_id)
+            ground_truths: 真值列表，每个元素 [M, 5] (class_id,x1,y1,x2,y2)
+            id_mapping: {原始class_id: 新class_id}
+
+        Returns:
+            映射后的 (predictions, ground_truths)
+        """
+        mapped_predictions = []
+        mapped_ground_truths = []
+
+        for pred in predictions:
+            if len(pred) == 0:
+                mapped_predictions.append(np.zeros((0, 6)))
+                continue
+
+            # pred 格式: [x1, y1, x2, y2, conf, class_id]
+            class_ids = pred[:, 5].astype(int)
+
+            # 创建映射后的 class_id
+            new_class_ids = np.array([id_mapping.get(cid, -1) for cid in class_ids])
+
+            # 只保留在映射中的检测
+            valid_mask = new_class_ids >= 0
+            if np.any(valid_mask):
+                new_pred = pred[valid_mask].copy()
+                new_pred[:, 5] = new_class_ids[valid_mask]
+                mapped_predictions.append(new_pred)
+            else:
+                mapped_predictions.append(np.zeros((0, 6)))
+
+        for gt in ground_truths:
+            if len(gt) == 0:
+                mapped_ground_truths.append(np.zeros((0, 5)))
+                continue
+
+            # gt 格式: [class_id, x1, y1, x2, y2]
+            class_ids = gt[:, 0].astype(int)
+
+            # 创建映射后的 class_id
+            new_class_ids = np.array([id_mapping.get(cid, -1) for cid in class_ids])
+
+            # 只保留在映射中的真值
+            valid_mask = new_class_ids >= 0
+            if np.any(valid_mask):
+                new_gt = gt[valid_mask].copy()
+                new_gt[:, 0] = new_class_ids[valid_mask]
+                mapped_ground_truths.append(new_gt)
+            else:
+                mapped_ground_truths.append(np.zeros((0, 5)))
+
+        return mapped_predictions, mapped_ground_truths
+
+    def _parse_exclude_classes(
+        self,
+        exclude_labels: List[str],
+        names: Dict[int, str]
+    ) -> set:
+        """
+        解析要排除的类别，返回类别ID集合
+
+        Args:
+            exclude_labels: 要排除的类别（支持类别名称或数字ID字符串）
+            names: 原始类别名称字典 {id: name}
+
+        Returns:
+            set: 要排除的类别ID集合
+        """
+        # 构建 name -> id 的反向映射
+        name_to_id = {v: k for k, v in names.items()}
+
+        exclude_ids = set()
+        for label in exclude_labels:
+            label = label.strip()
+            if not label:
+                continue
+
+            # 尝试解析为数字
+            if label.isdigit():
+                exclude_ids.add(int(label))
+            else:
+                # 通过名称查找ID
+                if label in name_to_id:
+                    exclude_ids.add(name_to_id[label])
+                else:
+                    logging.warning(f"排除类别 '{label}' 未找到，跳过")
+
+        return exclude_ids
+
+    def _apply_class_exclusion(
+        self,
+        predictions: List[np.ndarray],
+        ground_truths: List[np.ndarray],
+        exclude_ids: set
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """
+        从 pred 和 gt 中排除指定类别的检测目标
+
+        Args:
+            predictions: 预测结果列表，每个元素 [N, 6] (x1,y1,x2,y2,conf,class_id)
+            ground_truths: 真值列表，每个元素 [M, 5] (class_id,x1,y1,x2,y2)
+            exclude_ids: 要排除的类别ID集合
+
+        Returns:
+            过滤后的 (predictions, ground_truths)
+        """
+        filtered_predictions = []
+        filtered_ground_truths = []
+
+        for pred in predictions:
+            if len(pred) == 0:
+                filtered_predictions.append(np.zeros((0, 6)))
+                continue
+
+            # pred 格式: [x1, y1, x2, y2, conf, class_id]
+            class_ids = pred[:, 5].astype(int)
+
+            # 保留不在排除列表中的检测
+            valid_mask = ~np.isin(class_ids, list(exclude_ids))
+            if np.any(valid_mask):
+                filtered_predictions.append(pred[valid_mask].copy())
+            else:
+                filtered_predictions.append(np.zeros((0, 6)))
+
+        for gt in ground_truths:
+            if len(gt) == 0:
+                filtered_ground_truths.append(np.zeros((0, 5)))
+                continue
+
+            # gt 格式: [class_id, x1, y1, x2, y2]
+            class_ids = gt[:, 0].astype(int)
+
+            # 保留不在排除列表中的真值
+            valid_mask = ~np.isin(class_ids, list(exclude_ids))
+            if np.any(valid_mask):
+                filtered_ground_truths.append(gt[valid_mask].copy())
+            else:
+                filtered_ground_truths.append(np.zeros((0, 5)))
+
+        return filtered_predictions, filtered_ground_truths

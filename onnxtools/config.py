@@ -21,7 +21,7 @@ DET_CLASSES: Dict[int, str] = {
     6: "cyclist",
     7: "tricycle",
     8: "trolley",
-    9: "pedestrain",
+    9: "pedestrian",
     10: "cone",
     11: "animal",
     12: "other",
