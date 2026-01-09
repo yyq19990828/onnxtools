@@ -110,6 +110,21 @@ else
     echo "📁 RF-DETR 已存在，跳过"
 fi
 
+# 拉取 MCP-Vision
+echo "正在处理 MCP-Vision..."
+if [ "$FORCE_MODE" = true ] && [ -d "mcp-vision" ]; then
+    echo "删除已有的 mcp-vision 目录..."
+    rm -rf mcp-vision
+fi
+
+if [ ! -d "mcp-vision" ]; then
+    echo "拉取 MCP-Vision..."
+    git clone --depth 1 https://github.com/groundlight/mcp-vision.git mcp-vision
+    echo "✅ MCP-Vision 拉取完成"
+else
+    echo "📁 MCP-Vision 已存在，跳过"
+fi
+
 # 返回原目录
 cd ..
 
@@ -119,4 +134,5 @@ echo "📂 库存储位置: third_party/"
 echo "   ├── Polygraphy/          # TensorRT 工具包"
 echo "   ├── trt-engine-explorer/ # TensorRT 引擎分析工具"
 echo "   ├── ultralytics/         # YOLO 框架"
-echo "   └── rfdetr/              # RF-DETR 检测框架"
+echo "   ├── rfdetr/              # RF-DETR 检测框架"
+echo "   └── mcp-vision/          # MCP 视觉工具服务器"

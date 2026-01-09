@@ -34,12 +34,24 @@ trt = [
     "tensorrt-libs==8.6.1",
 ]
 
+# MCP (Model Context Protocol) 支持 (可选)
+# 安装方式: uv pip install -e ".[mcp]"
+# 用于将 onnxtools 功能暴露给 LLM (如 Claude)
+mcp = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+]
+
+[project.scripts]
+# MCP 服务器入口点
+onnxtools-mcp = "mcp_tools.server:main"
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["onnxtools*"]
+include = ["onnxtools*", "mcp_tools*"]
 exclude = ["tests*", "docs*", "data*", "specs*", "models*", "configs*", "tools*"]
 
 [tool.uv]

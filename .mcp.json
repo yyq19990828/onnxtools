@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "onnxtools": {
+      "command": "/home/tyjt/桌面/onnx_vehicle_plate_recognition/.venv/bin/python",
+      "args": ["-m", "mcp_tools.server"],
+      "cwd": "/home/tyjt/桌面/onnx_vehicle_plate_recognition"
+    }
+  }
+}
