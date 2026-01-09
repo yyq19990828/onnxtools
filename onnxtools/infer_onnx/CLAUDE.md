@@ -4,12 +4,13 @@
 
 ## 模块职责
 
-核心ONNX推理引擎，提供多种目标检测模型架构的统一接口，包括车辆检测、车牌检测、OCR识别和颜色/层级分类功能。支持YOLO、RT-DETR、RF-DETR等主流检测架构，提供BaseORT基类和统一的推理接口。
+核心ONNX推理引擎，提供多种目标检测模型架构的统一接口，包括车辆检测、车牌检测、OCR识别和颜色/层级/属性分类功能。支持YOLO、RT-DETR、RF-DETR等主流检测架构，提供BaseORT和BaseClsORT双基类架构和统一的推理接口。
 
 ## 入口和启动
 
 - **主要工厂函数**: `onnxtools.create_detector()` (根模块)
-- **基础抽象类**: `onnx_base.py::BaseORT`
+- **检测基类**: `onnx_base.py::BaseORT`
+- **分类基类**: `onnx_cls.py::BaseClsORT`
 - **模块导入**: `__init__.py` 提供统一的API接口
 
 ### 快速开始
@@ -47,7 +48,7 @@ print(f"Total detections: {stats['total_detections']}")
 
 ## 外部接口
 
-### 0. Result类 - 检测结果包装器 (NEW)
+### 0. Result类 - 检测结果包装器
 
 Result类是BaseORT子类返回的统一检测结果对象,提供面向对象的数据访问、可视化、过滤和统计功能。
 
@@ -136,22 +137,6 @@ stats = result.summary()
 # }
 ```
 
-#### 错误处理
-```python
-# 可视化方法需要orig_img
-result_no_img = Result(boxes=boxes, orig_shape=(640, 640))
-try:
-    result_no_img.plot()
-except ValueError as e:
-    print(f"Error: {e}")  # "Cannot plot detections: orig_img is None"
-
-# filter()参数验证
-try:
-    result.filter(conf_threshold=1.5)  # 超出范围
-except ValueError as e:
-    print(f"Error: {e}")  # "conf_threshold must be in [0.0, 1.0] range"
-```
-
 #### 完整工作流示例
 ```python
 from onnxtools import create_detector
@@ -202,56 +187,105 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
     """
 ```
 
-### 2. OCR和颜色分类器（独立推理类）
+### 2. 分类器类 (NEW - 继承BaseClsORT)
 
-**设计说明**: `ColorLayerORT` 和 `OcrORT` 是独立的推理类,不继承`BaseORT`,因为它们执行的是分类/OCR任务而非目标检测任务。
-
-**核心区别**:
-- **检测器类** (继承BaseORT): 返回`Result`对象,包含boxes/scores/class_ids
-- **分类器/OCR类** (独立): 返回元组,适合分类任务的自然表达
+**架构升级**: 从2025-11-25开始,所有分类模型(车牌颜色/层级、车辆属性)统一继承`BaseClsORT`基类,返回`ClsResult`对象。
 
 ```python
-from onnxtools import ColorLayerORT, OcrORT
-import yaml
+from onnxtools import ColorLayerORT, VehicleAttributeORT, ClsResult
 
-# 加载配置
-with open('configs/plate.yaml') as f:
-    config = yaml.safe_load(f)
-
-# 车牌颜色和层级分类 - 独立类,返回元组
+# 车牌颜色和层级分类 - 双分支分类器
 color_classifier = ColorLayerORT(
     onnx_path='models/color_layer.onnx',
-    color_map=config['color_map'],
-    layer_map=config['layer_map'],
+    # 可选: 使用默认映射或外部配置
+    color_map={0: 'black', 1: 'blue', 2: 'green', 3: 'white', 4: 'yellow'},
+    layer_map={0: 'single', 1: 'double'},
     input_shape=(48, 168),
     conf_thres=0.5
 )
-# 返回元组: (color: str, layer: str, confidence: float)
+
+# 返回ClsResult对象,支持属性访问和元组解包
+result = color_classifier(plate_image)
+print(result.labels[0])        # 颜色标签: 'blue'
+print(result.labels[1])        # 层级标签: 'single'
+print(result.avg_confidence)   # 平均置信度: 0.92
+
+# 向后兼容: 元组解包
 color, layer, conf = color_classifier(plate_image)
+
+# 车辆属性分类 - 多标签分类器 (车型 + 颜色)
+vehicle_classifier = VehicleAttributeORT(
+    onnx_path='models/vehicle_attribute.onnx',
+    input_shape=(224, 224),
+    conf_thres=0.5
+)
+
+# 返回ClsResult: 车型 + 车辆颜色
+result = vehicle_classifier(vehicle_image)
+print(f"Vehicle: {result.labels[0]}")  # 'car'
+print(f"Color: {result.labels[1]}")    # 'white'
+print(f"Type Confidence: {result.confidences[0]}")
+print(f"Color Confidence: {result.confidences[1]}")
+
+# 元组解包
+vehicle_type, color, avg_conf = vehicle_classifier(vehicle_image)
+```
+
+#### ClsResult API
+```python
+from onnxtools import ClsResult
+
+# ClsResult属性
+result.labels           # List[str] - 分类标签列表
+result.confidences      # List[float] - 每个分支的置信度
+result.avg_confidence   # float - 平均置信度
+result.logits           # Optional[List[np.ndarray]] - 原始logits
+
+# ClsResult方法
+len(result)            # 分支数量
+result[0]              # (label, confidence) 元组
+for label, conf in result:  # 迭代所有分支
+    print(f"{label}: {conf:.3f}")
+
+# 元组解包支持
+# 单分支: label, conf = result
+# 双分支: label1, label2, avg_conf = result
+# 多分支: labels, confs, avg_conf = result
+```
+
+### 3. OCR识别器（独立推理类）
+
+**设计说明**: `OcrORT` 保持独立推理类设计,不继承BaseORT/BaseClsORT,因为OCR是序列识别任务,返回可变长度字符序列。
+
+```python
+from onnxtools import OcrORT
 
 # 车牌OCR识别 - 独立类,返回Optional元组
 ocr_model = OcrORT(
     onnx_path='models/ocr.onnx',
-    character=config['plate_dict']['character'],
+    character=['京', '沪', 'A', 'B', '0', '1', ...],  # 字符字典
     input_shape=(48, 168),
     conf_thres=0.7
 )
+
 # 返回Optional[(text: str, confidence: float, char_confs: List[float])]
 result = ocr_model(plate_image, is_double_layer=True)
 if result:
     text, confidence, char_confs = result
+    print(f"Plate: {text}, Conf: {confidence:.3f}")
+    print(f"Char confidences: {char_confs}")
 ```
 
-### 3. 数据集评估器
+### 4. 数据集评估器
 ```python
-from onnxtools import DatasetEvaluator, OCRDatasetEvaluator
+from onnxtools import DetDatasetEvaluator, OCRDatasetEvaluator
 
 # COCO数据集评估
-evaluator = DatasetEvaluator(dataset_path, annotations_path)
-metrics = evaluator.evaluate(detector)
+evaluator = DetDatasetEvaluator(detector)
+metrics = evaluator.evaluate_dataset(dataset_path)
 
 # OCR数据集评估
-ocr_evaluator = OCRDatasetEvaluator(ocr_model, character_dict)
+ocr_evaluator = OCRDatasetEvaluator(ocr_model)
 results = ocr_evaluator.evaluate_dataset(label_file, dataset_base)
 ```
 
@@ -274,12 +308,13 @@ results = ocr_evaluator.evaluate_dataset(label_file, dataset_base)
 | YOLO | [1,3,640,640] | [1,N,85] | N个检测，85维(x,y,w,h,conf,classes) |
 | RT-DETR | [1,3,640,640] | [1,N,6] | N个检测，6维(x1,y1,x2,y2,score,cls) |
 | RF-DETR | [1,3,640,640] | [1,N,6] | 同RT-DETR格式 |
-| OCR | [1,3,48,320] | [1,T,C] | T个时间步，C个字符类别 |
-| Color/Layer | [1,3,224,224] | [1,K] | K个类别的logits |
+| OCR | [1,3,48,168] | [1,T,C] | T个时间步，C个字符类别 |
+| ColorLayer | [1,3,48,168] | [[1,5],[1,2]] | 双输出: 颜色(5类)+层级(2类) |
+| VehicleAttribute | [1,3,224,224] | [1,24] | 单输出: 车型(13)+颜色(11) |
 
 ## 数据模型
 
-### Result类 - 统一检测结果对象 (NEW)
+### Result类 - 统一检测结果对象
 ```python
 from onnxtools.infer_onnx import Result
 
@@ -304,23 +339,34 @@ result.save(output_path)                    # 保存图像
 result.filter(conf_threshold, classes)      # 过滤检测
 result.summary()                            # 统计信息
 result.to_supervision()                     # 转换为sv.Detections
-result.to_dict()                            # 转换为字典(已废弃)
 
-# 所有BaseORT子类现在返回Result对象而不是字典
+# 所有BaseORT子类现在返回Result对象
 detector = create_detector('yolo', 'model.onnx')
 result = detector(image)  # 返回Result实例
 assert isinstance(result, Result)
 ```
 
-### 检测结果字典结构 (旧格式,已废弃)
+### ClsResult类 - 统一分类结果对象 (NEW)
 ```python
-# 注意: BaseORT现在返回Result对象,此格式仅用于向后兼容
-detection_result = {
-    'boxes': np.ndarray,        # [N, 4] xyxy格式边界框
-    'scores': np.ndarray,       # [N] 置信度分数
-    'class_ids': np.ndarray,    # [N] 类别ID
-    'mask': np.ndarray          # [N] NMS后的有效掩码（可选）
-}
+from onnxtools.infer_onnx import ClsResult
+
+# ClsResult对象属性
+result = ClsResult(
+    labels=['blue', 'single'],          # List[str] - 分类标签
+    confidences=[0.95, 0.88],           # List[float] - 置信度
+    avg_confidence=0.915,               # float - 平均置信度
+    logits=[logits1, logits2]           # Optional - 原始输出
+)
+
+# 属性访问
+result.labels[0]        # 'blue'
+result.confidences[0]   # 0.95
+result.avg_confidence   # 0.915
+len(result)             # 2 (分支数)
+
+# 元组解包(向后兼容)
+color, layer, conf = result  # 双分支
+label, conf = result         # 单分支
 ```
 
 ### OCR结果结构
@@ -333,50 +379,25 @@ ocr_result = (
 # 或 None（识别失败时）
 ```
 
-### 颜色分类结果
-```python
-classification_result = (
-    color: str,                 # 'blue', 'yellow', 'white', 'black', 'green'
-    layer: str,                 # 'single', 'double'
-    confidence: float           # 分类置信度
-)
-```
-
-### OCR评估结果（SampleEvaluation）
-```python
-from onnxtools import SampleEvaluation
-
-sample = SampleEvaluation(
-    image_path='val_001.jpg',
-    label='京A12345',
-    prediction='京A12345',
-    exact_match=True,
-    normalized_edit_distance=0.0,
-    edit_distance_similarity=1.0,
-    confidence=0.95,
-    processing_time_ms=25.3
-)
-```
-
 ## 测试和质量
 
 ### 单元测试覆盖
-- [x] `test_ocr_onnx_refactored.py` - OCRONNX重构后的27个单元测试
+- [x] `test_ocr_onnx_refactored.py` - OcrORT重构后的27个单元测试
 - [x] `test_ocr_metrics.py` - OCR指标计算23个单元测试
 - [x] `test_load_label_file.py` - 标签文件加载12个单元测试
-- [ ] BaseORT基类功能测试
-- [ ] 多模型架构兼容性测试
+- [ ] BaseClsORT基类功能测试 (待补充)
+- [ ] ClsResult对象测试 (待补充)
 
 ### 集成测试覆盖
 - [x] `test_pipeline_integration.py` - 完整推理管道测试
 - [x] `test_ocr_integration.py` - OCR识别流程测试
 - [x] `test_ocr_evaluation_integration.py` - OCR评估集成测试 (8个用例)
-- [x] 115/122 集成测试通过
+- [ ] 分类模型集成测试 (待补充)
 
 ### 合约测试覆盖
-- [x] `test_ocr_onnx_refactored_contract.py` - OCRONNX API合约
+- [x] `test_ocr_onnx_refactored_contract.py` - OcrORT API合约
 - [x] `test_ocr_evaluator_contract.py` - OCR评估器合约 (11个用例)
-- [x] 基础评估流程、编辑距离、置信度过滤、JSON导出验证
+- [ ] BaseClsORT/ClsResult合约测试 (待补充)
 
 ### 性能基准
 - 目标: 推理延迟 < 50ms (640x640图像)
@@ -394,8 +415,19 @@ A: 1) 使用TensorRT引擎替代ONNX (`tools/build_engine.py`); 2) 调整输入�
 ### Q: OCR识别准确率低怎么改善？
 A: 1) 检查车牌图像预处理质量（`_process_plate_image_static()`）; 2) 调整OCR模型置信度阈值; 3) 使用更大的OCR模型; 4) 增加训练数据覆盖
 
-### Q: 支持哪些ONNX模型版本？
-A: 当前支持ONNX opset版本11-17，推荐使用opset 17以获得最佳兼容性。使用 `onnx.version_converter` 可以转换旧版本模型。
+### Q: 为什么分类模型现在返回ClsResult而不是元组？
+A: 为了提供统一的API体验和更好的扩展性。ClsResult支持:
+- 属性访问: `result.labels[0]`
+- 元组解包(向后兼容): `color, layer, conf = result`
+- 迭代和索引: `for label, conf in result:`
+- 支持任意数量的分类分支
+
+### Q: ColorLayerORT移到哪里了？
+A: 从`onnx_ocr.py`迁移到`onnx_cls.py`,现在继承`BaseClsORT`。API保持兼容:
+```python
+from onnxtools import ColorLayerORT  # 仍然有效
+color, layer, conf = classifier(image)  # 元组解包仍然支持
+```
 
 ### Q: 如何进行OCR数据集评估？
 A: 使用命令行工具：
@@ -412,16 +444,18 @@ python tools/eval_ocr.py \
 ## 相关文件列表
 
 ### 核心推理文件
-- `onnx_base.py` - BaseORT抽象基类，定义统一接口
+- `onnx_base.py` - BaseORT抽象基类，定义检测器统一接口
 - `onnx_yolo.py` - YoloORT，YOLO系列模型推理
 - `onnx_rtdetr.py` - RtdetrORT，RT-DETR模型推理
 - `onnx_rfdetr.py` - RfdetrORT，RF-DETR模型推理
 - `infer_utils.py` - 推理辅助工具函数
 
-### 专用功能模块
-- `onnx_ocr.py` - OcrORT和ColorLayerORT，OCR识别和颜色分类
-- `eval_coco.py` - DatasetEvaluator，COCO数据集评估
-- `eval_ocr.py` - OCRDatasetEvaluator，OCR数据集评估
+### 分类和OCR模块 (NEW架构)
+- `onnx_cls.py` - **BaseClsORT基类, ClsResult, ColorLayerORT, VehicleAttributeORT**
+- `onnx_ocr.py` - OcrORT，OCR序列识别
+- `result.py` - Result类，检测结果包装器
+
+### 其他模块
 - `engine_dataloader.py` - TensorRT引擎数据加载器
 
 ### 配置和接口
@@ -429,44 +463,63 @@ python tools/eval_ocr.py \
 
 ## 架构设计
 
-### 类继承关系
+### 类继承关系 (2025-11-25更新)
 ```
+检测器架构:
 BaseORT (抽象基类 - 目标检测)
 ├── YoloORT (YOLO系列)
 ├── RtdetrORT (RT-DETR)
 └── RfdetrORT (RF-DETR)
+    → 返回 Result 对象
 
-独立推理类 (分类/OCR - 不继承BaseORT)
-├── ColorLayerORT (颜色/层级分类)
-└── OcrORT (OCR识别)
+分类器架构 (NEW):
+BaseClsORT (抽象基类 - 分类任务)
+├── ColorLayerORT (车牌颜色/层级 - 双分支)
+└── VehicleAttributeORT (车辆类型/颜色 - 多标签)
+    → 返回 ClsResult 对象
+
+独立推理类 (序列识别):
+OcrORT (OCR识别 - 序列任务)
+    → 返回 Optional[Tuple]
 ```
 
 **架构决策说明**:
 
-**为什么OCR和分类类不继承BaseORT?**
+**为什么分类模型现在继承BaseClsORT?**
 
-1. **任务本质不同**:
-   - 检测器: 空间定位任务 → 输出boxes [N,4] + scores + class_ids
-   - 分类器/OCR: 单样本分类/序列识别 → 输出类别标签或文本序列
+1. **统一抽象模式**:
+   - 检测器(BaseORT) → Result对象
+   - 分类器(BaseClsORT) → ClsResult对象
+   - OCR(独立) → Optional[Tuple]
 
-2. **返回类型不兼容**:
-   - 检测器返回`Result`对象(包含boxes/scores/class_ids)
-   - 分类器返回元组`(color, layer, confidence)`
-   - OCR返回`Optional[(text, confidence, char_scores)]`
-   - 强行统一会造成语义混乱和性能开销
+2. **代码复用和维护性**:
+   - Template Method Pattern在BaseClsORT中实现
+   - 所有分类模型共享预处理/推理/后处理流程
+   - 减少重复代码,提高可维护性
 
-3. **使用模式差异**:
-   - 检测器: 处理整图 → 返回多个目标
-   - 分类器/OCR: 处理已裁剪的单个区域 → 返回单个结果
+3. **扩展性**:
+   - ClsResult支持任意数量的分类分支
+   - 向后兼容元组解包: `color, layer, conf = result`
+   - 支持属性访问和迭代: `result.labels[0]`, `for label, conf in result`
 
-4. **符合Python惯用法**:
-   - 元组解包: `color, layer, conf = classifier(image)` (自然、简洁)
-   - 强行用Result: `result = classifier(image); color = result.boxes[0]` (别扭、误导)
+4. **一致性**:
+   - BaseORT和BaseClsORT使用相同的设计模式
+   - 新分类模型只需实现`preprocess()`和`postprocess()`
 
-### 核心抽象方法 (仅BaseORT子类)
-所有BaseORT子类必须实现：
+**为什么OcrORT保持独立?**
+
+1. **任务本质不同**: OCR是序列识别,不是分类
+2. **返回类型特殊**: 可变长度字符序列 + 字符级置信度
+3. **预处理复杂**: 需要双层车牌处理、倾斜校正等特殊逻辑
+
+### 核心抽象方法
+**BaseORT子类**必须实现：
 - `_preprocess_static(img, **kwargs)` - 静态预处理方法
 - `_postprocess(outputs, **kwargs)` - 后处理输出
+
+**BaseClsORT子类**必须实现：
+- `preprocess(img, input_shape, **kwargs)` - 静态预处理方法
+- `postprocess(outputs, conf_thres, **kwargs)` - 后处理输出
 
 ### 统一调用接口
 ```python
@@ -476,10 +529,15 @@ result = detector(image)  # Result实例
 boxes = result.boxes
 scores = result.scores
 
-# 分类器/OCR类 - 返回元组
-classifier = ColorLayerORT('color.onnx', color_map, layer_map)
-color, layer, conf = classifier(plate_image)  # 元组解包
+# 分类器类 - 返回ClsResult对象 (NEW)
+classifier = ColorLayerORT('color.onnx')
+result = classifier(plate_image)  # ClsResult实例
+color = result.labels[0]
+layer = result.labels[1]
+# 或元组解包(向后兼容)
+color, layer, conf = classifier(plate_image)
 
+# OCR类 - 返回Optional[Tuple]
 ocr = OcrORT('ocr.onnx', character)
 ocr_result = ocr(plate_image)
 if ocr_result:
@@ -487,6 +545,15 @@ if ocr_result:
 ```
 
 ## 变更日志 (Changelog)
+
+**2025-11-25** - 分类架构重大升级
+- ✅ **新增**: `onnx_cls.py` - BaseClsORT抽象基类和ClsResult结果类
+- ✅ **新增**: `VehicleAttributeORT` - 车辆属性分类器(车型+颜色多标签)
+- ✅ **迁移**: `ColorLayerORT` 从 `onnx_ocr.py` 迁移到 `onnx_cls.py`
+- ✅ **重构**: `ColorLayerORT` 现在继承 `BaseClsORT`,返回 `ClsResult`
+- ✅ **保持**: `OcrORT` 保留为独立推理类,API无变化
+- ✅ **更新**: `__init__.py` 导出新的分类相关类
+- ✅ **更新**: 文档完整记录新架构和迁移说明
 
 **2025-11-05 (阶段1.3)** - OCR/分类类架构独立化和文档更新
 - ✅ ColorLayerORT和OcrORT不再继承BaseORT
@@ -528,4 +595,4 @@ if ocr_result:
 ---
 
 *模块路径: `/home/tyjt/桌面/onnx_vehicle_plate_recognition/onnxtools/infer_onnx/`*
-*最后更新: 2025-11-05 15:02:47*
+*最后更新: 2025-11-25 14:42:10*

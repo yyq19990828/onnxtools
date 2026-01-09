@@ -114,7 +114,7 @@ def parse_arguments():
 
 def load_colors_and_class_names():
     """加载类别名称和颜色配置（使用onnxtools.config的硬编码配置）"""
-    return DET_CLASSES, DET_COLORS
+    return DET_CLASSES, COCO_COLORS
 
 def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
     """对 compare_engine 返回的原始输出进行后处理，参考 __call__ 方法"""
@@ -457,7 +457,8 @@ def test_rtdetr_compare_engine(args):
         detector = create_detector(
             model_type=args.model_type,
             onnx_path=onnx_path,
-            conf_thres=args.conf_thres
+            conf_thres=args.conf_thres,
+            det_config = COCO_CLASSES
         )
         
         logging.info(f"成功创建检测器: {type(detector).__name__}")

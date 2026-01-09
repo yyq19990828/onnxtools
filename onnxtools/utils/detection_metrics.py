@@ -646,14 +646,58 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
                     instances = 0
                 print(f"{class_name:>22} {images:>11d} {instances:>11d} {0:>11.3g} {0:>11.3g} {0:>11.3g} {0:>11.3g}")
 
-    # 打印总体指标
+    # 打印总体指标（类别平均）
     map50 = results.get('map50', 0)
     map50_95 = results.get('map', 0)
     mp = results.get('mp', 0)
     mr = results.get('mr', 0)
-    
+
     print(f"{'all':>22} {total_images:>11d} {total_instances:>11d} {mp:>11.3g} {mr:>11.3g} {map50:>11.3g} {map50_95:>11.3g}")
-    
+
+    # 计算并打印加权平均指标（按样本数加权）
+    if 'ap50' in results and 'ap' in results and 'nt_per_class' in results:
+        computed_classes = results.get('classes', [])
+        nt_per_class = results['nt_per_class']
+
+        # 收集每个类别的指标和样本数
+        weighted_p, weighted_r, weighted_ap50, weighted_ap = 0.0, 0.0, 0.0, 0.0
+        total_weight = 0
+
+        for i, class_id in enumerate(computed_classes):
+            instances = nt_per_class[class_id] if class_id < len(nt_per_class) else 0
+            if instances == 0:
+                continue
+
+            # 获取该类别的指标
+            ap50_i = results['ap50'][i] if i < len(results['ap50']) else 0
+            ap_i = results['ap'][i] if i < len(results['ap']) else 0
+
+            if 'final_p' in results and len(results['final_p']) > i:
+                p_i = results['final_p'][i]
+            else:
+                p_i = 0
+
+            if 'final_r' in results and len(results['final_r']) > i:
+                r_i = results['final_r'][i]
+            else:
+                r_i = 0
+
+            # 加权累加
+            weighted_p += p_i * instances
+            weighted_r += r_i * instances
+            weighted_ap50 += ap50_i * instances
+            weighted_ap += ap_i * instances
+            total_weight += instances
+
+        # 计算加权平均
+        if total_weight > 0:
+            weighted_p /= total_weight
+            weighted_r /= total_weight
+            weighted_ap50 /= total_weight
+            weighted_ap /= total_weight
+
+            print(f"{'all(weighted)':>22} {total_images:>11d} {total_instances:>11d} {weighted_p:>11.3g} {weighted_r:>11.3g} {weighted_ap50:>11.3g} {weighted_ap:>11.3g}")
+
     # 打印速度统计（如果可用）
     if 'speed_preprocess' in results:
         speed_preprocess = results.get('speed_preprocess', 0)

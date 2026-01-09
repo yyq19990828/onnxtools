@@ -1,14 +1,18 @@
 """
-OCR and Color/Layer Classification ONNX Inference Module.
+OCR ONNX Inference Module.
 
-This module provides two main classes:
-- ColorLayerORT: Vehicle plate color and layer classification
+This module provides:
 - OcrORT: Optical Character Recognition for plate numbers
 
-These are independent inference classes (not inheriting BaseORT) because:
-1. They perform classification/OCR tasks, not object detection
-2. They return tuples (natural for classification) instead of Result objects
-3. No bounding box concept - incompatible with Result's boxes/scores/class_ids model
+Note: ColorLayerORT has been moved to onnx_cls.py as part of the
+classification model architecture refactoring. It now inherits from
+BaseClsORT and returns ClsResult instead of tuple.
+
+OcrORT remains an independent inference class (not inheriting BaseORT/BaseClsORT)
+because:
+1. OCR is a sequence recognition task, different from classification
+2. Returns Optional tuple with variable-length character confidences
+3. Requires special preprocessing for double-layer plates
 
 See onnxtools/infer_onnx/CLAUDE.md for architecture design rationale.
 """
@@ -17,14 +21,12 @@ import cv2
 import numpy as np
 import logging
 import onnxruntime
-from typing import List, Tuple, Optional, Dict, TypeAlias
+from typing import List, Tuple, Optional, TypeAlias
 from numpy.typing import NDArray
 
 
-# Type Aliases for OCR and Color/Layer Classification
+# Type Aliases for OCR
 OCRResult: TypeAlias = Tuple[str, float, List[float]]  # (text, avg_confidence, char_confidences)
-ColorLogits: TypeAlias = Tuple[NDArray[np.float32], float]  # (color_logits, confidence)
-LayerLogits: TypeAlias = Tuple[NDArray[np.float32], float]  # (layer_logits, confidence)
 PreprocessResult: TypeAlias = Tuple[
     NDArray[np.float32],           # input_tensor
     float,                          # scale
@@ -32,258 +34,6 @@ PreprocessResult: TypeAlias = Tuple[
     Optional[Tuple[Tuple[float, float], Tuple[float, float]]]  # ratio_pad
 ]
 OCROutput: TypeAlias = Tuple[NDArray[np.int_], Optional[NDArray[np.float32]]]
-
-
-class ColorLayerORT:
-    """
-    Vehicle plate color and layer classification inference engine.
-
-    Independent inference class for classification tasks (does not inherit BaseORT).
-    Supports:
-    - 5 color categories: blue, yellow, white, black, green
-    - 2 layer categories: single, double
-
-    Example:
-        >>> classifier = ColorLayerORT(
-        ...     'models/color_layer.onnx',
-        ...     color_map={0: 'blue', 1: 'yellow', 2: 'white', 3: 'black', 4: 'green'},
-        ...     layer_map={0: 'single', 1: 'double'}
-        ... )
-        >>> color, layer, conf = classifier(plate_image)
-        >>> print(f"Color: {color}, Layer: {layer}")
-    """
-
-    def __init__(
-        self,
-        onnx_path: str,
-        color_map: Optional[Dict[int, str]] = None,
-        layer_map: Optional[Dict[int, str]] = None,
-        input_shape: Tuple[int, int] = (48, 168),
-        conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None,
-        plate_config_path: Optional[str] = None
-    ):
-        """
-        Initialize color and layer classification model.
-
-        Args:
-            onnx_path: Path to ONNX model file
-            color_map: Mapping from color index to color name (optional, defaults to config.COLOR_MAP)
-            layer_map: Mapping from layer index to layer name (optional, defaults to config.LAYER_MAP)
-            input_shape: Input image size (height, width), default (48, 168)
-            conf_thres: Confidence threshold, default 0.5
-            providers: ONNX Runtime execution providers
-            plate_config_path: Optional path to plate configuration file
-
-        Raises:
-            FileNotFoundError: If model file doesn't exist
-            ValueError: If color_map or layer_map cannot be loaded
-        """
-        # Load from config if not provided
-        if color_map is None or layer_map is None:
-            try:
-                # 如果指定了外部配置文件，使用load_plate_config加载
-                if plate_config_path:
-                    from onnxtools.config import load_plate_config
-                    plate_config = load_plate_config(plate_config_path)
-                    if color_map is None:
-                        color_map = plate_config.get('color_dict')
-                        if not color_map:
-                            raise ValueError("Failed to load color_map from external config")
-                        logging.info(f"从外部配置加载color_map: {len(color_map)} colors")
-
-                    if layer_map is None:
-                        layer_map = plate_config.get('layer_dict')
-                        if not layer_map:
-                            raise ValueError("Failed to load layer_map from external config")
-                        logging.info(f"从外部配置加载layer_map: {len(layer_map)} layers")
-                else:
-                    # 默认直接使用硬编码常量
-                    if color_map is None:
-                        from onnxtools.config import COLOR_MAP
-                        color_map = COLOR_MAP
-                        logging.info(f"使用硬编码color_map: {len(color_map)} colors")
-
-                    if layer_map is None:
-                        from onnxtools.config import LAYER_MAP
-                        layer_map = LAYER_MAP
-                        logging.info(f"使用硬编码layer_map: {len(layer_map)} layers")
-
-            except Exception as e:
-                raise ValueError(f"Failed to load plate configuration: {e}")
-
-        # Validate inputs
-        if not color_map:
-            raise ValueError("color_map cannot be empty")
-        if not layer_map:
-            raise ValueError("layer_map cannot be empty")
-
-        # Initialize ONNX Runtime session
-        if providers is None:
-            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-
-        self._onnx_session = onnxruntime.InferenceSession(onnx_path, providers=providers)
-        logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
-
-        # Get input/output names from model
-        self.input_name = self._onnx_session.get_inputs()[0].name
-        self.output_names = [output.name for output in self._onnx_session.get_outputs()]
-        logging.info(f"从ONNX模型读取信息: input={self.input_name}, outputs={self.output_names}")
-
-        # Read actual input shape from ONNX model (highest priority)
-        model_input_shape = self._onnx_session.get_inputs()[0].shape
-        if len(model_input_shape) == 4 and model_input_shape[2] is not None and model_input_shape[3] is not None:
-            # Shape format: [batch, channels, height, width]
-            actual_height = int(model_input_shape[2])
-            actual_width = int(model_input_shape[3])
-            # Override input_shape with actual model requirements
-            self.input_shape = (actual_height, actual_width)
-            logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}")
-        else:
-            # Fallback to provided input_shape
-            self.input_shape = input_shape
-            logging.info(f"使用默认输入形状: {self.input_shape}")
-
-        self.conf_thres = conf_thres
-
-        # Store mappings
-        self.color_map = color_map
-        self.layer_map = layer_map
-
-        logging.info(f"ColorLayerORT initialized: {len(color_map)} colors, {len(layer_map)} layers")
-
-    def _preprocess(self, image: NDArray[np.uint8]) -> PreprocessResult:
-        """
-        Preprocess image for color/layer classification (instance method).
-
-        Args:
-            image: Input plate image, BGR format [H, W, 3]
-
-        Returns:
-            PreprocessResult: (input_tensor, scale, original_shape, ratio_pad)
-        """
-        input_tensor, scale, original_shape = self._preprocess_static(image, self.input_shape)
-        ratio_pad = None
-        return input_tensor, scale, original_shape, ratio_pad
-
-    @staticmethod
-    def _preprocess_static(
-        img: NDArray[np.uint8],
-        image_shape: Tuple[int, int]
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
-        """
-        Preprocess image for classification (static method).
-
-        This method:
-        1. Resizes image to target size
-        2. Normalizes to [-1, 1] range
-        3. Converts HWC to CHW format
-        4. Adds batch dimension
-
-        Args:
-            img: Input image, BGR format [H, W, 3]
-            image_shape: Target size (height, width)
-
-        Returns:
-            Tuple containing:
-                - input_tensor: Preprocessed tensor [1, 3, H, W] float32
-                - scale: Fixed scale value (1.0, no scaling)
-                - original_shape: Original image shape (H, W)
-
-        Source:
-            Original utils/ocr_image_processing.py::image_pretreatment()
-        """
-        # Store original shape
-        original_shape = (img.shape[0], img.shape[1])
-
-        # Convert BGR to RGB (cv2 reads as BGR, but model expects RGB)
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        img = np.asarray(img_rgb).astype(np.float32)
-        # Resize to target size (note: cv2.resize expects (width, height))
-        img = cv2.resize(img, (image_shape[1], image_shape[0]))
-
-        # Normalize to [-1, 1]
-        mean_value = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-        std_value = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-        img = (img / 255.0 - mean_value) / std_value
-
-        # HWC to CHW
-        img = img.transpose([2, 0, 1])
-
-        # Add batch dimension
-        onnx_infer_data = img[np.newaxis, :, :, :]
-        onnx_infer_data = np.array(onnx_infer_data, dtype=np.float32)
-
-        return onnx_infer_data, 1.0, original_shape
-
-    def __call__(
-        self,
-        image: NDArray[np.uint8],
-        conf_thres: Optional[float] = None
-    ) -> Tuple[str, str, float]:
-        """
-        Execute color and layer classification inference.
-
-        Args:
-            image: Input plate image, BGR format [H, W, 3]
-            conf_thres: Optional confidence threshold override
-
-        Returns:
-            Tuple[str, str, float]:
-                - color: Color classification result
-                - layer: Layer classification result
-                - confidence: Average confidence of both predictions
-
-        Example:
-            >>> color, layer, conf = classifier(plate_img)
-            >>> print(f"Color: {color}, Layer: {layer}, Confidence: {conf:.3f}")
-        """
-        # Preprocess
-        input_tensor, scale, original_shape, ratio_pad = self._preprocess(image)
-
-        # Inference using ONNX Runtime session
-        feed_dict = {self.input_name: input_tensor}
-        outputs = self._onnx_session.run(self.output_names, feed_dict)
-
-        # Expected: outputs = [color_logits, layer_logits]
-        if len(outputs) != 2:
-            logging.warning(f"Expected 2 outputs, got {len(outputs)}")
-
-        color_logits = outputs[0]
-        layer_logits = outputs[1] if len(outputs) > 1 else outputs[0]
-
-        # Apply softmax
-        def softmax(x):
-            exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
-            return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
-
-        color_probs = softmax(color_logits)
-        layer_probs = softmax(layer_logits)
-
-        # Get predictions
-        color_idx = int(np.argmax(color_probs, axis=-1)[0])
-        layer_idx = int(np.argmax(layer_probs, axis=-1)[0])
-
-        color_conf = float(color_probs[0, color_idx])
-        layer_conf = float(layer_probs[0, layer_idx])
-
-        # Map to names
-        color_name = self.color_map.get(color_idx, f'unknown_{color_idx}')
-        layer_name = self.layer_map.get(layer_idx, f'unknown_{layer_idx}')
-
-        # Filter by confidence threshold
-        effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
-
-        if color_conf < effective_conf_thres:
-            logging.warning(f"Low color confidence: {color_conf:.3f}")
-        if layer_conf < effective_conf_thres:
-            logging.warning(f"Low layer confidence: {layer_conf:.3f}")
-
-        # Return simple tuple format
-        average_conf = (color_conf + layer_conf) / 2.0
-        return color_name, layer_name, average_conf
-
 
 
 class OcrORT:
@@ -336,18 +86,21 @@ class OcrORT:
         if character is None:
             try:
                 # 如果指定了外部配置文件，使用get_ocr_character_list加载
+                # NOTE: add_space=False确保字典长度与模型输出类别数匹配
                 if plate_config_path:
                     from onnxtools.config import get_ocr_character_list
                     character = get_ocr_character_list(
                         config_path=plate_config_path,
                         add_blank=True,
-                        add_space=True
+                        add_space=False
                     )
                     logging.info(f"从外部配置加载OCR字符: {len(character)} characters")
                 else:
                     # 默认直接使用硬编码常量
+                    # NOTE: 不添加末尾空格，确保字典长度与模型输出类别数匹配
+                    # 模型输出84类：blank(1) + 字符(83) = 84
                     from onnxtools.config import OCR_CHARACTER_DICT
-                    character = ["blank"] + OCR_CHARACTER_DICT + [" "]
+                    character = ["blank"] + OCR_CHARACTER_DICT
                     logging.info(f"使用硬编码OCR字符: {len(character)} characters")
             except Exception as e:
                 raise ValueError(f"Failed to load OCR character dictionary: {e}")

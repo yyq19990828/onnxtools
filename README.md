@@ -35,33 +35,59 @@
 - **规范驱动开发**: 基于Spec-Kit的功能规范管理（`specs/`）
 - **详细输出**: 保存带边界框和识别结果的标注图像/视频，并提供结构化JSON文件
 
-## 处理流程
+## pipeline处理流程
 
 ```mermaid
 graph TD
-    A[开始] --> B{输入源是什么?};
-    B -- 图片 --> C[读取图片];
-    B -- 视频文件 --> D[打开视频文件];
-    B -- 摄像头 --> E[打开摄像头];
-
-    C --> F[处理帧];
-    D --> G[循环读取视频帧];
-    E --> G;
-
-    G -- 有帧 --> H[处理帧];
-    G -- 无帧 --> I[结束];
-
-    H --> J{输出模式是什么?};
-    F --> J;
-
-    J -- 保存 --> K[写入结果图片/视频帧];
-    J -- 显示 --> L[显示结果图片/视频帧];
-
-    K --> M{还有更多帧?};
-    L --> M;
-
-    M -- 是 --> G;
-    M -- 否 --> I;
+    A[开始] --> B[初始化InferencePipeline]
+    B --> C{推断输入源类型}
+    
+    C -- image --> D[process_single_image]
+    C -- folder --> E[process_folder]
+    C -- video/camera/rtsp --> F[process_video]
+    
+    D --> D1[读取图片]
+    D1 --> D2[执行pipeline推理]
+    D2 --> D3{输出模式?}
+    D3 -- save --> D4[保存结果图片和JSON]
+    D3 -- show --> D5[显示结果窗口]
+    D4 --> END[结束]
+    D5 --> END
+    
+    E --> E1[遍历文件夹中的图片]
+    E1 --> E2[读取单张图片]
+    E2 --> E3[执行pipeline推理]
+    E3 --> E4{输出模式?}
+    E4 -- save --> E5[保存结果图片和JSON]
+    E4 -- show --> E6[显示结果窗口]
+    E5 --> E7{还有更多图片?}
+    E6 --> E7
+    E7 -- 是 --> E1
+    E7 -- 否 --> END
+    
+    F --> F1[打开视频源<br/>VideoCapture]
+    F1 --> F2{视频源打开成功?}
+    F2 -- 否 --> END
+    F2 -- 是 --> F3[设置输出目录和VideoWriter]
+    F3 --> F4[循环读取视频帧]
+    F4 --> F5{读取到帧?}
+    F5 -- 否 --> F12[释放资源]
+    F5 -- 是 --> F6{需要处理此帧?<br/>frame_skip判断}
+    F6 -- 是 --> F7[执行pipeline推理]
+    F6 -- 否 --> F8[使用上一帧结果]
+    F7 --> F9{save_frame?}
+    F8 --> F10{输出模式?}
+    F9 -- 是 --> F9A[保存单帧图片]
+    F9 -- 否 --> F9B{save_json?}
+    F9A --> F9B
+    F9B -- 是 --> F9C[保存JSON结果]
+    F9B -- 否 --> F10
+    F9C --> F10
+    F10 -- save --> F11[写入VideoWriter]
+    F10 -- show --> F11A[显示结果窗口]
+    F11 --> F4
+    F11A --> F4
+    F12 --> END
 ```
 
 ## 安装指南
@@ -137,7 +163,7 @@ pip install tensorrt==8.6.1.post1 tensorrt-bindings==8.6.1 tensorrt-libs==8.6.1 
 
 ## 使用方法
 
-使用必要的参数运行主脚本。
+使用必要的参数运行demo_pipeline.py主脚本。
 
 ### 命令行参数
 
@@ -211,42 +237,29 @@ if result:
 
 ### 快速开始示例
 
-#### 处理单张图片并保存结果
 ```bash
+# 1. 处理单张图片并保存结果
 # 使用YOLO模型
-python main.py --model-path models/yolov8s_640.onnx --input data/sample.jpg --source-type image --output-mode save
-
+python demo_pipeline.py --model-path models/yolov8s_640.onnx --input data/sample.jpg --source-type image --output-mode save
 # 使用RT-DETR模型（推荐）
-python main.py --model-path models/rtdetr-2024080100.onnx --input data/sample.jpg --output-mode show
-```
+python demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input data/sample.jpg --output-mode show
 
-#### 处理本地视频并实时显示结果
-```bash
+# 2. 处理本地视频并实时显示结果
 # 使用RF-DETR模型（高精度）
 bash run.sh  # 使用预配置的RF-DETR模型
-
 # 自定义参数
-python main.py --model-path models/rfdetr-2024072800.onnx --input /path/to/your/video.mp4 --source-type video --output-mode show
-```
+python demo_pipeline.py --model-path models/rfdetr-2024072800.onnx --input /path/to/your/video.mp4 --source-type video --output-mode show
 
-#### 使用摄像头进行实时识别
-```bash
+# 3. 使用摄像头进行实时识别
 # 使用YOLO11（最快）
-python main.py --model-path models/yolo11n.onnx --input 0 --source-type camera --output-mode show --frame-skip 2
-```
+python demo_pipeline.py --model-path models/yolo11n.onnx --input 0 --source-type camera --output-mode show --frame-skip 2
 
-#### 处理视频并保存完整结果
-```bash
-python main.py --model-path models/rtdetr-2024080100.onnx --input /path/to/your/video.mp4 --source-type video --output-mode save --save-frame --save-json
-```
+# 4. 处理视频并保存完整结果
+python demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input /path/to/your/video.mp4 --source-type video --output-mode save --save-frame --save-json
 
-#### 使用TensorRT加速（需要先构建引擎）
-```bash
+# 5. 使用TensorRT加速（需要先构建引擎）
 # 构建TensorRT引擎
 python tools/build_engine.py --onnx models/yolov8s_640.onnx --output models/yolov8s_640.engine
-
-# 使用引擎推理（速度提升2-5倍）
-python main.py --model-path models/yolov8s_640.engine --input data/sample.jpg --output-mode show
 ```
 
 ## 模型说明
@@ -268,9 +281,9 @@ python main.py --model-path models/yolov8s_640.engine --input data/sample.jpg --
 
 ### 配置文件
 
-项目需要以下配置文件（位于 `configs/` 目录）：
+**默认配置已内置于模块中**,无需额外配置文件即可运行。如需自定义配置,可在 `configs/` 目录创建以下 YAML 文件:
 
-- **`det_config.yaml`**: 检测模型配置
+- **`det_config.yaml`**: 检测模型配置(可选)
   ```yaml
   names:
     0: vehicle
@@ -280,7 +293,7 @@ python main.py --model-path models/yolov8s_640.engine --input data/sample.jpg --
     1: [0, 255, 0]  # 绿色 - 车牌
   ```
 
-- **`plate.yaml`**: OCR字典和颜色/层级映射
+- **`plate.yaml`**: OCR字典和颜色/层级映射(可选)
   ```yaml
   plate_dict:
     character: "京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新0123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -297,113 +310,29 @@ python main.py --model-path models/yolov8s_640.engine --input data/sample.jpg --
     1: double
   ```
 
-- **`visualization_presets.yaml`**: Supervision可视化预设（可选）
+- **`visualization_presets.yaml`**: Supervision可视化预设(可选)
+
+**注意**: 外部配置文件优先级高于内置默认配置。
 
 ## 📁 项目结构
 
 ```
 onnx_vehicle_plate_recognition/
-├── onnxtools/                      # 核心Python包
-│   ├── __init__.py                 # 包入口，导出公共API
-│   ├── pipeline.py                 # 完整推理管道
-│   │
-│   ├── infer_onnx/                 # 推理引擎子模块
-│   │   ├── __init__.py
-│   │   ├── onnx_base.py            # BaseORT抽象基类
-│   │   ├── onnx_yolo.py            # YOLO模型推理 (YoloORT)
-│   │   ├── onnx_rtdetr.py          # RT-DETR推理 (RtdetrORT)
-│   │   ├── onnx_rfdetr.py          # RF-DETR推理 (RfdetrORT)
-│   │   ├── onnx_ocr.py             # OCR和颜色分类 (OcrORT, ColorLayerORT)
-│   │   ├── eval_coco.py            # COCO数据集评估器
-│   │   ├── eval_ocr.py             # OCR数据集评估器
-│   │   ├── infer_utils.py          # 推理辅助工具
-│   │   ├── engine_dataloader.py   # TensorRT数据加载器
-│   │   └── CLAUDE.md               # 推理引擎模块文档
-│   │
-│   └── utils/                      # 工具函数子模块
-│       ├── __init__.py
-│       ├── drawing.py              # Supervision可视化绘制
-│       ├── supervision_annotator.py # Annotator工厂和管道（13种类型）
-│       ├── supervision_preset.py   # 可视化预设（5种场景）
-│       ├── supervision_converter.py # Supervision数据转换
-│       ├── supervision_labels.py   # 标签创建
-│       ├── ocr_metrics.py          # OCR评估指标
-│       ├── detection_metrics.py    # 检测指标计算
-│       ├── nms.py                  # 非极大值抑制
-│       ├── logging_config.py       # 日志配置
-│       ├── font_utils.py           # 字体工具
-│       ├── output_transforms.py    # 输出转换
-│       └── CLAUDE.md               # 工具模块文档
-│
-├── configs/                        # 配置文件
-│   ├── det_config.yaml             # 检测类别和颜色配置
-│   ├── plate.yaml                  # OCR字典和映射配置
-│   └── visualization_presets.yaml # 可视化预设配置
-│
-├── models/                         # 模型文件
-│   ├── *.onnx                      # ONNX模型文件
-│   └── *.engine                    # TensorRT引擎（可选）
-│
-├── tools/                          # 调试和优化工具
-│   ├── eval.py                     # 模型评估脚本
-│   ├── eval.sh                     # 评估快捷脚本
-│   ├── build_engine.py             # TensorRT引擎构建
-│   ├── build.sh                    # 构建快捷脚本
-│   ├── compare_onnx_engine.py      # ONNX vs TensorRT对比
-│   ├── draw_engine.py              # 引擎可视化
-│   ├── layer_statistics.py         # 层统计分析
-│   └── debug/                      # 调试脚本集
-│
-├── tests/                          # 测试体系
-│   ├── unit/                       # 单元测试（62+用例）
-│   ├── integration/                # 集成测试（30+套件）
-│   ├── contract/                   # 合约测试（15+套件）
-│   ├── performance/                # 性能测试（基准测试）
-│   └── conftest.py                 # pytest配置和fixtures
-│
-├── specs/                          # 功能规范（OpenSpec）
-│   ├── 001-supervision-plate-box/  # Supervision可视化集成
-│   ├── 002-delete-old-draw/        # 旧版代码重构
-│   ├── 003-add-more-annotators/    # 13种Annotators扩展
-│   ├── 004-refactor-colorlayeronnx-ocronnx/ # OCR重构
-│   ├── 005-baseonnx-postprocess-call/       # BaseORT优化
-│   └── 006-make-ocr-metrics/       # OCR评估功能
-│
+├── onnxtools/                      # 核心Python包（推理引擎和工具）
+├── configs/                        # 配置文件（检测类别、OCR字典、可视化预设）
+├── models/                         # 模型文件（ONNX模型和TensorRT引擎）
+├── tools/                          # 调试和优化工具（评估、构建引擎、对比分析）
+├── tests/                          # 测试体系（单元/集成/合约/性能测试）
+├── specs/                          # 功能规范（Spec-kit规范驱动开发）
 ├── openspec/                       # OpenSpec规范管理系统
-│   ├── AGENTS.md                   # OpenSpec工作流指南
-│   ├── project.md                  # 项目约定
-│   ├── changes/                    # 活跃的变更提案
-│   └── specs/                      # 能力规范定义
-│
 ├── mcp_vehicle_detection/          # MCP协议服务（子项目）
-│   ├── server.py                   # MCP服务器
-│   ├── main.py                     # 检测服务入口
-│   ├── models/                     # 数据模型
-│   ├── services/                   # 服务层
-│   └── mcp_utils/                  # MCP工具
-│
-├── third_party/                    # 第三方库集成
-│   ├── ultralytics/                # YOLO参考实现
-│   ├── Polygraphy/                 # NVIDIA调试工具
-│   ├── rfdetr/                     # RF-DETR参考实现
-│   └── trt-engine-explorer/        # TensorRT性能分析
-│
-├── docs/                           # 项目文档
-│   ├── polygraphy使用指南/          # Polygraphy深度指南
-│   ├── evaluation_guide.md         # 评估指南
-│   └── annotator_usage.md          # Annotator使用文档
-│
-├── data/                           # 数据资源
-│   └── sample.jpg                  # 示例图片
-│
-├── runs/                           # 运行输出（自动生成）
-│   ├── result.jpg                  # 标注结果图片
-│   └── result.json                 # 检测结果JSON
-│
-├── main.py                         # 主程序入口
+├── third_party/                    # 第三方库集成（Ultralytics、Polygraphy、RF-DETR）
+├── docs/                           # 项目文档（使用指南和API文档）
+├── data/                           # 数据资源（示例图片和测试数据）
+├── runs/                           # 运行输出（自动生成的结果）
+├── demo_pipeline.py                # 演示脚本（完整推理管道示例）
 ├── run.sh                          # 快速运行脚本
-├── pyproject.toml                  # 项目配置（uv）
-├── requirements.txt                # Python依赖列表
+├── pyproject.toml                  # 项目配置（uv包管理）
 ├── CLAUDE.md                       # AI助手开发指南
 └── README.md                       # 用户文档（本文件）
 ```
@@ -413,7 +342,7 @@ onnx_vehicle_plate_recognition/
 - 推理类重命名：`BaseOnnx` → `BaseORT`，`YoloOnnx` → `YoloORT` 等
 - 使用工厂函数 `create_detector()` 创建检测器实例
 - 集成13种Supervision Annotators和5种可视化预设
-- 完整的OpenSpec规范驱动开发流程
+- 完整的`OpenSpec`&&`spec-kit`规范驱动开发流程
 - 详细的模块文档系统（`CLAUDE.md` 文件）
 
 详细的模块文档请参阅各目录下的 `CLAUDE.md` 文件。
@@ -494,18 +423,6 @@ polygraphy run models/yolov8s_640.onnx --onnxrt --trt --compare
 ```
 
 详细的Polygraphy使用指南请参阅 `docs/polygraphy使用指南/`。
-
-### MCP协议集成
-启动MCP服务进行远程推理：
-
-```bash
-# 启动MCP服务器
-cd mcp_vehicle_detection
-python server.py --port 8080
-
-# 使用服务进行推理
-curl -X POST http://localhost:8080/detect -F "image=@data/sample.jpg"
-```
 
 ## 📊 性能指标
 
