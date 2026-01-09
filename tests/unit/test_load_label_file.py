@@ -10,7 +10,10 @@ Tests the load_label_file function's ability to handle:
 import pytest
 import tempfile
 from pathlib import Path
-from onnxtools.infer_onnx.eval_ocr import load_label_file
+from onnxtools.eval.eval_ocr import OCRDatasetEvaluator
+
+# load_label_file is a static method of OCRDatasetEvaluator
+load_label_file = OCRDatasetEvaluator.load_label_file
 
 
 class TestLoadLabelFile:
