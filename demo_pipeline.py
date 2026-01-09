@@ -371,9 +371,9 @@ Examples:
                         help='Top ratio of ROI for detection [0.0-1.0] (default: 0.5)')
 
     # OCR model parameters
-    parser.add_argument('--color-layer-model', type=str, default='models/color_layer.onnx',
+    parser.add_argument('--color-layer-model', type=str, default='models/color_layer_20251222.onnx',
                         help='Path to color/layer ONNX model (default: models/color_layer.onnx)')
-    parser.add_argument('--ocr-model', type=str, default='models/ocr.onnx',
+    parser.add_argument('--ocr-model', type=str, default='models/ocr_20251222.onnx',
                         help='Path to OCR ONNX model (default: models/ocr.onnx)')
 
     # Visualization parameters

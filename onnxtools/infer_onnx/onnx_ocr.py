@@ -86,18 +86,21 @@ class OcrORT:
         if character is None:
             try:
                 # 如果指定了外部配置文件，使用get_ocr_character_list加载
+                # NOTE: add_space=False确保字典长度与模型输出类别数匹配
                 if plate_config_path:
                     from onnxtools.config import get_ocr_character_list
                     character = get_ocr_character_list(
                         config_path=plate_config_path,
                         add_blank=True,
-                        add_space=True
+                        add_space=False
                     )
                     logging.info(f"从外部配置加载OCR字符: {len(character)} characters")
                 else:
                     # 默认直接使用硬编码常量
+                    # NOTE: 不添加末尾空格，确保字典长度与模型输出类别数匹配
+                    # 模型输出84类：blank(1) + 字符(83) = 84
                     from onnxtools.config import OCR_CHARACTER_DICT
-                    character = ["blank"] + OCR_CHARACTER_DICT + [" "]
+                    character = ["blank"] + OCR_CHARACTER_DICT
                     logging.info(f"使用硬编码OCR字符: {len(character)} characters")
             except Exception as e:
                 raise ValueError(f"Failed to load OCR character dictionary: {e}")
