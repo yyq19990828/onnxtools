@@ -17,13 +17,13 @@ because:
 See onnxtools/infer_onnx/CLAUDE.md for architecture design rationale.
 """
 
+import logging
+from typing import List, Optional, Tuple, TypeAlias
+
 import cv2
 import numpy as np
-import logging
 import onnxruntime
-from typing import List, Tuple, Optional, TypeAlias
 from numpy.typing import NDArray
-
 
 # Type Aliases for OCR
 OCRResult: TypeAlias = Tuple[str, float, List[float]]  # (text, avg_confidence, char_confidences)
@@ -619,7 +619,7 @@ class OcrORT:
 
             # Join text
             text = ''.join(char_list)
-            
+
             # NOTE: hack
             # Post-processing: Replace '苏' with '京'
             # if text.startswith('苏'):

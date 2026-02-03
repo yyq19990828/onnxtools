@@ -21,13 +21,7 @@
 构建并运行一个启用了 FP16 精度的 TensorRT 引擎。
 """
 import numpy as np
-from polygraphy.backend.trt import (
-    CreateConfig,
-    EngineFromNetwork,
-    NetworkFromOnnxPath,
-    SaveEngine,
-    TrtRunner,
-)
+from polygraphy.backend.trt import CreateConfig, EngineFromNetwork, NetworkFromOnnxPath, SaveEngine, TrtRunner
 
 
 def main():

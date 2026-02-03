@@ -22,13 +22,14 @@ TODO: Future refactoring
     - Color palette management needs custom implementation
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
-from typing import List, Dict, Any, Optional, Union
 import supervision as sv
 
 try:
-    from .supervision_labels import create_ocr_labels
     from .font_utils import get_fallback_font_path
+    from .supervision_labels import create_ocr_labels
 except ImportError as e:
     raise ImportError(
         "Required utilities are not available. "

@@ -1,9 +1,10 @@
 """Integration tests for OCR text overlay functionality - 这些测试必须在实现前编写且必须失败."""
 
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -58,8 +59,9 @@ class TestOCRIntegration:
     def test_supervision_ocr_label_creation(self, sample_detections, sample_plate_results, sample_class_names):
         """Integration: OCR labels should be properly created for supervision annotator."""
         try:
-            from onnxtools.utils.supervision_labels import create_ocr_labels
             import numpy as np
+
+            from onnxtools.utils.supervision_labels import create_ocr_labels
 
             # Extract separate arrays from detection format (adapted for new API)
             det_array = np.array(sample_detections[0])  # [N, 6] format
@@ -153,11 +155,11 @@ class TestOCRIntegration:
     def test_supervision_rich_label_annotator_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Supervision RichLabelAnnotator should work with OCR data."""
         try:
-            from onnxtools.utils.drawing import create_rich_label_annotator
-            from onnxtools.utils.drawing import convert_to_supervision_detections
-            from onnxtools.utils.supervision_labels import create_ocr_labels
-            import supervision as sv
             import numpy as np
+            import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections, create_rich_label_annotator
+            from onnxtools.utils.supervision_labels import create_ocr_labels
 
             # Convert detections
             sv_detections = convert_to_supervision_detections(sample_detections, sample_class_names)
@@ -297,8 +299,9 @@ class TestOCRIntegration:
 
         many_plate_detections.append(detection_list)
 
-        from onnxtools.utils.drawing import draw_detections
         import time
+
+        from onnxtools.utils.drawing import draw_detections
 
         start_time = time.time()
         result = draw_detections(

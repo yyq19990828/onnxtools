@@ -1,8 +1,9 @@
 """Integration tests for geometric marker annotators (Circle, Triangle, Ellipse)."""
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

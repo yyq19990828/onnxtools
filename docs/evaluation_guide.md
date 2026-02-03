@@ -82,7 +82,7 @@ def my_custom_transform(detections, original_shape):
         # 转换每个批次的检测结果
         # ...转换逻辑...
         converted_detections.append(converted_batch)
-    
+
     return converted_detections
 
 # 使用自定义转换函数

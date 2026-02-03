@@ -23,13 +23,7 @@
 import numpy as np
 import tensorrt as trt
 from polygraphy import func
-from polygraphy.backend.trt import (
-    CreateConfig,
-    EngineFromNetwork,
-    NetworkFromOnnxPath,
-    TrtRunner,
-)
-
+from polygraphy.backend.trt import CreateConfig, EngineFromNetwork, NetworkFromOnnxPath, TrtRunner
 
 # 提示：立即评估的功能性 API 使得与 TensorRT 等后端的互操作变得非常容易。
 # 有关详细信息，请参阅示例 06 (`examples/api/06_immediate_eval_api`)。

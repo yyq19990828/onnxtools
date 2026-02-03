@@ -1,11 +1,12 @@
 """Global pytest configuration and fixtures for supervision integration tests."""
 
-import pytest
-import numpy as np
-import cv2
-from typing import List, Dict, Any
 import os
 import sys
+from typing import Any, Dict, List
+
+import cv2
+import numpy as np
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

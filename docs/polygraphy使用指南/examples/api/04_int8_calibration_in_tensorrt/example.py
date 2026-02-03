@@ -17,17 +17,11 @@
 #
 
 """
-该脚本演示如何使用 Polygraphy 提供的 Calibrator API 
+该脚本演示如何使用 Polygraphy 提供的 Calibrator API
 来校准 TensorRT 引擎以在 INT8 精度下运行。
 """
 import numpy as np
-from polygraphy.backend.trt import (
-    Calibrator,
-    CreateConfig,
-    EngineFromNetwork,
-    NetworkFromOnnxPath,
-    TrtRunner,
-)
+from polygraphy.backend.trt import Calibrator, CreateConfig, EngineFromNetwork, NetworkFromOnnxPath, TrtRunner
 from polygraphy.logger import G_LOGGER
 
 

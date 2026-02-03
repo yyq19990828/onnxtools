@@ -4,41 +4,29 @@ onnxtools - ONNX模型推理工具集
 提供多种目标检测模型架构的统一推理接口，包括YOLO、RT-DETR、RF-DETR等。
 """
 
+# 从 eval 子模块导入评估工具
+from .eval import DetDatasetEvaluator, OCRDatasetEvaluator, SampleEvaluation
+
 # 从 infer_onnx 子模块导入推理引擎类
-from .infer_onnx import (
-    # Detection base and implementations
-    BaseORT,
-    YoloORT,
-    RtdetrORT,
-    RfdetrORT,
-    # Classification base and implementations
+from .infer_onnx import (  # Detection base and implementations; Classification base and implementations; OCR; Result classes; Constants
+    RUN,
     BaseClsORT,
+    BaseORT,
     ClsResult,
     ColorLayerORT,
-    VehicleAttributeORT,
-    # OCR
     OcrORT,
-    # Result classes
     Result,
-    # Constants
-    RUN,
-)
-
-# 从 eval 子模块导入评估工具
-from .eval import (
-    DetDatasetEvaluator,
-    OCRDatasetEvaluator,
-    SampleEvaluation,
-)
-
-# 从 utils 子模块导入工具函数
-from .utils import (
-    setup_logger,
+    RfdetrORT,
+    RtdetrORT,
+    VehicleAttributeORT,
+    YoloORT,
 )
 
 # 从 pipeline 子模块导入推理管道类
 from .pipeline import InferencePipeline
 
+# 从 utils 子模块导入工具函数
+from .utils import setup_logger
 
 # ============================================================================
 # 工厂函数：根据模型类型创建相应的检测器

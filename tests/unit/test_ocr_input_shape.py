@@ -4,9 +4,10 @@ Tests verify that OcrORT automatically reads input shape from ONNX model metadat
 instead of relying on default values, which fixes the dimension mismatch error.
 """
 
-import pytest
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pytest
 
 from onnxtools.infer_onnx.onnx_ocr import OcrORT
 

@@ -1,13 +1,16 @@
+import ast
+import json
 import logging
 import threading
-import onnxruntime
-import json
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
-from typing import Optional, Dict, Any, Tuple
+import onnxruntime
 
 # Use a lock to ensure thread-safety for the one-time initialization
 _preload_lock = threading.Lock()
 _preload_done = False
+
 
 def preload_onnx_libraries():
     """
@@ -43,13 +46,13 @@ def preload_onnx_libraries():
         finally:
             # Mark as done even if it fails, to avoid retrying.
             _preload_done = True
-            
-            
+
+
 def get_best_available_providers(model_path: str) -> list[str]:
     """
     Returns the best available ONNX Runtime execution providers, prioritizing CUDA if it's functional.
     It performs a functional check for CUDA by attempting to load the specified model.
-    
+
     Args:
         model_path (str): Path to the ONNX model to use for the functional check.
 
@@ -78,22 +81,22 @@ def get_best_available_providers(model_path: str) -> list[str]:
 def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
     """
     从ONNX模型中读取metadata信息
-    
+
     Args:
         model_path (str): ONNX模型文件路径
-        
+
     Returns:
         Optional[Dict[str, Any]]: metadata字典，如果没有则返回None
     """
     try:
         session = onnxruntime.InferenceSession(model_path, providers=['CPUExecutionProvider'])
         metadata = session.get_modelmeta()
-        
+
         # 获取自定义metadata
         custom_metadata = {}
         if hasattr(metadata, 'custom_metadata_map'):
             custom_metadata = metadata.custom_metadata_map
-        
+
         # 尝试解析names字段
         names_data = None
         if 'names' in custom_metadata:
@@ -102,12 +105,12 @@ def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
                 names_data = json.loads(custom_metadata['names'])
             except (json.JSONDecodeError, TypeError):
                 try:
-                    # 如果JSON解析失败，尝试Python字典的eval解析（Ultralytics格式）
-                    names_data = eval(custom_metadata['names'])
+                    # 如果JSON解析失败，尝试Python字典的literal_eval解析（Ultralytics格式）
+                    names_data = ast.literal_eval(custom_metadata['names'])
                 except Exception:
                     # 如果都失败了，直接返回字符串
                     names_data = custom_metadata['names']
-        
+
         result = {
             'producer_name': getattr(metadata, 'producer_name', ''),
             'version': getattr(metadata, 'version', ''),
@@ -115,7 +118,7 @@ def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
             'custom_metadata': custom_metadata,
             'names': names_data
         }
-        
+
         return result
     except Exception as e:
         logging.warning(f"无法读取ONNX模型metadata: {e}")
@@ -125,19 +128,19 @@ def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
 def get_class_names_from_onnx(model_path: str) -> Optional[Dict[int, str]]:
     """
     从ONNX模型metadata中获取类别名称
-    
+
     Args:
         model_path (str): ONNX模型文件路径
-        
+
     Returns:
         Optional[Dict[int, str]]: 类别名称字典，key为类别ID，value为类别名称
     """
     metadata = get_onnx_metadata(model_path)
     if not metadata or not metadata.get('names'):
         return None
-    
+
     names = metadata['names']
-    
+
     # 处理不同的names格式
     if isinstance(names, dict):
         # 如果names是字典格式，尝试转换key为int
@@ -148,18 +151,18 @@ def get_class_names_from_onnx(model_path: str) -> Optional[Dict[int, str]]:
     elif isinstance(names, list):
         # 如果names是列表格式
         return {i: str(name) for i, name in enumerate(names)}
-    
+
     return None
 
 
 def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> dict:
     """
     统一获取ONNX模型的所有信息，只创建一次session
-    
+
     Args:
         model_path (str): ONNX模型文件路径
         default_input_shape (tuple): 默认输入形状
-        
+
     Returns:
         dict: 包含模型所有信息的字典
         {
@@ -174,18 +177,18 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
     try:
         # 预加载库
         preload_onnx_libraries()
-        
+
         # 创建session
         providers = get_best_available_providers(model_path)
         session = onnxruntime.InferenceSession(model_path, providers=providers)
-        
+
         # 获取输入输出信息
         input_name = session.get_inputs()[0].name
         output_names = [output.name for output in session.get_outputs()]
-        
+
         # 获取输入形状
         model_input_shape = session.get_inputs()[0].shape
-        if (len(model_input_shape) >= 4 and 
+        if (len(model_input_shape) >= 4 and
             isinstance(model_input_shape[2], int) and model_input_shape[2] > 0 and
             isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
             input_shape = (model_input_shape[2], model_input_shape[3])
@@ -193,10 +196,10 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
         else:
             input_shape = default_input_shape
             logging.info(f"模型输入形状为动态 {model_input_shape}，使用默认形状: {input_shape}")
-        
+
         # 获取metadata信息
         metadata = get_onnx_metadata(model_path)
-        
+
         # 获取类别名称
         class_names = None
         if metadata and metadata.get('names'):
@@ -209,18 +212,18 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
                     class_names = {i: str(v) for i, v in enumerate(names.values())}
             elif isinstance(names, list):
                 class_names = {i: str(name) for i, name in enumerate(names)}
-        
+
         # 验证模型输出
         # 检查模型期望的batch维度
         model_input_shape = session.get_inputs()[0].shape
         expected_batch_size = model_input_shape[0] if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0 else 1
-        
+
         dummy_input = np.random.randn(expected_batch_size, 3, input_shape[0], input_shape[1]).astype(np.float32)
         outputs = session.run(None, {input_name: dummy_input})
         output_shape = outputs[0].shape
         logging.info(f"模型输出形状: {output_shape}")
         logging.info(f"使用batch大小: {expected_batch_size}")
-        
+
         return {
             'session': session,
             'input_name': input_name,
@@ -230,7 +233,7 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
             'metadata': metadata,
             'output_shape': output_shape
         }
-        
+
     except Exception as e:
         logging.error(f"获取模型信息失败: {e}")
         return None
@@ -239,13 +242,13 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
 def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     """
     Convert bounding box coordinates from (x, y, width, height) format to (x1, y1, x2, y2) format.
-    
+
     Source: ultralytics/utils/ops.py::xywh2xyxy
     原函数路径: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/utils/ops.py
-    
+
     Args:
         x (np.ndarray): Input bounding box coordinates in (x, y, width, height) format.
-        
+
     Returns:
         np.ndarray: Bounding box coordinates in (x1, y1, x2, y2) format.
     """
@@ -261,13 +264,13 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
 def clip_boxes(boxes: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
     """
     Clip bounding boxes to image boundaries.
-    
+
     Source: ultralytics/utils/ops.py::clip_boxes
-    
+
     Args:
         boxes (np.ndarray): Bounding boxes to clip.
         shape (tuple): Image shape as (height, width).
-        
+
     Returns:
         np.ndarray: Clipped bounding boxes.
     """
@@ -277,22 +280,22 @@ def clip_boxes(boxes: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
     return boxes
 
 
-def scale_boxes(img1_shape: Tuple[int, int], boxes: np.ndarray, img0_shape: Tuple[int, int], 
-                ratio_pad: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None, 
+def scale_boxes(img1_shape: Tuple[int, int], boxes: np.ndarray, img0_shape: Tuple[int, int],
+                ratio_pad: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
                 padding: bool = True) -> np.ndarray:
     """
     Rescale bounding boxes from one image shape to another.
-    
+
     Source: ultralytics/utils/ops.py::scale_boxes
     原函数路径: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/utils/ops.py
-    
+
     Args:
         img1_shape (tuple): Shape of the source image (height, width).
         boxes (np.ndarray): Bounding boxes to rescale in format (N, 4).
         img0_shape (tuple): Shape of the target image (height, width).
         ratio_pad (tuple, optional): Tuple of ((ratio_w, ratio_h), (pad_w, pad_h)) for scaling.
         padding (bool): Whether boxes are based on YOLO-style augmented images with padding.
-        
+
     Returns:
         np.ndarray: Rescaled bounding boxes in the same format as input.
     """

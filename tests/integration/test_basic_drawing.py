@@ -1,10 +1,11 @@
 """Integration tests for basic detection drawing - 这些测试必须在实现前编写且必须失败."""
 
-import pytest
-import numpy as np
-import cv2
-import sys
 import os
+import sys
+
+import cv2
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -186,9 +187,9 @@ class TestBasicDrawingIntegration:
         """Integration: Format conversion should work seamlessly in drawing pipeline."""
         # This test ensures the full pipeline works
         try:
-            from onnxtools.utils.drawing import convert_to_supervision_detections
-            from onnxtools.utils.drawing import draw_detections
             import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections, draw_detections
 
             # Convert detections
             sv_detections = convert_to_supervision_detections(sample_detections, sample_class_names)

@@ -60,7 +60,7 @@ if [ ! -d "Polygraphy" ] || [ ! -d "trt-engine-explorer" ]; then
     git sparse-checkout init --cone
     git sparse-checkout set tools/Polygraphy tools/experimental/trt-engine-explorer
     git checkout main
-    
+
     # 移动到third_party目录
     if [ -d "tools/Polygraphy" ]; then
         mv tools/Polygraphy ../Polygraphy
@@ -68,7 +68,7 @@ if [ ! -d "Polygraphy" ] || [ ! -d "trt-engine-explorer" ]; then
     if [ -d "tools/experimental/trt-engine-explorer" ]; then
         mv tools/experimental/trt-engine-explorer ../trt-engine-explorer
     fi
-    
+
     cd ..
     rm -rf temp_tensorrt
     echo "✅ TensorRT 工具拉取完成"

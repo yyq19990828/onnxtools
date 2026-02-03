@@ -16,11 +16,10 @@
 #
 
 
-from setuptools import find_packages, setup
+import os
 
 import polygraphy_reshape_destroyer
-
-import os
+from setuptools import find_packages, setup
 
 
 def main():

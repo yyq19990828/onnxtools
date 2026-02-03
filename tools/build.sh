@@ -101,17 +101,17 @@ echo "========================================="
 if [[ "$OPTIMIZE" = true ]]; then
     echo "步骤1/2: 优化ONNX模型..."
     TEMP_FOLDED="${ONNX_DIR}/.${ONNX_BASENAME}_temp.onnx"
-    
+
     if ! polygraphy surgeon sanitize "$ONNX_MODEL" -o "$TEMP_FOLDED" --fold-constants; then
         echo "错误: ONNX模型优化失败" >&2
         rm -f "$TEMP_FOLDED"
         exit 1
     fi
-    
+
     # 将优化后的模型重命名为最终名称
     mv "$TEMP_FOLDED" "$FOLDED_ONNX"
     echo "✓ ONNX模型优化完成: $FOLDED_ONNX"
-    
+
     INPUT_FOR_ENGINE="$FOLDED_ONNX"
 else
     echo "步骤1/2: 跳过ONNX优化，直接使用原始模型"

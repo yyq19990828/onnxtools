@@ -25,10 +25,11 @@ Note: this script requires graphviz which can be installed manually:
 """
 
 
-import graphviz
-from trex import *
 import argparse
 import shutil
+
+import graphviz
+from trex import *
 
 
 def draw_engine(engine_json_fname: str):

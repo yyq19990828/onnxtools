@@ -4,10 +4,11 @@ Contract test for AnnotatorPipeline interface.
 This test MUST FAIL before implementation (TDD approach).
 """
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
-from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorFactory, AnnotatorType
+
+from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorPipeline, AnnotatorType
 
 
 @pytest.fixture

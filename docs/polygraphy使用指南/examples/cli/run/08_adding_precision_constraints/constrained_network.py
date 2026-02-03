@@ -20,9 +20,9 @@
 Parses an ONNX model, then adds precision constraints so specific layers run in FP32.
 """
 
+import tensorrt as trt
 from polygraphy import func
 from polygraphy.backend.trt import NetworkFromOnnxPath
-import tensorrt as trt
 
 # Load the model, which implements the following network:
 #

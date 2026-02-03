@@ -5,10 +5,10 @@
 ## 📋 基本语法
 
 ```bash
-polygraphy convert [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]] 
+polygraphy convert [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]]
                    [--silent] [--log-format {timestamp,line-info,no-colors} [{timestamp,line-info,no-colors} ...]]
                    [--log-file LOG_FILE] [--model-type {frozen,keras,ckpt,onnx,engine,uff,trt-network-script,caffe}]
-                   [多个选项...] -o OUTPUT [--convert-to {onnx,trt,onnx-like-trt-network}] 
+                   [多个选项...] -o OUTPUT [--convert-to {onnx,trt,onnx-like-trt-network}]
                    model_file
 ```
 
@@ -52,16 +52,16 @@ polygraphy convert [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]]
 model_file            # 模型路径
 --model-type {frozen,keras,ckpt,onnx,engine,uff,trt-network-script,caffe}
                       # 输入模型的类型：
-                      # {'frozen': TensorFlow frozen graph; 
-                      #  'keras': Keras model; 
-                      #  'ckpt': TensorFlow checkpoint directory; 
-                      #  'onnx': ONNX model; 
-                      #  'engine': TensorRT engine; 
+                      # {'frozen': TensorFlow frozen graph;
+                      #  'keras': Keras model;
+                      #  'ckpt': TensorFlow checkpoint directory;
+                      #  'onnx': ONNX model;
+                      #  'engine': TensorRT engine;
                       #  'trt-network-script': 定义 `load_network` 函数的 Python 脚本，
                       #    该函数不接受参数并返回 TensorRT Builder、Network 和可选的 Parser。
                       #    如果函数名不是 `load_network`，可以在模型文件后用冒号分隔指定。
-                      #    例如：`my_custom_script.py:my_func`; 
-                      #  'uff': UFF file [deprecated]; 
+                      #    例如：`my_custom_script.py:my_func`;
+                      #  'uff': UFF file [deprecated];
                       #  'caffe': Caffe prototxt [deprecated]}
 --input-shapes INPUT_SHAPES [INPUT_SHAPES ...], --inputs INPUT_SHAPES [INPUT_SHAPES ...]
                       # 模型输入及其形状。用于确定在为推理生成输入数据时使用的形状。
@@ -75,7 +75,7 @@ model_file            # 模型路径
                       # 如果 `checkpoint` 文件缺失则为必需。
                       # 不应包含文件扩展名（例如要加载 `model.meta` 使用 `--ckpt=model`）
 --tf-outputs TF_OUTPUTS [TF_OUTPUTS ...]
-                      # TensorFlow 输出的名称。使用 '--tf-outputs mark all' 
+                      # TensorFlow 输出的名称。使用 '--tf-outputs mark all'
                       # 表示所有张量都应用作输出
 --freeze-graph        # [实验性] 尝试冻结图
 ```
@@ -124,7 +124,7 @@ model_file            # 模型路径
                       # 大小阈值（以字节为单位），超过此阈值的张量数据将存储在外部文件中。
                       # 小于此阈值的张量将保留在 ONNX 文件中。
                       # 可选择使用 `K`、`M` 或 `G` 后缀来表示 KiB、MiB 或 GiB。
-                      # 例如，`--external-data-size-threshold=16M` 等于 
+                      # 例如，`--external-data-size-threshold=16M` 等于
                       # `--external-data-size-threshold=16777216`。
                       # 如果未设置 `--save-external-data` 则无效果。默认为 1024 字节。
 --no-save-all-tensors-to-one-file
@@ -266,7 +266,7 @@ model_file            # 模型路径
                       # 生成的引擎可能具有更好的性能。详见 TensorRT API 文档。
 --hardware-compatibility-level HARDWARE_COMPATIBILITY_LEVEL
                       # 用于引擎的硬件兼容性级别。这允许在一种 GPU 架构上构建的引擎
-                      # 在其他架构的 GPU 上工作。值来自 `trt.HardwareCompatibilityLevel` 
+                      # 在其他架构的 GPU 上工作。值来自 `trt.HardwareCompatibilityLevel`
                       # 枚举中值的名称，不区分大小写。
                       # 例如，`--hardware-compatibility-level ampere_plus`
 --max-aux-streams MAX_AUX_STREAMS
@@ -334,7 +334,7 @@ model_file            # 模型路径
 --onnx-flags ONNX_FLAGS [ONNX_FLAGS ...]
                       # 要在 ONNX-Runtime 中设置的标志。格式：--onnx-flags <flag_name>:<flag_value> ...
                       # 例如：--onnx-flags enable_cpu_mem_arena:0
---plugin-instancenorm # [已弃用] 
+--plugin-instancenorm # [已弃用]
 ```
 
 ### ONNX-Runtime 会话创建 (ONNX-Runtime Session Creation)

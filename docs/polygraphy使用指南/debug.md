@@ -312,7 +312,7 @@ from polygraphy.backend.trt import TrtRunner
 
 def main():
     model_path = sys.argv[1] if len(sys.argv) > 1 else "polygraphy_debug.engine"
-    
+
     try:
         with TrtRunner(model_path) as runner:
             # 生成测试输入
@@ -320,19 +320,19 @@ def main():
             inputs = {}
             for name, (dtype, shape) in input_metadata.items():
                 inputs[name] = np.random.randn(*shape).astype(dtype)
-            
+
             # 运行推理
             outputs = runner.infer(inputs)
-            
+
             # 检查结果
             for name, output in outputs.items():
                 if np.any(np.isnan(output)) or np.any(np.isinf(output)):
                     print(f"发现 NaN/Inf 在输出 {name}")
                     return 1  # 失败
-            
+
             print("模型检查通过")
             return 0  # 成功
-            
+
     except Exception as e:
         print(f"检查失败: {e}")
         return 1  # 失败

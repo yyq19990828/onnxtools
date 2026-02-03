@@ -41,11 +41,11 @@
 graph TD
     A[开始] --> B[初始化InferencePipeline]
     B --> C{推断输入源类型}
-    
+
     C -- image --> D[process_single_image]
     C -- folder --> E[process_folder]
     C -- video/camera/rtsp --> F[process_video]
-    
+
     D --> D1[读取图片]
     D1 --> D2[执行pipeline推理]
     D2 --> D3{输出模式?}
@@ -53,7 +53,7 @@ graph TD
     D3 -- show --> D5[显示结果窗口]
     D4 --> END[结束]
     D5 --> END
-    
+
     E --> E1[遍历文件夹中的图片]
     E1 --> E2[读取单张图片]
     E2 --> E3[执行pipeline推理]
@@ -64,7 +64,7 @@ graph TD
     E6 --> E7
     E7 -- 是 --> E1
     E7 -- 否 --> END
-    
+
     F --> F1[打开视频源<br/>VideoCapture]
     F1 --> F2{视频源打开成功?}
     F2 -- 否 --> END

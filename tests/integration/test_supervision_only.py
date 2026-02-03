@@ -4,11 +4,12 @@ These tests verify that the drawing module works correctly with only
 the supervision library, without PIL fallback.
 """
 
-import pytest
-import numpy as np
-import cv2
-import sys
 import os
+import sys
+
+import cv2
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -191,8 +192,11 @@ class TestSupervisionOnlyRendering:
     def test_supervision_annotators_integration(self):
         """Test that supervision annotators are properly integrated."""
         try:
-            from onnxtools.utils.drawing import create_box_annotator, create_rich_label_annotator
-            from onnxtools.utils.drawing import convert_to_supervision_detections
+            from onnxtools.utils.drawing import (
+                convert_to_supervision_detections,
+                create_box_annotator,
+                create_rich_label_annotator,
+            )
 
             # Test annotator creation
             box_annotator = create_box_annotator(thickness=3)

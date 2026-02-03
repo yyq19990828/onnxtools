@@ -20,10 +20,19 @@ import sys
 import time
 from pathlib import Path
 
-from polygraphy import mod, config
-from polygraphy.backend.onnxrt import OnnxrtRunner, SessionFromOnnx
-from polygraphy.backend.trt import EngineBytesFromNetwork, EngineFromBytes, EngineFromPath, NetworkFromOnnxPath, TrtRunner, CreateConfig, PostprocessNetwork, SaveEngine
+from polygraphy import config, mod
 from polygraphy.backend.common import InvokeFromScript
+from polygraphy.backend.onnxrt import OnnxrtRunner, SessionFromOnnx
+from polygraphy.backend.trt import (
+    CreateConfig,
+    EngineBytesFromNetwork,
+    EngineFromBytes,
+    EngineFromPath,
+    NetworkFromOnnxPath,
+    PostprocessNetwork,
+    SaveEngine,
+    TrtRunner,
+)
 from polygraphy.comparator import Comparator
 
 # 注意：USE_TENSORRT_RTX 的设置策略：
@@ -46,7 +55,7 @@ def parse_args():
         description='构建TensorRT引擎并可选地与ONNX Runtime进行比较',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    
+
     # 主要参数
     parser.add_argument(
         '--onnx-path',
@@ -54,14 +63,14 @@ def parse_args():
         required=True,
         help='输入的ONNX模型路径'
     )
-    
+
     parser.add_argument(
         '--engine-path',
         type=str,
         default=None,
         help='输出的TensorRT引擎路径（默认与ONNX同名，扩展名为.engine）'
     )
-    
+
     # 构建参数
     build_group = parser.add_argument_group('构建参数')
     build_group.add_argument(
@@ -70,13 +79,13 @@ def parse_args():
         default=True,
         help='启用FP16精度（默认启用）'
     )
-    
+
     build_group.add_argument(
         '--no-fp16',
         action='store_true',
         help='禁用FP16精度，使用FP32'
     )
-    
+
     build_group.add_argument(
         '--optimization-level',
         type=int,
@@ -84,7 +93,7 @@ def parse_args():
         choices=[0, 1, 2, 3, 4, 5],
         help='TensorRT构建优化级别（0-5）'
     )
-    
+
     # 比较功能参数
     compare_group = parser.add_argument_group('比较功能参数')
     compare_group.add_argument(
@@ -92,41 +101,41 @@ def parse_args():
         action='store_true',
         help='是否开启ONNX Runtime和TensorRT的精度对比'
     )
-    
+
     compare_group.add_argument(
         '--rtol',
         type=float,
         default=1e-3,
         help='相对容差，用于精度比较（默认1e-3）'
     )
-    
+
     compare_group.add_argument(
         '--atol',
         type=float,
         default=1e-3,
         help='绝对容差，用于精度比较（默认1e-3）'
     )
-    
+
     compare_group.add_argument(
         '--iterations',
         type=int,
         default=1,
         help='性能测试迭代次数（默认10次）'
     )
-    
+
     compare_group.add_argument(
         '--warmup',
         type=int,
         default=3,
         help='性能测试预热次数（默认3次）'
     )
-    
+
     compare_group.add_argument(
         '--save-outputs',
         action='store_true',
         help='保存推理结果到文件进行详细分析'
     )
-    
+
     return parser.parse_args()
 
 
@@ -142,7 +151,7 @@ def validate_paths(onnx_path, engine_path):
     """验证路径有效性"""
     if not os.path.exists(onnx_path):
         raise FileNotFoundError(f"ONNX模型文件不存在: {onnx_path}")
-    
+
     engine_dir = os.path.dirname(engine_path)
     if engine_dir and not os.path.exists(engine_dir):
         os.makedirs(engine_dir, exist_ok=True)
@@ -154,13 +163,13 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
     if os.path.exists(engine_path):
         file_size = os.path.getsize(engine_path) / 1024 / 1024  # MB
         print(f"✓ 发现已存在的引擎文件: {engine_path} ({file_size:.1f} MB)")
-        
+
         # 如果compare未启用，询问用户是否想要启用
         if not compare_enabled:
             print("💡 建议启用比较功能来验证已存在引擎的精度和性能")
             print("   使用方式: python tools/build_engine.py --onnx-path <path> --engine-path <path> --compare")
             print("   高级选项: --rtol 1e-2 --atol 1e-3 --iterations 5 --warmup 2")
-            
+
             try:
                 response = input("是否现在启用比较功能？(y/n): ").strip().lower()
                 if response in ['y', 'yes', '是', 'Y']:
@@ -168,7 +177,7 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
             except KeyboardInterrupt:
                 print("\n用户取消操作")
                 sys.exit(0)
-        
+
         # 询问是否跳过构建
         try:
             response = input("引擎文件已存在，是否跳过构建？(Y/n): ").strip().lower()
@@ -180,48 +189,48 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
         except KeyboardInterrupt:
             print("\n用户取消操作")
             sys.exit(0)
-    
+
     return False, compare_enabled  # 引擎不存在，不跳过构建
 
 
 def main():
     """主函数"""
     args = parse_args()
-    
+
     # 处理FP16/FP32选项
     if args.no_fp16:
         args.fp16 = False
-    
+
     # 获取引擎路径
     engine_path = get_engine_path(args.onnx_path, args.engine_path)
-    
+
     # 验证路径
     try:
         validate_paths(args.onnx_path, engine_path)
     except Exception as e:
         print(f"错误: {e}")
         sys.exit(1)
-    
+
     # 确定是否启用比较功能
     compare_enabled = args.compare
-    
+
     print(f"ONNX模型路径: {args.onnx_path}")
     print(f"引擎输出路径: {engine_path}")
-    
+
     # 检查引擎是否已存在并获取用户选择
     skip_build, compare_enabled = check_engine_exists_and_prompt(engine_path, compare_enabled)
-    
+
     save_engine = None
     deserialize_engine = None
     saved_engine_for_comparison = None
-    
+
     if not skip_build:
         print(f"精度对比: {'是' if compare_enabled else '否'}")
-        
+
         # 构建引擎时确保 USE_TENSORRT_RTX = False 以支持精度标志
         config.USE_TENSORRT_RTX = False
         print(f"构建阶段: 设置 USE_TENSORRT_RTX = {config.USE_TENSORRT_RTX}")
-        
+
         # 构建TensorRT引擎配置
         print("配置优化的TensorRT构建参数...")
         create_config = CreateConfig(
@@ -230,12 +239,12 @@ def main():
             profiles=None,
             builder_optimization_level=args.optimization_level
         )
-        
+
         print(f"TensorRT构建配置: FP16={create_config.fp16}, 优化级别={args.optimization_level}")
-        
+
         # 解析ONNX网络
         parse_network_from_onnx = NetworkFromOnnxPath(args.onnx_path)
-        
+
         # 网络后处理仅在FP16开启时进行
         if args.fp16:
             postprocess_script = 'tools/network_postprocess.py'
@@ -249,23 +258,23 @@ def main():
         else:
             print("FP32模式，跳过网络后处理")
             network = parse_network_from_onnx
-        
+
         # 构建引擎
         print("开始构建TensorRT引擎...")
         try:
             build_engine = EngineBytesFromNetwork(network, config=create_config)
-            
+
             # 保存引擎
             print(f"保存引擎到: {engine_path}")
             deserialize_engine = EngineFromBytes(build_engine)
             save_engine = SaveEngine(deserialize_engine, path=engine_path)
-            
+
             # 触发实际的引擎构建和保存
             _ = save_engine()
-            
+
             # 构建完成后，创建引擎加载器用于比较（避免重复构建）
             saved_engine_for_comparison = EngineFromPath(engine_path)
-            
+
             # 验证引擎文件是否成功生成
             if os.path.exists(engine_path):
                 file_size = os.path.getsize(engine_path) / 1024 / 1024  # MB
@@ -273,7 +282,7 @@ def main():
             else:
                 print(f"✗ 引擎文件未生成: {engine_path}")
                 sys.exit(1)
-        
+
         except Exception as e:
             print(f"构建引擎时发生错误: {e}")
             sys.exit(1)
@@ -287,7 +296,7 @@ def main():
             except Exception as e:
                 print(f"加载现有引擎文件时发生错误: {e}")
                 sys.exit(1)
-    
+
     # 如果需要比较，运行对比测试
     if compare_enabled and saved_engine_for_comparison is not None:
         # 比较阶段设置 USE_TENSORRT_RTX = True 规避兼容性问题
@@ -314,16 +323,16 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
     """运行ONNX Runtime和TensorRT对比"""
     print("\n=== 开始模型推理对比 ===")
     print(f"比较参数: 相对容差={rtol}, 绝对容差={atol}, 迭代次数={iterations}, 预热次数={warmup}")
-    
+
     # 构建ONNX Runtime会话
     build_onnxrt_session = SessionFromOnnx(onnx_path)
-    
+
     # 创建runners
     runners = [
         OnnxrtRunner(build_onnxrt_session),
         TrtRunner(save_engine),
     ]
-    
+
     print("正在运行ONNX Runtime和TensorRT推理...")
     try:
         # 预热阶段
@@ -332,67 +341,67 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             for i in range(warmup):
                 _ = Comparator.run(runners)
                 print(f"预热进度: {i+1}/{warmup}")
-        
+
         # 正式测试阶段
         print(f"正式测试: 运行 {iterations} 次...")
         all_results = []
         import time
         start_time = time.time()
-        
+
         for i in range(iterations):
             results = Comparator.run(runners)
             all_results.append(results)
             print(f"测试进度: {i+1}/{iterations}")
-        
+
         total_time = time.time() - start_time
         avg_time_per_iteration = total_time / iterations
-        
+
         print(f"\n=== 性能统计 ===")
         print(f"总测试时间: {total_time:.4f}s")
         print(f"平均每次推理: {avg_time_per_iteration:.4f}s")
-        
+
         print("\n=== 推理结果分析 ===")
         success = True
-        
+
         # 使用最后一次结果进行精度对比（所有次结果应该一致）
         results = all_results[-1]
-        
+
         # 精度对比
         print("进行精度对比分析...")
-        
+
         from polygraphy.comparator import CompareFunc
+
         # 创建自定义比较函数，使用指定的相对和绝对容差
-        
         # 设置保存路径：使用 infer_onnx.RUN/trt文件名
         if save_outputs:
             # 获取引擎文件名（不包含扩展名）
             engine_name = Path(engine_path).stem
             output_dir = Path(RUN) / engine_name
             output_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # 创建带输出文件路径的比较函数
             heatmap_path = str(output_dir / "heatmap")
             error_plot_path = str(output_dir / "error_metrics")
-            
+
             print(f"保存输出文件到: {output_dir}")
-            
+
             compare_func = CompareFunc.simple(
-                rtol=rtol, 
+                rtol=rtol,
                 atol=atol,
                 save_heatmaps=heatmap_path,
                 save_error_metrics_plot=error_plot_path
             )
         else:
             compare_func = CompareFunc.simple(rtol=rtol, atol=atol, fail_fast=True)
-        
+
         accuracy_result = Comparator.compare_accuracy(results, compare_func=compare_func, fail_fast=True)
-        
+
         if save_outputs:
             # 保存原始运行结果 (RunResults 有 save 方法)
             results_path = str(output_dir / "run_results.json")
             results.save(results_path)
             print(f"✓ 运行结果已保存到: {results_path}")
-            
+
             # # 保存精度统计信息 (AccuracyResult 的 stats 可以序列化)
             # if hasattr(accuracy_result, 'stats'):
             #     stats_path = str(output_dir / "accuracy_stats.json")
@@ -400,7 +409,7 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             #     with open(stats_path, 'w') as f:
             #         json.dump(accuracy_result.stats(), f, indent=2)
             #     print(f"✓ 精度统计已保存到: {stats_path}")
-            
+
             # # 保存精度概况
             # summary_path = str(output_dir / "accuracy_summary.json")
             # import json
@@ -415,17 +424,17 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             #     json.dump(summary, f, indent=2)
             # print(f"✓ 精度概况已保存到: {summary_path}")
 
-        
+
         success &= bool(accuracy_result)
         print(f"精度对比结果: {'✓ 通过' if accuracy_result else '✗ 失败'}")
-        
-        
+
+
         # 最终报告
         print_final_report(success, engine_path, rtol, atol, avg_time_per_iteration)
-        
+
         if not success:
             sys.exit(1)
-            
+
     except Exception as e:
         print(f"比较过程中发生错误: {e}")
         sys.exit(1)

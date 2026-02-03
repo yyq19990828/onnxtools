@@ -5,18 +5,14 @@ This package contains all MCP tool implementations for onnxtools.
 """
 
 from .classification import register_classification_tools
-from .detection import (
-    register_detection_tools,
-    register_detect_objects_tool,
-    register_full_pipeline_tool,
-)
+from .detection import register_detect_objects_tool, register_detection_tools, register_full_pipeline_tool
 from .ocr import register_ocr_tools
 from .visualization import (
-    register_visualization_tools,
-    register_crop_detections_tool,
     register_annotate_image_tool,
-    register_zoom_to_object_tool,
+    register_crop_detections_tool,
     register_enlarge_image_tool,
+    register_visualization_tools,
+    register_zoom_to_object_tool,
 )
 
 __all__ = [

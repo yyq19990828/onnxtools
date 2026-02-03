@@ -1,6 +1,8 @@
 import logging
 import sys
+
 import colorlog
+
 
 def setup_logger(level="INFO"):
     """
@@ -15,7 +17,7 @@ def setup_logger(level="INFO"):
     # If level is a string, convert it to the corresponding logging level
     if isinstance(level, str):
         level = getattr(logging, level.upper(), logging.INFO)
-    
+
     logger.setLevel(level)
 
     # Remove all existing handlers to avoid duplicates
@@ -24,7 +26,7 @@ def setup_logger(level="INFO"):
 
     # Create a handler to write to the console (stdout)
     console_handler = colorlog.StreamHandler(sys.stdout)
-    
+
     # Create a colored formatter and set it for the handler
     formatter = colorlog.ColoredFormatter(
         '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s',

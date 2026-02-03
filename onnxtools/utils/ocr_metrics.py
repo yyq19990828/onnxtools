@@ -7,9 +7,10 @@ Provides core OCR evaluation metrics including:
 - JSON export functionality
 """
 
-from typing import List, Tuple, Dict, Any
-import Levenshtein
 import json
+from typing import Any, Dict, List, Tuple
+
+import Levenshtein
 
 __all__ = [
     'calculate_edit_distance_metrics',

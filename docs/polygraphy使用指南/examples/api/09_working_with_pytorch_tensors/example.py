@@ -20,14 +20,7 @@
 """
 
 import torch
-
-from polygraphy.backend.trt import (
-    Calibrator,
-    CreateConfig,
-    TrtRunner,
-    engine_from_network,
-    network_from_onnx_path,
-)
+from polygraphy.backend.trt import Calibrator, CreateConfig, TrtRunner, engine_from_network, network_from_onnx_path
 
 # 如果您的 PyTorch 安装支持 GPU，那么我们将直接在 GPU 内存中分配张量。
 # 这意味着校准器和运行器可以跳过我们在使用 NumPy 数组时会产生的

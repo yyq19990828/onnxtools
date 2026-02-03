@@ -8,8 +8,9 @@ Author: ONNX Vehicle Plate Recognition Team
 Date: 2025-11-05
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from onnxtools import Result
 
 
@@ -272,8 +273,8 @@ class TestResultVisualizationContract:
 
     def test_save_contract_creates_file(self):
         """Contract: save() must create a file at specified path."""
-        import tempfile
         import os
+        import tempfile
 
         boxes = np.array([[10, 20, 30, 40]], dtype=np.float32)
         scores = np.array([0.9], dtype=np.float32)

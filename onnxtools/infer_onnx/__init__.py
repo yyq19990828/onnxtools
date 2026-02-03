@@ -15,15 +15,15 @@ OCR Models (independent):
 
 # Import detection classes from separate modules
 from .onnx_base import BaseORT
-from .onnx_yolo import YoloORT
-from .onnx_rtdetr import RtdetrORT
-from .onnx_rfdetr import RfdetrORT
 
 # Import classification classes (new architecture)
 from .onnx_cls import BaseClsORT, ClsResult, ColorLayerORT, VehicleAttributeORT
 
 # Import OCR class
 from .onnx_ocr import OcrORT
+from .onnx_rfdetr import RfdetrORT
+from .onnx_rtdetr import RtdetrORT
+from .onnx_yolo import YoloORT
 
 # Import result class
 from .result import Result

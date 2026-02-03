@@ -1,9 +1,10 @@
 """Contract tests for draw_detections API - 这些测试必须在实现前编写且必须失败."""
 
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -20,6 +21,7 @@ class TestDrawDetectionsContract:
     def test_draw_detections_signature_compatibility(self):
         """Contract: draw_detections must have supervision-only signature (use_supervision removed)."""
         import inspect
+
         from onnxtools.utils.drawing import draw_detections
 
         sig = inspect.signature(draw_detections)
@@ -100,8 +102,9 @@ class TestDrawDetectionsContract:
         """Contract: Format conversion function must be available and work correctly."""
         # This test will fail initially and pass after implementation
         try:
-            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -117,8 +120,9 @@ class TestDrawDetectionsContract:
         """Contract: Supervision library must always be used (no fallback)."""
         # After refactoring, only supervision implementation exists
         try:
-            from onnxtools.utils.drawing import draw_detections
             import inspect
+
+            from onnxtools.utils.drawing import draw_detections
 
             # Verify use_supervision parameter is removed
             sig = inspect.signature(draw_detections)

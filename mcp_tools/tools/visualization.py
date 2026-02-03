@@ -12,7 +12,7 @@ import cv2
 from mcp.server.fastmcp import Image as MCPImage
 
 from ..config import DEFAULT_OUTPUT_DIR
-from ..models import AnnotateImageInput, CropDetectionsInput, ZoomToObjectInput, ViewImageInput
+from ..models import AnnotateImageInput, CropDetectionsInput, ViewImageInput, ZoomToObjectInput
 from ..utils.error_handler import handle_inference_error
 from ..utils.image_loader import load_image, to_mcp_image
 from ..utils.model_manager import get_detector

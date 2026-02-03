@@ -26,7 +26,7 @@ polygraphy check [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]]
 --verbosity VERBOSITY [VERBOSITY ...]
                       # 要使用的日志详细程度。优先于 `-v` 和 `-q` 选项，
                       # 与它们不同，允许您控制每个路径的详细程度。
-                      # 详细程度值应来自 Logger 类中定义的 Polygraphy 
+                      # 详细程度值应来自 Logger 类中定义的 Polygraphy
                       # 日志详细程度，不区分大小写。
                       # 例如：`--verbosity INFO` 或 `--verbosity verbose`
                       # 要指定每个路径的详细程度，使用格式：
@@ -259,12 +259,12 @@ for model in "$models_dir"/*.onnx; do
     if [[ -f "$model" ]]; then
         model_name=$(basename "$model" .onnx)
         echo "检查模型: $model_name"
-        
+
         polygraphy check lint "$model" \
           -o "$report_dir/${model_name}_lint_report.json" \
           --verbose \
           > "$report_dir/${model_name}_lint.log" 2>&1
-        
+
         if [[ $? -eq 0 ]]; then
             echo "✅ $model_name 检查通过"
         else
@@ -292,16 +292,16 @@ def analyze_lint_report(report_path):
             report = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         return f"无法读取报告 {report_path}: {e}"
-    
+
     summary = report.get('summary', {})
     lint_entries = report.get('lint_entries', [])
-    
+
     passing_count = len(summary.get('passing', []))
     failing_count = len(summary.get('failing', []))
-    
+
     error_count = len([entry for entry in lint_entries if entry.get('level') == 'error'])
     warning_count = len([entry for entry in lint_entries if entry.get('level') == 'warning'])
-    
+
     result = {
         'report_path': report_path,
         'passing_nodes': passing_count,
@@ -310,16 +310,16 @@ def analyze_lint_report(report_path):
         'warnings': warning_count,
         'status': 'PASS' if error_count == 0 else 'FAIL'
     }
-    
+
     return result
 
 def main():
     if len(sys.argv) < 2:
         print("用法: python analyze_lint_reports.py <报告目录或文件>")
         sys.exit(1)
-    
+
     path = Path(sys.argv[1])
-    
+
     if path.is_file():
         # 分析单个报告文件
         result = analyze_lint_report(path)
@@ -335,13 +335,13 @@ def main():
     elif path.is_dir():
         # 批量分析报告目录
         report_files = list(path.glob("*_lint_report.json"))
-        
+
         if not report_files:
             print(f"在目录 {path} 中未找到lint报告文件")
             sys.exit(1)
-        
+
         print(f"发现 {len(report_files)} 个报告文件\n")
-        
+
         all_results = []
         for report_file in sorted(report_files):
             result = analyze_lint_report(report_file)
@@ -352,14 +352,14 @@ def main():
                       f"(错误: {result['errors']}, 警告: {result['warnings']})")
             else:
                 print(f"❌ {report_file.name}: {result}")
-        
+
         # 汇总统计
         if all_results:
             total_reports = len(all_results)
             passed_reports = len([r for r in all_results if r['status'] == 'PASS'])
             total_errors = sum(r['errors'] for r in all_results)
             total_warnings = sum(r['warnings'] for r in all_results)
-            
+
             print(f"\n📊 汇总统计:")
             print(f"总报告数: {total_reports}")
             print(f"通过数: {passed_reports}")

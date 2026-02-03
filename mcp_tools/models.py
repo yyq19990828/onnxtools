@@ -7,13 +7,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .config import (
-    DEFAULT_COLOR_LAYER_MODEL,
-    DEFAULT_CONF_THRESHOLD,
-    DEFAULT_DETECTION_MODEL,
-    DEFAULT_OCR_MODEL,
-)
-
+from .config import DEFAULT_COLOR_LAYER_MODEL, DEFAULT_CONF_THRESHOLD, DEFAULT_DETECTION_MODEL, DEFAULT_OCR_MODEL
 
 # ============================================================================
 # Enums

@@ -12,11 +12,12 @@ Test Coverage:
 - Type safety and return value contracts
 """
 
-import pytest
-import numpy as np
-import cv2
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Any, Dict, List, Tuple
+
+import cv2
+import numpy as np
+import pytest
 
 
 @pytest.fixture
@@ -331,7 +332,6 @@ class TestOcrORTContract:
         # Simulate a decode result starting with '苏'
         # (In real scenario, this would come from model output)
         # We test the static method directly
-
         # Create mock prediction for '苏A12345'
         # This is a white-box test of the post-processing logic
         test_characters = ['blank'] + list('苏ABCDEFG0123456789')
@@ -392,8 +392,9 @@ class TestRefactoredClassesIntegration:
 
         This test verifies that type annotations match actual behavior.
         """
-        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT, OcrORT
         import inspect
+
+        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT, OcrORT
 
         # Check ColorLayerORT.__call__ signature
         call_sig = inspect.signature(ColorLayerORT.__call__)

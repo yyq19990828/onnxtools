@@ -25,7 +25,6 @@ import tensorrt as trt
 from polygraphy import func
 from polygraphy.backend.trt import CreateNetwork, EngineFromNetwork, TrtRunner
 
-
 INPUT_NAME = "input"
 INPUT_SHAPE = (64, 64)
 OUTPUT_NAME = "output"

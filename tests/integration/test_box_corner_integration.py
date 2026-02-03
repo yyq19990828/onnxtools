@@ -2,9 +2,10 @@
 Integration test for BoxCornerAnnotator end-to-end functionality.
 """
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

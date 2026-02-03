@@ -4,10 +4,12 @@ Contract test for VisualizationPreset loading and creation.
 This test MUST FAIL before implementation (TDD approach).
 """
 
-import pytest
 from pathlib import Path
-from onnxtools.utils.supervision_preset import VisualizationPreset, Presets
+
+import pytest
+
 from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
+from onnxtools.utils.supervision_preset import Presets, VisualizationPreset
 
 
 class TestVisualizationPresetContract:

@@ -1,9 +1,10 @@
 """Integration tests for all 5 preset scenarios."""
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
-from onnxtools.utils.supervision_preset import VisualizationPreset, Presets
+
+from onnxtools.utils.supervision_preset import Presets, VisualizationPreset
 
 
 @pytest.fixture

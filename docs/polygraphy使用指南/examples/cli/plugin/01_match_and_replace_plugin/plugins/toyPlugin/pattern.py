@@ -1,6 +1,8 @@
 from polygraphy import mod
+
 gs = mod.lazy_import("onnx_graphsurgeon>=0.5.0")
-from typing import List,Dict
+from typing import Dict, List
+
 
 def get_plugin_pattern():
     """

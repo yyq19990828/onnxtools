@@ -9,22 +9,24 @@ Recommended usage:
     result_img, output_data = pipeline(image)
 """
 
-import numpy as np
-import yaml
 import logging
 import warnings
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import yaml
 
 from onnxtools.utils.drawing import draw_detections
 
 # Import annotator functionality
 try:
-    from .utils.supervision_annotator import AnnotatorType, AnnotatorPipeline
+    from .utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
     from .utils.supervision_preset import VisualizationPreset
     ANNOTATOR_AVAILABLE = True
 except ImportError:
     ANNOTATOR_AVAILABLE = False
     logging.warning("Annotator functionality not available. Using legacy drawing.")
+
 
 def create_annotator_pipeline(args):
     """Create annotator pipeline based on command line arguments.
@@ -38,7 +40,7 @@ def create_annotator_pipeline(args):
     Returns:
         AnnotatorPipeline or None if annotators not available/configured
     """
-    warnings.warn(
+    warnings.warn(  # noqa: F823
         "create_annotator_pipeline() is deprecated and will be removed in v0.3.0. "
         "Use InferencePipeline class instead.",
         DeprecationWarning,
@@ -200,7 +202,7 @@ def initialize_models(args):
 
 
 def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
-                  class_names, colors, args, annotator_pipeline=None):
+                  class_names, colors, args, annotator_pipeline=None, label_type=None):
     """Process a single frame for vehicle and plate detection and recognition.
 
     .. deprecated:: 0.2.0
@@ -216,6 +218,7 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
         colors: List of colors for visualization
         args: Command line arguments
         annotator_pipeline: Optional pre-initialized annotator pipeline
+        label_type: Label format type ("confidence_only" for confidence-only labels)
 
     Returns:
         Tuple of (annotated_frame, output_data)
@@ -278,7 +281,7 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
 
             # Apply specific confidence threshold for plates
             if class_name == 'plate' and conf < plate_conf_thres:
-                plate_results.append(None) # Keep lists in sync
+                plate_results.append(None)  # Keep lists in sync
                 continue
 
             # Keep float values for JSON output
@@ -304,15 +307,15 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
                     is_double = (layer_str == "double")
                     ocr_result = ocr_model(plate_img, is_double_layer=is_double)
                     plate_text = ocr_result[0] if ocr_result else ""
-                    
+
                     # Determine if OCR text should be displayed based on ROI and width
                     should_display_ocr = (y1 >= roi_top_pixel) and (w > 50)
-                    
+
                     plate_info = {
                         "plate_text": plate_text, "color": color_str, "layer": layer_str,
                         "should_display_ocr": should_display_ocr
                     }
-            
+
             plate_results.append(plate_info)
 
             # Populate JSON data regardless of display logic
@@ -346,11 +349,14 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
             )
             sv_detections = vis_result.to_supervision()
 
-            # Import label creation function
-            from .utils.supervision_labels import create_ocr_labels
+            # Import label creation functions
+            from .utils.supervision_labels import create_confidence_labels, create_ocr_labels
 
-            # Create labels with OCR information (adapted for Result API)
-            labels = create_ocr_labels(boxes, scores, class_ids, plate_results, class_names)
+            # Create labels based on label_type
+            if label_type == "confidence_only":
+                labels = create_confidence_labels(scores)
+            else:
+                labels = create_ocr_labels(boxes, scores, class_ids, plate_results, class_names)
 
             result_frame = annotator_pipeline.annotate(frame.copy(), sv_detections, labels=labels)
             logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")
@@ -368,7 +374,10 @@ def process_frame(frame, detector, color_layer_classifier, ocr_model, character,
             scaled_detections_for_drawing = [detections_array]
         else:
             scaled_detections_for_drawing = []
-        result_frame = draw_detections(frame.copy(), scaled_detections_for_drawing, class_names, colors, plate_results=plate_results)
+        result_frame = draw_detections(
+            frame.copy(), scaled_detections_for_drawing, class_names, colors,
+            plate_results=plate_results
+        )
 
     return result_frame, output_data
 
@@ -480,7 +489,7 @@ class InferencePipeline:
         if isinstance(det_config, dict):
             # 直接使用传入的字典（已经是 Dict[int, str] 格式）
             det_config_data = {"class_names": det_config, "visual_colors": []}
-            logging.info(f"使用传入的类别名称字典")
+            logging.info("使用传入的类别名称字典")
         elif isinstance(det_config, str):
             # 从文件加载
             det_config_data = load_det_config(det_config)
@@ -509,8 +518,9 @@ class InferencePipeline:
 
         # 初始化annotator管道
         self.annotator_pipeline = None
+        self.label_type = None  # Label format type (e.g., "confidence_only")
         if annotator_preset or annotator_types:
-            self.annotator_pipeline = self._create_annotator_pipeline(
+            self.annotator_pipeline, self.label_type = self._create_annotator_pipeline(
                 annotator_preset, annotator_types, **kwargs
             )
             if self.annotator_pipeline:
@@ -521,21 +531,26 @@ class InferencePipeline:
         preset: Optional[str],
         types: Optional[List[str]],
         **kwargs
-    ) -> Optional[AnnotatorPipeline]:
-        """创建annotator管道。"""
+    ) -> tuple:
+        """创建annotator管道。
+
+        Returns:
+            Tuple of (AnnotatorPipeline or None, label_type str or None)
+        """
         if not ANNOTATOR_AVAILABLE:
-            return None
+            return None, None
 
         # 优先使用预设
         if preset:
             try:
                 preset_obj = VisualizationPreset.from_yaml(preset)
                 pipeline = preset_obj.create_pipeline()
+                label_type = preset_obj.label_type  # Get label_type from preset
                 logging.info(f"Using annotator preset: {preset}")
-                return pipeline
+                return pipeline, label_type
             except Exception as e:
                 logging.warning(f"Failed to load preset '{preset}': {e}")
-                return None
+                return None, None
 
         # 使用自定义类型
         if types:
@@ -559,9 +574,9 @@ class InferencePipeline:
                 except ValueError:
                     logging.warning(f"Unknown annotator type: {ann_type_str}")
 
-            return pipeline
+            return pipeline, None  # Custom types don't have label_type
 
-        return None
+        return None, None
 
     def __call__(
         self,
@@ -601,7 +616,8 @@ class InferencePipeline:
             self.class_names,
             self.colors,
             args,
-            self.annotator_pipeline
+            self.annotator_pipeline,
+            self.label_type
         )
 
         return result_frame, output_data

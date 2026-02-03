@@ -34,7 +34,7 @@
 3.  使用以下命令为无界 DDS 设置上限：
 
     ```bash
-    polygraphy surgeon sanitize folded.onnx --set-unbounded-dds-upper-bound 1000 -o modified.onnx 
+    polygraphy surgeon sanitize folded.onnx --set-unbounded-dds-upper-bound 1000 -o modified.onnx
     ```
 
     Polygraphy 将首先搜索所有具有无界 DDS 的张量。
@@ -52,4 +52,3 @@
     ```
 
     现在 `modified.onnx` 应该不包含无界 DDS。
-

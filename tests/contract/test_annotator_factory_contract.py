@@ -6,6 +6,7 @@ This test MUST FAIL before implementation (TDD approach).
 
 import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

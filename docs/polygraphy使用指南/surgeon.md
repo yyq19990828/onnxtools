@@ -61,8 +61,8 @@ polygraphy surgeon [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]] [--sil
 
 ### 基本语法
 ```bash
-polygraphy surgeon extract [-h] [日志参数] [模型参数] [数据加载器参数] [ONNX参数] [保存参数] 
-                          [--inputs INPUT_META [INPUT_META ...]] [--outputs OUTPUT_META [OUTPUT_META ...]] 
+polygraphy surgeon extract [-h] [日志参数] [模型参数] [数据加载器参数] [ONNX参数] [保存参数]
+                          [--inputs INPUT_META [INPUT_META ...]] [--outputs OUTPUT_META [OUTPUT_META ...]]
                           model_file
 ```
 
@@ -175,7 +175,7 @@ polygraphy surgeon extract model.onnx \
 
 ### 基本语法
 ```bash
-polygraphy surgeon sanitize [-h] [日志参数] [模型参数] [数据加载器参数] [ONNX参数] [保存参数] [常量折叠参数] 
+polygraphy surgeon sanitize [-h] [日志参数] [模型参数] [数据加载器参数] [ONNX参数] [保存参数] [常量折叠参数]
                            [--cleanup] [--toposort] model_file
 ```
 
@@ -300,9 +300,9 @@ polygraphy surgeon sanitize model.onnx \
 
 ### 基本语法
 ```bash
-polygraphy surgeon insert [-h] [日志参数] [ONNX参数] [保存参数] 
+polygraphy surgeon insert [-h] [日志参数] [ONNX参数] [保存参数]
                          --inputs INPUTS [INPUTS ...] --outputs OUTPUTS [OUTPUTS ...] --op OP
-                         [--name NAME] [--attrs ATTRS [ATTRS ...]] 
+                         [--name NAME] [--attrs ATTRS [ATTRS ...]]
                          model_file
 ```
 

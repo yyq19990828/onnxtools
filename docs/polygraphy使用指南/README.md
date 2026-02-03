@@ -21,7 +21,7 @@ make install  # Linux
 # 跨框架推理比较
 polygraphy run model.onnx --onnxrt --trt
 
-# 模型转换 
+# 模型转换
 polygraphy convert model.onnx --convert-to trt --output model.engine
 
 # 模型检查
@@ -117,7 +117,7 @@ polygraphy check lint model.onnx
 
 ### 核心工具
 - [run - 跨框架推理比较](./run.md)
-- [convert - 模型格式转换](./convert.md) 
+- [convert - 模型格式转换](./convert.md)
 - [inspect - 模型结构分析](./inspect.md)
 - [surgeon - ONNX 模型修改](./surgeon.md)
 - [debug - 调试工具集](./debug.md)

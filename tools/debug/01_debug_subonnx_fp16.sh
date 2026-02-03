@@ -69,16 +69,16 @@ generate_data_loader() {
     local size=$1
     local template_file="tools/debug/data_loader.py.template"
     local output_file="${debug_dir}/data_loader.py"
-    
+
     # 确保模板文件存在
     if [ ! -f "$template_file" ]; then
         echo "Error: Template file not found: $template_file"
         exit 1
     fi
-    
+
     # 使用 sed 替换占位符
     sed "s/{{INPUT_SIZE}}/$size/g" "$template_file" > "$output_file"
-    
+
     echo "✓ Generated data_loader.py with input size: ${size}x${size}"
 }
 
@@ -94,7 +94,7 @@ replay_file="${debug_dir}/polygraphy_debug_replay.json"
 folded_onnx="${debug_dir}/folded.onnx"
 
 # 步骤0: 优化ONNX模型
-polygraphy surgeon sanitize ${onnx_model} -o ${folded_onnx} --fold-constants 
+polygraphy surgeon sanitize ${onnx_model} -o ${folded_onnx} --fold-constants
 
 # 步骤1: 生成ONNX Runtime的中间结果作为FP32的参考值
 if [ -f "$inputs_file" ] && [ -f "$golden_file" ]; then

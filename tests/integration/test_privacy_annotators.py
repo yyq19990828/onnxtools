@@ -1,8 +1,9 @@
 """Integration tests for privacy protection annotators (Blur, Pixelate)."""
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

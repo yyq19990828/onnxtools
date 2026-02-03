@@ -5,14 +5,13 @@ This module provides predefined annotator combinations for common use cases.
 """
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional
 from functools import lru_cache
-import yaml
+from typing import Any, Dict, List, Optional, Tuple
+
 import supervision as sv
 
-from .supervision_annotator import AnnotatorPipeline, AnnotatorType
 from .. import config
+from .supervision_annotator import AnnotatorPipeline, AnnotatorType
 
 
 class Presets:
@@ -23,12 +22,14 @@ class Presets:
     DEBUG = "debug"
     HIGH_CONTRAST = "high_contrast"
 
+
 @dataclass
 class VisualizationPreset:
     """Visualization preset configuration."""
     name: str
     description: str
     annotators: List[Tuple[AnnotatorType, Dict[str, Any]]]
+    label_type: Optional[str] = None  # e.g., "confidence_only" for confidence-only labels
 
     @classmethod
     def from_yaml(
@@ -111,7 +112,8 @@ class VisualizationPreset:
         return cls(
             name=preset_data['name'],
             description=preset_data['description'],
-            annotators=annotators
+            annotators=annotators,
+            label_type=preset_data.get('label_type', None)
         )
 
     def create_pipeline(self) -> AnnotatorPipeline:
@@ -123,8 +125,8 @@ class VisualizationPreset:
         """
         pipeline = AnnotatorPipeline()
 
-        for ann_type, config in self.annotators:
-            pipeline.add(ann_type, config)
+        for ann_type, ann_config in self.annotators:
+            pipeline.add(ann_type, ann_config)
 
         return pipeline
 

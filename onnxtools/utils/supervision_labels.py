@@ -1,7 +1,21 @@
 """Label generation functions for supervision annotators."""
 
-from typing import List, Dict, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
+
+
+def create_confidence_labels(scores: np.ndarray) -> List[str]:
+    """
+    Create labels with confidence scores only.
+
+    Args:
+        scores: Confidence scores array [N]
+
+    Returns:
+        List of confidence strings like ["0.85", "0.92", ...]
+    """
+    return [f"{float(score):.2f}" for score in scores]
 
 
 def create_ocr_labels(
@@ -54,8 +68,8 @@ def create_ocr_labels(
         base_label = f"{class_name} {confidence:.2f}"
 
         # Add OCR information if available
-        if (i < len(plate_results) and plate_results[i] is not None and
-            class_name == 'plate' and isinstance(plate_results[i], dict)):
+        if (i < len(plate_results) and plate_results[i] is not None
+                and class_name == 'plate' and isinstance(plate_results[i], dict)):
 
             plate_result = plate_results[i]
             if plate_result.get("should_display_ocr", False):

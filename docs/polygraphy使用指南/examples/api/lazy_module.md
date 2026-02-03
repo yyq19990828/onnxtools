@@ -39,14 +39,14 @@ class LazyLoader:
         self.kwargs = kwargs
         self.executed = False
         self.result = None
-    
+
     def __call__(self):
         # 调用时才执行实际工作
         if not self.executed:
             self.result = self._do_actual_work(*self.args, **self.kwargs)
             self.executed = True
         return self.result
-    
+
     def _do_actual_work(self, *args, **kwargs):
         # 子类实现具体的工作逻辑
         raise NotImplementedError
@@ -71,7 +71,7 @@ def __init__(self, path, flags=None, plugin_instancenorm=None, strongly_typed=No
     """只存储参数，不执行任何实际工作"""
     super().__init__(flags=flags, plugin_instancenorm=plugin_instancenorm, strongly_typed=strongly_typed)
     self.path = path  # 仅保存路径字符串
-    
+
     # 注意：此时没有进行以下操作：
     # ❌ 文件存在性检查
     # ❌ ONNX文件读取
@@ -94,17 +94,17 @@ def __call__(self, *args, **kwargs):
 @util.check_called_by("__call__")  # 装饰器确保只能通过 __call__ 调用
 def call_impl(self):
     """这里才真正执行所有工作"""
-    
+
     # 步骤1：智能路径解析（支持嵌套懒加载）
     path = util.invoke_if_callable(self.path)[0]
-    
+
     # 步骤2：创建TensorRT基础对象（builder, network, parser）
     builder, network, parser = super().call_impl()
-    
+
     # 步骤3：实际文件I/O和解析（耗时操作在这里！）
     success = parser.parse_from_file(path)
     trt_util.check_onnx_parser_errors(parser, success)
-    
+
     # 步骤4：返回实际的TensorRT对象
     return builder, network, parser
 ```

@@ -9,9 +9,10 @@ Date: 2025-11-05
 Version: 1.0.0
 """
 
-from typing import Optional, Union, List, Dict, Any
 import warnings
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import numpy.typing as npt
 
@@ -996,4 +997,3 @@ def _sanitize_filename(name: str) -> str:
         'test123'
     """
     return "".join(c if c.isalnum() or c in ('_', '-') else '' if c == ' ' else '_' for c in name)
-

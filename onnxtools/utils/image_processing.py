@@ -1,7 +1,8 @@
-import cv2
-import numpy as np
 import warnings
 from typing import Tuple, Union
+
+import cv2
+import numpy as np
 
 
 def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tuple:
@@ -38,11 +39,11 @@ def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tupl
         stacklevel=2
     )
     original_shape = image.shape[:2]  # (height, width)
-    
+
     # Calculate scaling factor
     h, w = original_shape
     scale = min(input_shape[0] / h, input_shape[1] / w)
-    
+
     # Resize the image with aspect ratio preservation
     unpad_w, unpad_h = int(round(w * scale)), int(round(h * scale))
     resized_image = cv2.resize(image, (unpad_w, unpad_h), interpolation=cv2.INTER_LINEAR)
@@ -50,7 +51,7 @@ def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tupl
     # Create a new image with padding
     padded_image = np.full((input_shape[0], input_shape[1], 3), 114, dtype=np.uint8)
     padded_image[:unpad_h, :unpad_w, :] = resized_image
-    
+
     # Convert image to float32 and normalize to [0, 1]
     normalized_image = padded_image.astype(np.float32) / 255.0
 
@@ -66,14 +67,14 @@ def preprocess_image(image: np.ndarray, input_shape: tuple = (640, 640)) -> tupl
 class UltralyticsLetterBox:
     """
     Optimized LetterBox implementation based on ultralytics/data/augment.py::LetterBox
-    
+
     This class provides efficient image resizing and padding for YOLO model inference,
     directly migrated from ultralytics for better performance and compatibility.
-    
+
     Source: ultralytics/data/augment.py::LetterBox
     Reference: https://github.com/ultralytics/ultralytics/blob/main/ultralytics/data/augment.py
     """
-    
+
     def __init__(
         self,
         new_shape: Tuple[int, int] = (640, 640),
@@ -88,7 +89,7 @@ class UltralyticsLetterBox:
     ):
         """
         Initialize LetterBox object for resizing and padding images.
-        
+
         Args:
             new_shape (Tuple[int, int]): Target size (height, width) for the resized image.
             auto (bool): If True, use minimum rectangle to resize. If False, use new_shape directly.
@@ -109,16 +110,16 @@ class UltralyticsLetterBox:
         self.padding_value = padding_value
         self.interpolation = interpolation
         self.half = half
-    
+
     def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int], Tuple[int, int]]:
         """
         Apply letterboxing to an image for object detection inference.
-        
+
         Based on ultralytics LetterBox.__call__ method, optimized for inference-only use.
-        
+
         Args:
             image (np.ndarray): Input image in BGR format
-            
+
         Returns:
             Tuple containing:
                 - preprocessed_tensor (np.ndarray): Preprocessed image tensor [1, C, H, W]
@@ -130,31 +131,31 @@ class UltralyticsLetterBox:
         original_shape = image.shape[:2]  # (height, width)
         shape = original_shape
         new_shape = self.new_shape
-        
+
         if isinstance(new_shape, int):
             new_shape = (new_shape, new_shape)
-        
+
         # Scale ratio (new / old)
         r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
         if not self.scaleup:  # only scale down, do not scale up (for better val mAP)
             r = min(r, 1.0)
-        
+
         # Compute padding
         ratio = r, r  # width, height ratios
         new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
         dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
-        
+
         if self.auto:  # minimum rectangle
             dw, dh = np.mod(dw, self.stride), np.mod(dh, self.stride)  # wh padding
         elif self.scale_fill:  # stretch
             dw, dh = 0.0, 0.0
             new_unpad = (new_shape[1], new_shape[0])
             ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
-        
+
         if self.center:
             dw /= 2  # divide padding into 2 sides
             dh /= 2
-        
+
         # Resize if needed
         if shape[::-1] != new_unpad:  # resize
             img = cv2.resize(image, new_unpad, interpolation=self.interpolation)
@@ -162,11 +163,11 @@ class UltralyticsLetterBox:
                 img = img[..., None]
         else:
             img = image
-        
+
         # Add padding
         top, bottom = int(round(dh - 0.1)) if self.center else 0, int(round(dh + 0.1))
         left, right = int(round(dw - 0.1)) if self.center else 0, int(round(dw + 0.1))
-        
+
         h, w, c = img.shape
         if c == 3:
             img = cv2.copyMakeBorder(
@@ -176,19 +177,19 @@ class UltralyticsLetterBox:
             pad_img = np.full((h + top + bottom, w + left + right, c), fill_value=self.padding_value, dtype=img.dtype)
             pad_img[top : top + h, left : left + w] = img
             img = pad_img
-        
+
         # Apply ultralytics-style preprocessing (复刻DetectionValidator.preprocess逻辑)
         # Convert to float32 and normalize to [0, 1] (batch["img"].float() / 255)
         img = img.astype(np.float32 if not self.half else np.float16) / 255.0
-        
+
         # Transpose from HWC to CHW format
         img = np.transpose(img, (2, 0, 1))
-        
+
         # Add batch dimension
         preprocessed_tensor = np.expand_dims(img, axis=0)
-        
+
         # Return information needed for post-processing
         scale = r  # Single scale factor
         ratio_pad = (left, top)  # Padding info for coordinate scaling
-        
+
         return preprocessed_tensor, scale, original_shape, ratio_pad

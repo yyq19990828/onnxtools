@@ -6,22 +6,24 @@ YOLO模型ORT推理类
 支持YOLOv5、YOLOv8等使用NMS后处理的YOLO模型
 """
 
-import numpy as np
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
-from .onnx_base import BaseORT
-from .infer_utils import scale_boxes
+import numpy as np
+
 from onnxtools.utils.nms import non_max_suppression
+
+from .infer_utils import scale_boxes
+from .onnx_base import BaseORT
 
 
 class YoloORT(BaseORT):
     """
     传统YOLO模型ORT推理类 (原DetONNX)
-    
+
     支持YOLOv5、YOLOv8等使用NMS后处理的YOLO模型
     """
-    
+
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
                  conf_thres: float = 0.5, iou_thres: float = 0.5,
                  multi_label: bool = True, has_objectness: bool = False,
@@ -47,7 +49,7 @@ class YoloORT(BaseORT):
         self.multi_label = multi_label
         self.has_objectness = has_objectness
         # YoloORT类固定使用Ultralytics预处理方式
-    
+
     @staticmethod
     def preprocess(
         image: np.ndarray,
@@ -77,7 +79,7 @@ class YoloORT(BaseORT):
         # 构造scale_boxes期望的ratio_pad格式: ((ratio_w, ratio_h), (pad_w, pad_h))
         ratio_pad = ((scale, scale), pad)
         return input_tensor, scale, original_shape, ratio_pad
-    
+
     @staticmethod
     def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int], conf_thres: float,
                    iou_thres: float, multi_label: bool, has_objectness: bool,
@@ -101,25 +103,25 @@ class YoloORT(BaseORT):
         # YOLO官方库输出: [B, bbox+C, N] 例如 (1, 84, 8400)
         # 我们的处理逻辑: [B, N, bbox+C] 例如 (1, 8400, 84)
         original_shape = prediction.shape
-        
+
         # 鲁棒的维度判断逻辑：
         # 1. 如果第二维小于第三维，且第二维在合理的特征数范围内(4-200)，则可能是[B, C, N]格式
         # 2. 特征数应该是4+类别数，一般在80-200之间比较合理
-        if (prediction.shape[1] < prediction.shape[2] and 
+        if (prediction.shape[1] < prediction.shape[2] and
             4 <= prediction.shape[1] <= 200 and
             prediction.shape[2] > prediction.shape[1]):
             # 转换为我们期望的格式: [B, N, C]
             prediction = prediction.transpose(0, 2, 1)
             logging.info(f"YOLO输出格式自适应转换: {original_shape} -> {prediction.shape}")
-        
+
         # 验证最终格式的合理性
         if prediction.shape[2] < 4:
             raise ValueError(f"YOLO输出格式异常: {prediction.shape}，特征维度应该至少包含4个bbox坐标")
-        
+
         # 检查坐标格式并转换为像素坐标（对齐Ultralytics实现）
         bbox_coords = prediction[..., :4]
         max_coord = np.max(np.abs(bbox_coords))
-        
+
         if max_coord <= 1.0:
             # 归一化坐标，需要转换为像素坐标
             prediction[..., 0] *= input_shape[1]  # x_center
@@ -170,20 +172,18 @@ class YoloORT(BaseORT):
                 detections[0][:, :4] /= scale
 
         return detections
-    
-    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, 
+
+    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None,
                  iou_thres: Optional[float] = None) -> Tuple[List[np.ndarray], tuple]:
         """
         YOLO推理接口
-        
+
         Args:
             image (np.ndarray): 输入图像，BGR格式
             conf_thres (Optional[float]): 置信度阈值
             iou_thres (Optional[float]): IoU阈值
-            
+
         Returns:
             Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
         """
         return super().__call__(image, conf_thres=conf_thres, iou_thres=iou_thres)
-
-

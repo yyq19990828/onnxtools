@@ -17,11 +17,12 @@ Test Coverage:
 - OcrORT._decode_static()
 """
 
-import pytest
-import numpy as np
-import cv2
 from pathlib import Path
 from typing import List
+
+import cv2
+import numpy as np
+import pytest
 
 
 class TestColorLayerPreprocessing:

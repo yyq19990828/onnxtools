@@ -1,8 +1,9 @@
 """Integration tests for AnnotatorPipeline combinations and rendering order."""
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
 
 

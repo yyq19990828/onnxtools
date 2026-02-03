@@ -68,7 +68,7 @@ def main():
         )
     )
     print("所有输出都使用距离度量（L2 范数，余弦相似度）匹配")
-    
+
     # 使用质量度量进行信号质量评估
     assert bool(
         Comparator.compare_accuracy(

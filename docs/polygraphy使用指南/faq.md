@@ -306,15 +306,15 @@ results = postprocess(outputs)  # 检查这一步
 for model in models/*.onnx; do
     echo "处理: $model"
     model_name=$(basename "$model" .onnx)
-    
+
     # 验证模型
     polygraphy check lint "$model" || continue
-    
+
     # 转换模型
     polygraphy convert "$model" --convert-to trt \
       --fp16 --workspace 2G \
       --output "engines/${model_name}.engine"
-    
+
     # 验证精度
     polygraphy run "$model" --onnxrt \
       --trt-engine "engines/${model_name}.engine" \
@@ -332,10 +332,10 @@ done
     for model in changed_models/*.onnx; do
       # 基础验证
       polygraphy check lint "$model" || exit 1
-      
+
       # 兼容性检查
       polygraphy check compatibility "$model" --onnxrt || exit 1
-      
+
       # 性能基准（可选）
       timeout 300 polygraphy convert "$model" --convert-to trt --workspace 1G || echo "TRT conversion timeout"
     done

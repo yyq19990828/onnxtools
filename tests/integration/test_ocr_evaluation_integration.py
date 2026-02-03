@@ -7,12 +7,13 @@ End-to-end tests verifying:
 - Output formatting
 """
 
-import pytest
 import json
 import tempfile
 from pathlib import Path
+
 import cv2
 import numpy as np
+import pytest
 
 
 @pytest.mark.integration
@@ -207,8 +208,9 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_performance(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation performance characteristics"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
         import time
+
+        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 

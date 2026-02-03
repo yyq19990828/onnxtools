@@ -7,9 +7,11 @@ Tests the load_label_file function's ability to handle:
 4. Error handling for invalid JSON and missing files
 """
 
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
+
 from onnxtools.infer_onnx.eval_ocr import load_label_file
 
 

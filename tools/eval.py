@@ -6,9 +6,7 @@ from typing import Dict, List
 # 添加项目路径到系统路径
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
-from onnxtools import create_detector
-from onnxtools import DetDatasetEvaluator
-from onnxtools import setup_logger
+from onnxtools import DetDatasetEvaluator, create_detector, setup_logger
 
 
 def parse_class_mapping_arg(mapping_str: str) -> Dict[str, List[str]]:
@@ -39,7 +37,7 @@ def parse_class_mapping_arg(mapping_str: str) -> Dict[str, List[str]]:
 
 def main():
     parser = argparse.ArgumentParser(description='评估ONNX模型在数据集上的性能')
-    parser.add_argument('--model-type', type=str, default='rtdetr', 
+    parser.add_argument('--model-type', type=str, default='rtdetr',
                         choices=['rtdetr', 'yolo', 'rfdetr'], help='模型类型')
     parser.add_argument('--model-path', type=str, required=True,
                         help='ONNX模型文件路径')
@@ -59,22 +57,22 @@ def main():
                         help='类别映射，格式: "vehicle:car,truck,bus;cyclist:bicycle,motorcycle"')
 
     args = parser.parse_args()
-    
+
     setup_logger()
-    
+
     # 使用工厂函数创建检测器
     detector = create_detector(args.model_type, args.model_path)
-    
+
     # 使用统一的评估器
     evaluator = DetDatasetEvaluator(detector)
-    
+
     # 构建evaluate_dataset的参数字典
     eval_kwargs = {
         'dataset_path': args.dataset_path,
         'conf_threshold': args.conf_threshold,
         'iou_threshold': args.iou_threshold
     }
-    
+
     # 添加可选参数
     if args.max_images is not None:
         eval_kwargs['max_images'] = args.max_images

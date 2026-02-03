@@ -6,26 +6,27 @@ ONNX Runtime 模型推理基类
 - 通用的工具函数：xywh2xyxy, clip_boxes, scale_boxes
 """
 
-import numpy as np
+import ast
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict, Optional, Union
-from .result import Result
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 # Polygraphy懒加载导入
 from polygraphy.backend.onnxrt import OnnxrtRunner
-from polygraphy.backend.trt import (TrtRunner,
-                                    EngineFromNetwork, EngineFromPath,
-                                    NetworkFromOnnxPath,
-                                    SaveEngine)
+from polygraphy.backend.trt import EngineFromNetwork, EngineFromPath, NetworkFromOnnxPath, SaveEngine, TrtRunner
 from polygraphy.comparator import Comparator, CompareFunc
 
 from onnxtools.config import DET_CLASSES
 
+from .result import Result
+
+
 class BaseORT(ABC):
     """ONNX Runtime模型推理基类 - 使用Polygraphy懒加载"""
-    
+
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
                  conf_thres: float = 0.5, providers: Optional[List[str]] = None,
                  det_config: Optional[Union[str, Dict[int, str]]] = None):
@@ -48,12 +49,12 @@ class BaseORT(ABC):
         self.input_shape = None  # 实际输入形状，将从模型中读取
         self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         self.det_config = det_config  # 保存配置（路径或字典）
-        
+
         # 创建ONNX Runtime会话（立即创建并缓存，后续复用）
         import onnxruntime
         self._onnx_session = onnxruntime.InferenceSession(self.onnx_path, providers=self.providers)
         logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
-        
+
         # 使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
         model_info = self._get_model_info()
 
@@ -99,8 +100,9 @@ class BaseORT(ABC):
             - input_shape: List (可能包含动态维度)
             - class_names: Dict[int, str]
         """
-        import onnx
         import json
+
+        import onnx
 
         result = {
             'input_name': None,
@@ -143,8 +145,8 @@ class BaseORT(ABC):
                     names_data = json.loads(custom_metadata['names'])
                 except (json.JSONDecodeError, TypeError):
                     try:
-                        # 如果JSON解析失败，尝试Python字典的eval解析（Ultralytics格式）
-                        names_data = eval(custom_metadata['names'])
+                        # 如果JSON解析失败，尝试Python字典的literal_eval解析（Ultralytics格式）
+                        names_data = ast.literal_eval(custom_metadata['names'])
                     except Exception:
                         names_data = None
 
@@ -440,15 +442,15 @@ class BaseORT(ABC):
             orig_shape=original_shape,
             names=self.class_names
         )
-    
+
     def create_engine_dataloader(self, **kwargs):
         """
         为引擎比较创建适配的数据加载器，并自动赋值给engine_dataloader属性
-        
+
         Args:
             image_paths: 图片路径列表，可以是文件夹路径或具体图片路径
             iterations: 迭代次数
-        
+
         Returns:
             CustomEngineDataLoader: 使用静态预处理方法的自定义数据加载器
         """
@@ -457,10 +459,10 @@ class BaseORT(ABC):
         # 直接赋值给私有属性，这样外部脚本调用后就会自动设置好
         self.engine_dataloader = dataloader
         return dataloader
-    
+
     #TODO 输出结果加上后处理，以及一些图像变换的中间超参
     def compare_engine(
-        self, 
+        self,
         engine_path: Optional[str] = None,
         save_engine: bool = False,
         rtol: float = 1e-3,
@@ -468,20 +470,20 @@ class BaseORT(ABC):
     ) -> bool:
         """
         使用Polygraphy比较ONNX模型和TensorRT引擎的推理结果
-        
+
         Args:
             engine_path (Optional[str]): TensorRT引擎文件路径。如果为None，则从ONNX构建引擎
             save_engine (bool): 当从ONNX构建引擎时，是否保存引擎文件(fp32)，默认False
             rtol (float): 相对容差，默认1e-3
             atol (float): 绝对容差，默认1e-3
-            
+
         Returns:
             bool: 比较结果，True表示精度匹配
         """
-        
+
         # 创建ONNX Runner
         onnx_runner = OnnxrtRunner(sess=self._onnx_session)
-        
+
         # 创建TensorRT Runner
         if engine_path is not None:
             # 使用现有引擎文件
@@ -492,21 +494,21 @@ class BaseORT(ABC):
         else:
             # 从ONNX构建引擎
             build_engine = EngineFromNetwork(NetworkFromOnnxPath(self.onnx_path))
-            
+
             if save_engine:
                 # 保存引擎文件
                 engine_save_path = str(Path(self.onnx_path).with_suffix('.engine'))
                 build_engine = SaveEngine(build_engine, path=engine_save_path)
-            
+
             trt_runner = TrtRunner(build_engine)
-        
+
         # 运行推理比较，使用适配的数据加载器
         # 如果没有设置自定义数据加载器，则创建默认的
         # if self.engine_dataloader is None:
         #     self.create_engine_dataloader()  # 这会自动设置self.engine_dataloader
-        
+
         run_results = Comparator.run([onnx_runner, trt_runner], data_loader=self.engine_dataloader)
-        
+
         # 比较精度
         accuracy_results = Comparator.compare_accuracy(
             run_results,
@@ -514,6 +516,6 @@ class BaseORT(ABC):
                                             error_quantile=0.95,
                                             rtol=rtol, atol=atol)
                                             )
-        
+
         # 返回比较结果
         return bool(accuracy_results), run_results

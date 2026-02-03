@@ -1,9 +1,10 @@
 """Integration tests for pipeline compatibility - 这些测试必须在实现前编写且必须失败."""
 
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -45,8 +46,9 @@ class TestPipelineIntegration:
 
         # Test conversion compatibility
         try:
-            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             sv_detections = convert_to_supervision_detections(pipeline_detections, pipeline_class_names)
             assert isinstance(sv_detections, sv.Detections)
@@ -109,8 +111,9 @@ class TestPipelineIntegration:
             detections = [[[100.0 + i * 50, 100.0, 200.0 + i * 50, 150.0, 0.9, 0]]]
             batch_detections.append(detections)
 
-        from onnxtools.utils.drawing import draw_detections
         import time
+
+        from onnxtools.utils.drawing import draw_detections
 
         # Process batch
         start_time = time.time()
@@ -151,8 +154,9 @@ class TestPipelineIntegration:
 
     def test_real_time_processing_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Real-time processing requirements should be met."""
-        from onnxtools.utils.drawing import draw_detections
         import time
+
+        from onnxtools.utils.drawing import draw_detections
 
         # Simulate real-time processing (30 FPS requirement = ~33ms per frame)
         frame_times = []
@@ -195,8 +199,9 @@ class TestPipelineIntegration:
 
     def test_output_format_pipeline_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Output formats should remain compatible with existing pipeline."""
-        from onnxtools.utils.drawing import draw_detections
         import cv2
+
+        from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
 
@@ -240,8 +245,9 @@ class TestPipelineIntegration:
 
     def test_memory_usage_pipeline_compatibility(self, sample_class_names, sample_colors):
         """Integration: Memory usage should be efficient for pipeline processing."""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss
@@ -303,8 +309,8 @@ class TestPipelineIntegration:
 
     def test_concurrent_pipeline_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Concurrent pipeline processing should work correctly."""
-        import threading
         import queue
+        import threading
 
         result_queue = queue.Queue()
         error_queue = queue.Queue()

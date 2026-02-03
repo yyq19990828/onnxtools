@@ -7,13 +7,14 @@ This module provides:
 - AnnotatorPipeline: Pipeline for composing multiple annotators
 """
 
+import logging
 from enum import Enum
-from typing import Union, Dict, Any, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import supervision as sv
-import logging
 
-from .font_utils import  get_fallback_font_path
+from .font_utils import get_fallback_font_path
 
 logger = logging.getLogger(__name__)
 
@@ -125,11 +126,13 @@ class AnnotatorFactory:
             font_path = get_fallback_font_path()
 
         return sv.RichLabelAnnotator(
-            text_color=sv.Color.BLACK,
+            text_color=config.get('text_color', sv.Color.BLACK),
             color=config.get('color_palette', sv.ColorPalette.DEFAULT),
             color_lookup=config.get('color_lookup', sv.ColorLookup.CLASS),
             font_path=font_path,
             font_size=config.get('font_size', 25),
+            text_padding=config.get('text_padding', 10),
+            border_radius=config.get('border_radius', 0),
             smart_position=True
         )
 
@@ -252,9 +255,11 @@ class AnnotatorFactory:
                     if len(numbers) >= 3:
                         r, g, b = int(numbers[0]), int(numbers[1]), int(numbers[2])
                         # Create sv.Color from RGB values
-                        color = sv.Color(r=min(255, max(0, r)),
-                                       g=min(255, max(0, g)),
-                                       b=min(255, max(0, b)))
+                        color = sv.Color(
+                            r=min(255, max(0, r)),
+                            g=min(255, max(0, g)),
+                            b=min(255, max(0, b))
+                        )
                     else:
                         logger.warning(f"Invalid RGB color format: {color}. Using default black.")
                         color = sv.Color.BLACK
@@ -268,9 +273,11 @@ class AnnotatorFactory:
             # Handle RGB tuple/list
             try:
                 r, g, b = color[:3]
-                color = sv.Color(r=min(255, max(0, int(r))),
-                               g=min(255, max(0, int(g))),
-                               b=min(255, max(0, int(b))))
+                color = sv.Color(
+                    r=min(255, max(0, int(r))),
+                    g=min(255, max(0, int(g))),
+                    b=min(255, max(0, int(b)))
+                )
             except Exception as e:
                 logger.warning(f"Error converting color tuple {color}: {e}. Using default black.")
                 color = sv.Color.BLACK

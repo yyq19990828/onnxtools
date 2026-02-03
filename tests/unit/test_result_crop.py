@@ -11,12 +11,13 @@ Tests cover:
 - Directory structure options
 """
 
-import pytest
-import numpy as np
-import cv2
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+
+import cv2
+import numpy as np
+import pytest
 
 from onnxtools.infer_onnx.result import Result, _sanitize_filename
 

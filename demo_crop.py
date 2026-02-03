@@ -25,15 +25,16 @@ Author: ONNX Vehicle Plate Recognition Team
 Date: 2025-11-07
 """
 
-import cv2
-import json
-import os
 import argparse
+import json
 import logging
-from typing import List, Tuple, Dict, Any
+import os
+from typing import Any, Dict, List, Tuple
 
-from onnxtools.pipeline import initialize_models
+import cv2
+
 from onnxtools import setup_logger
+from onnxtools.pipeline import initialize_models
 
 
 def infer_source_type(input_path: str) -> str:

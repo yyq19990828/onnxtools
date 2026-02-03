@@ -36,19 +36,21 @@ Usage:
 
 import argparse
 import json
-import sys
-import yaml
 import shutil
-from pathlib import Path
-from typing import Dict, Any, List
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+
+import yaml
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from onnxtools import OCRDatasetEvaluator, OcrORT, SampleEvaluation
-from onnxtools import setup_logger
 import logging
+
+from onnxtools import OCRDatasetEvaluator, OcrORT, SampleEvaluation, setup_logger
+
 logging.getLogger("polygraphy").setLevel(logging.WARNING)
 
 

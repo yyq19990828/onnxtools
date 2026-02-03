@@ -23,13 +23,7 @@
 保存引擎，最后运行推理。
 """
 import numpy as np
-from polygraphy.backend.trt import (
-    TrtRunner,
-    create_config,
-    engine_from_network,
-    network_from_onnx_path,
-    save_engine,
-)
+from polygraphy.backend.trt import TrtRunner, create_config, engine_from_network, network_from_onnx_path, save_engine
 
 
 def main():

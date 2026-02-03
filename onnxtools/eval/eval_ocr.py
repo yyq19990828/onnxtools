@@ -17,11 +17,12 @@ Example:
     ... )
 """
 
-from typing import Dict, Any, Optional, List, Tuple
-from pathlib import Path
-from dataclasses import dataclass
 import logging
 import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 import cv2
 
 __all__ = ['OCRDatasetEvaluator', 'SampleEvaluation']
@@ -227,8 +228,8 @@ class OCRDatasetEvaluator:
         from onnxtools.utils.ocr_metrics import (
             calculate_accuracy,
             calculate_edit_distance_metrics,
+            format_ocr_results_json,
             print_ocr_metrics,
-            format_ocr_results_json
         )
 
         # Load dataset

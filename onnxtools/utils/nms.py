@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def softmax(x, axis=1):
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
@@ -39,7 +40,7 @@ def non_max_suppression(
 ) -> list:
     """
     Perform Non-Maximum Suppression (NMS) on inference results.
-    
+
     与Ultralytics对齐的实现，支持现代YOLO格式：
     - 有objectness: [batch, num_anchors, 4 + 1 + num_classes] (传统YOLO)
     - 无objectness: [batch, num_anchors, 4 + num_classes] (现代YOLO如YOLO11)
@@ -70,18 +71,18 @@ def non_max_suppression(
         # YOLO格式处理：根据has_objectness参数决定如何解析输出
         # 传统YOLO: [num_anchors, 4 + 1 + num_classes] - 有objectness
         # 现代YOLO: [num_anchors, 4 + num_classes] - 无objectness
-        
+
         if has_objectness:  # 传统YOLO格式，有objectness分支
             # 提取objectness和类别分数
             obj_conf = x[:, 4:5]  # objectness score
             cls_conf = x[:, 5:]   # class scores
-            
+
             # 处理原始logits（如果需要）
             if np.max(obj_conf) > 1:
                 obj_conf = sigmoid(obj_conf)
             if np.max(cls_conf) > 1:
                 cls_conf = sigmoid(cls_conf)
-            
+
             if multi_label:
                 # multi_label模式：每个框可以有多个类别
                 # 使用obj_conf * cls_conf作为最终置信度
@@ -90,10 +91,10 @@ def non_max_suppression(
                 # 这里暂时简化为取最大值（后续可以优化）
                 conf = np.max(class_scores, axis=1, keepdims=True)
                 mask = (conf.flatten() >= conf_thres)
-                
+
                 if not np.any(mask):
                     continue
-                    
+
                 x = x[mask]
                 class_scores = class_scores[mask]
                 conf = conf[mask]
@@ -104,32 +105,32 @@ def non_max_suppression(
                 class_scores = cls_conf
                 conf = obj_conf.flatten() * np.max(class_scores, axis=1)
                 mask = (conf >= conf_thres)
-                
+
                 if not np.any(mask):
                     continue
-                    
+
                 x = x[mask]
                 class_scores = class_scores[mask]
                 conf = conf[mask].reshape(-1, 1)
-                
+
                 # 获取最大类别索引
                 j = np.argmax(class_scores, axis=1, keepdims=True)
-        
+
         else:  # 现代YOLO格式（如YOLO11）：没有单独的objectness
             # 直接使用类别分数
             class_scores = x[:, 4:]
-            
+
             # 处理原始logits（如果需要）
             if np.max(class_scores) > 1:
                 class_scores = sigmoid(class_scores)
-            
+
             # 计算置信度和类别
             conf = np.max(class_scores, axis=1, keepdims=True)
             mask = (conf.flatten() >= conf_thres)
-            
+
             if not np.any(mask):
                 continue
-                
+
             x = x[mask]
             conf = conf[mask]
             class_scores = class_scores[mask]
@@ -156,7 +157,7 @@ def non_max_suppression(
         max_wh = 7680  # maximum box width and height
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
         boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
-        
+
         # NMS using pure numpy (修正IoU计算，移除+1偏移)
         order = scores.argsort()[::-1]
         keep = []
@@ -172,7 +173,7 @@ def non_max_suppression(
             w = np.maximum(0.0, xx2 - xx1)
             h = np.maximum(0.0, yy2 - yy1)
             inter = w * h
-            
+
             # 计算IoU（不使用+1偏移）
             area_i = (boxes[i, 2] - boxes[i, 0]) * (boxes[i, 3] - boxes[i, 1])
             area_order = (boxes[order[1:], 2] - boxes[order[1:], 0]) * (boxes[order[1:], 3] - boxes[order[1:], 1])

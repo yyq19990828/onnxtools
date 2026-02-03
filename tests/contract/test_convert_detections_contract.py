@@ -1,9 +1,10 @@
 """Contract tests for convert_to_supervision_detections API - 这些测试必须在实现前编写且必须失败."""
 
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -24,6 +25,7 @@ class TestConvertDetectionsContract:
         """Contract: Function must accept correct parameters."""
         try:
             import inspect
+
             from onnxtools.utils.drawing import convert_to_supervision_detections
 
             sig = inspect.signature(convert_to_supervision_detections)
@@ -38,8 +40,9 @@ class TestConvertDetectionsContract:
     def test_convert_empty_detections(self, sample_class_names):
         """Contract: Must handle empty detection arrays gracefully."""
         try:
-            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Test empty detection list
             empty_detections = [[]]
@@ -54,8 +57,9 @@ class TestConvertDetectionsContract:
     def test_convert_valid_detections_format(self, sample_detections, sample_class_names):
         """Contract: Must convert current detection format to supervision format correctly."""
         try:
-            from onnxtools.utils.drawing import convert_to_supervision_detections
             import supervision as sv
+
+            from onnxtools.utils.drawing import convert_to_supervision_detections
 
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
@@ -205,6 +209,7 @@ class TestConvertDetectionsContract:
         """Contract: Conversion must be fast enough for real-time processing."""
         try:
             import time
+
             from onnxtools.utils.drawing import convert_to_supervision_detections
 
             # Create larger detection set

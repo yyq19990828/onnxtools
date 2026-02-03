@@ -7,9 +7,11 @@ Author: ONNX Vehicle Plate Recognition Team
 Date: 2025-11-05
 """
 
-import pytest
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pytest
+
 from onnxtools import Result
 
 

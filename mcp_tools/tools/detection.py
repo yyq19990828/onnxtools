@@ -9,11 +9,7 @@ from typing import TYPE_CHECKING
 from ..models import DetectObjectsInput, FullPipelineInput
 from ..utils.error_handler import handle_inference_error
 from ..utils.image_loader import load_image
-from ..utils.model_manager import (
-    get_color_layer_classifier,
-    get_detector,
-    get_ocr_model,
-)
+from ..utils.model_manager import get_color_layer_classifier, get_detector, get_ocr_model
 from ..utils.response_formatter import format_detection_response, format_pipeline_response
 
 if TYPE_CHECKING:

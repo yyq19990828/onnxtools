@@ -33,4 +33,4 @@ HTTP_TIMEOUT_SECONDS = 30.0
 SERVER_NAME = "onnxtools_mcp"
 
 # Default output directory for crops and annotated images
-DEFAULT_OUTPUT_DIR = "/tmp/onnxtools_mcp"
+DEFAULT_OUTPUT_DIR = "/tmp/onnxtools_mcp"  # nosec B108 - intentional temp directory for MCP outputs

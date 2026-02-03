@@ -9,6 +9,7 @@ Tests edge cases and boundary conditions for:
 """
 
 import pytest
+
 from onnxtools.utils.ocr_metrics import calculate_edit_distance_metrics
 
 

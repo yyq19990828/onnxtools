@@ -8,12 +8,13 @@ Verifies API contracts for:
 - JSON export format
 """
 
-import pytest
 import json
+from pathlib import Path
+from typing import Any, Dict
+
 import cv2
 import numpy as np
-from pathlib import Path
-from typing import Dict, Any
+import pytest
 
 
 class MockOCRModel:

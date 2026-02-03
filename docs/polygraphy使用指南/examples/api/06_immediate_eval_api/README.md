@@ -99,7 +99,7 @@ class NetworkFromOnnxPath(BaseLoader):
     def __init__(self, path, **kwargs):
         # 初始化参数
         pass
-    
+
     def call_impl(self, **kwargs):
         # 实际执行逻辑，返回 (builder, network, parser)
         pass
@@ -125,9 +125,9 @@ def network_from_onnx_path(path, **kwargs):
 **延迟加载器方式**（类式API）：
 ```python
 # 步骤1：创建加载器对象（轻量级，无实际工作）
-parse_network = NetworkFromOnnxPath("/path/to/model.onnx")   
-create_config = CreateConfig(fp16=True, tf32=True)          
-build_engine = EngineFromNetwork(parse_network, create_config) 
+parse_network = NetworkFromOnnxPath("/path/to/model.onnx")  
+create_config = CreateConfig(fp16=True, tf32=True)  
+build_engine = EngineFromNetwork(parse_network, create_config)
 
 # 步骤2：实际执行所有工作
 engine = build_engine()  # 这时才解析ONNX、构建网络、创建引擎

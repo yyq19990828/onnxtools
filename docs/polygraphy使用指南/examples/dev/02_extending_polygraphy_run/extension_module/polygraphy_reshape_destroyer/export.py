@@ -20,7 +20,7 @@
 `polygraphy run` 将使用此入口点来添加我们的自定义参数组。
 """
 
-from polygraphy_reshape_destroyer.args import ReplaceReshapeArgs, IdentityOnlyRunnerArgs
+from polygraphy_reshape_destroyer.args import IdentityOnlyRunnerArgs, ReplaceReshapeArgs
 
 
 # 入口点应该不接受参数并返回参数组实例的列表。

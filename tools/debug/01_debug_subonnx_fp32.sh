@@ -69,16 +69,16 @@ generate_data_loader() {
     local size=$1
     local template_file="tools/debug/data_loader.py.template"
     local output_file="${debug_dir}/data_loader.py"
-    
+
     # 确保模板文件存在
     if [ ! -f "$template_file" ]; then
         echo "Error: Template file not found: $template_file"
         exit 1
     fi
-    
+
     # 使用 sed 替换占位符
     sed "s/{{INPUT_SIZE}}/$size/g" "$template_file" > "$output_file"
-    
+
     echo "✓ Generated data_loader.py with input size: ${size}x${size}"
 }
 

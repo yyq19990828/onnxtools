@@ -5,9 +5,10 @@ This module provides pytest-benchmark tests for all 13 annotator types,
 measuring rendering performance on 640x640 images with 20 detection objects.
 """
 
-import pytest
 import numpy as np
+import pytest
 import supervision as sv
+
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

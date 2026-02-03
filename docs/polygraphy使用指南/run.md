@@ -66,16 +66,16 @@ polygraphy run [-h] [-v] [-q] [--verbosity VERBOSITY [VERBOSITY ...]]
 model_file            # 模型的路径
 --model-type {frozen,keras,ckpt,onnx,engine,uff,trt-network-script,caffe}
                       # 输入模型的类型：
-                      # {'frozen': TensorFlow frozen graph; 
-                      #  'keras': Keras model; 
-                      #  'ckpt': TensorFlow checkpoint directory; 
-                      #  'onnx': ONNX model; 
-                      #  'engine': TensorRT engine; 
+                      # {'frozen': TensorFlow frozen graph;
+                      #  'keras': Keras model;
+                      #  'ckpt': TensorFlow checkpoint directory;
+                      #  'onnx': ONNX model;
+                      #  'engine': TensorRT engine;
                       #  'trt-network-script': 定义 `load_network` 函数的 Python 脚本，
                       #    该函数不接受参数并返回 TensorRT Builder、Network 和可选的 Parser。
                       #    如果函数名称不是 `load_network`，可以在模型文件后用冒号分隔指定。
-                      #    例如：`my_custom_script.py:my_func`; 
-                      #  'uff': UFF file [deprecated]; 
+                      #    例如：`my_custom_script.py:my_func`;
+                      #  'uff': UFF file [deprecated];
                       #  'caffe': Caffe prototxt [deprecated]}
 --input-shapes INPUT_SHAPES [INPUT_SHAPES ...], --inputs INPUT_SHAPES [INPUT_SHAPES ...]
                       # 模型输入及其形状。用于确定生成推理输入数据时要使用的形状。
@@ -97,7 +97,7 @@ model_file            # 模型的路径
                       # 如果缺少 `checkpoint` 文件，则为必需。
                       # 不应包含文件扩展名（例如，要加载 `model.meta`，使用 `--ckpt=model`）
 --tf-outputs TF_OUTPUTS [TF_OUTPUTS ...]
-                      # TensorFlow 输出的名称。使用 `--tf-outputs mark all` 
+                      # TensorFlow 输出的名称。使用 `--tf-outputs mark all`
                       # 表示所有张量都应用作输出
 --save-pb SAVE_FROZEN_GRAPH_PATH
                       # 保存 TensorFlow 冻结 graphdef 的路径
@@ -136,7 +136,7 @@ model_file            # 模型的路径
                       # 大小阈值（以字节为单位），超过此阈值的张量数据将存储在外部文件中。
                       # 小于此阈值的张量将保留在 ONNX 文件中。
                       # 可选地，使用 `K`、`M` 或 `G` 后缀表示 KiB、MiB 或 GiB。
-                      # 例如，`--external-data-size-threshold=16M` 等价于 
+                      # 例如，`--external-data-size-threshold=16M` 等价于
                       # `--external-data-size-threshold=16777216`。
                       # 如果未设置 `--save-external-data`，则无效果。默认值为 1024 字节。
 --no-save-all-tensors-to-one-file
@@ -245,7 +245,7 @@ model_file            # 模型的路径
                       # 指定此选项时，将忽略所有其他配置参数。默认情况下，Polygraphy 查找名为 `load_config` 的函数。
                       # 您可以通过用冒号分隔来指定自定义函数名称。例如：`my_custom_script.py:my_func`
 --trt-config-func-name TRT_CONFIG_FUNC_NAME
-                      # [已弃用 - 函数名称可以用 --trt-config-script 指定，如：`my_custom_script.py:my_func`] 
+                      # [已弃用 - 函数名称可以用 --trt-config-script 指定，如：`my_custom_script.py:my_func`]
                       # 使用 trt-config-script 时，这指定创建配置的函数的名称。默认为 `load_config`。
 --trt-config-postprocess-script TRT_CONFIG_POSTPROCESS_SCRIPT, --trt-cpps TRT_CONFIG_POSTPROCESS_SCRIPT
                       # [实验性] 定义修改 TensorRT IBuilderConfig 的函数的 Python 脚本的路径。
@@ -333,7 +333,7 @@ model_file            # 模型的路径
                       # 数据类型值来自 TensorRT 数据类型别名，如 float32、float16、int8、bool 等。
                       # 例如：`--tensor-datatypes example_tensor:float16 other_tensor:int8`。
 --trt-network-func-name TRT_NETWORK_FUNC_NAME
-                      # [已弃用 - 函数名称可以与脚本一起指定，如：`my_custom_script.py:my_func`] 
+                      # [已弃用 - 函数名称可以与脚本一起指定，如：`my_custom_script.py:my_func`]
                       # 当使用 trt-network-script 而不是其他模型类型时，这指定加载网络的函数名称。默认为 `load_network`。
 --trt-network-postprocess-script TRT_NETWORK_POSTPROCESS_SCRIPT [TRT_NETWORK_POSTPROCESS_SCRIPT ...], --trt-npps TRT_NETWORK_POSTPROCESS_SCRIPT [TRT_NETWORK_POSTPROCESS_SCRIPT ...]
                       # [实验性] 指定要在解析的 TensorRT 网络上运行的后处理脚本。
@@ -404,7 +404,7 @@ model_file            # 模型的路径
                       # 默认情况下，Polygraphy 查找名为 `load_data` 的函数。
                       # 您可以通过用冒号分隔来指定自定义函数名称。例如：`my_custom_script.py:my_func`
 --data-loader-func-name DATA_LOADER_FUNC_NAME
-                      # [已弃用 - 函数名称可以用 --data-loader-script 指定，如：`my_custom_script.py:my_func`] 
+                      # [已弃用 - 函数名称可以用 --data-loader-script 指定，如：`my_custom_script.py:my_func`]
                       # 使用 data-loader-script 时，这指定加载数据的函数名称。默认为 `load_data`。
 ```
 

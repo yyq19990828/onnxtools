@@ -22,12 +22,13 @@ Example:
     >>> color, layer, conf = classifier(plate_image)
 """
 
+import logging
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Tuple
+
 import cv2
 import numpy as np
-import logging
 import onnxruntime
-from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict, Optional
 from numpy.typing import NDArray
 
 

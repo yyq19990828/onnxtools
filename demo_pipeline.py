@@ -19,11 +19,12 @@ Example usage:
                    --input 0 --source-type camera --output-mode show
 """
 
-import cv2
-import json
-import os
 import argparse
+import json
 import logging
+import os
+
+import cv2
 
 from onnxtools import InferencePipeline, setup_logger
 
@@ -140,7 +141,7 @@ def process_folder(pipeline, folder_path, output_dir, output_mode, save_json=Tru
 
 
 def process_video(pipeline, video_source, output_dir, output_mode, frame_skip=0,
-                 save_frame=False, save_json=False):
+                  save_frame=False, save_json=False):
     """Process video stream (file, camera, or RTSP).
 
     Args:
@@ -158,7 +159,10 @@ def process_video(pipeline, video_source, output_dir, output_mode, frame_skip=0,
         source_name = 'camera'
     else:
         cap = cv2.VideoCapture(video_source)
-        source_name = os.path.splitext(os.path.basename(video_source))[0] if not video_source.startswith('rtsp://') else 'rtsp'
+        if video_source.startswith('rtsp://'):
+            source_name = 'rtsp'
+        else:
+            source_name = os.path.splitext(os.path.basename(video_source))[0]
 
     if not cap.isOpened():
         logging.error(f"Could not open video source {video_source}")
@@ -200,7 +204,7 @@ def process_video(pipeline, video_source, output_dir, output_mode, frame_skip=0,
     # Process frames
     try:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    except:
+    except (ValueError, TypeError):
         total_frames = 0
 
     if total_frames > 0:
@@ -378,12 +382,12 @@ Examples:
 
     # Visualization parameters
     parser.add_argument('--annotator-preset', type=str, default='standard',
-                        choices=['standard', 'lightweight', 'privacy', 'debug', 'high_contrast'],
+                        choices=['standard', 'lightweight', 'privacy', 'debug', 'high_contrast', 'box_only'],
                         help='Visualization preset (default: standard)')
     parser.add_argument('--annotator-types', type=str, nargs='+', default=None,
-                        choices=['box', 'rich_label', 'round_box', 'box_corner', 'circle', 'triangle',
-                                'ellipse', 'dot', 'color', 'background_overlay', 'halo',
-                                'percentage_bar', 'blur', 'pixelate'],
+                        choices=['box', 'rich_label', 'round_box', 'box_corner', 'circle',
+                                 'triangle', 'ellipse', 'dot', 'color', 'background_overlay',
+                                 'halo', 'percentage_bar', 'blur', 'pixelate'],
                         help='Custom annotator types (overrides preset)')
     parser.add_argument('--box-thickness', type=int, default=2,
                         help='Thickness for box annotators (default: 2)')
