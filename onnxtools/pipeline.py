@@ -243,7 +243,7 @@ class InferencePipeline:
         return self._process_frame(frame)
 
     def _process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
-        """内部推理处理流程，仅供__call__封装复用."""
+        """内部推理处理流程，供__call__复用并便于子类覆盖."""
         # 1. Object Detection - now returns Result object
         result = self.detector(frame)
 
