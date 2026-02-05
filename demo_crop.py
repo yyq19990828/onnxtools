@@ -33,8 +33,7 @@ from typing import Any, Dict, List, Tuple
 
 import cv2
 
-from onnxtools import setup_logger
-from onnxtools.pipeline import initialize_models
+from onnxtools import ColorLayerORT, OcrORT, create_detector, setup_logger
 
 
 def infer_source_type(input_path: str) -> str:
@@ -341,16 +340,26 @@ def main(args):
 
     # 初始化模型
     logging.info("正在初始化检测模型...")
-    models = initialize_models(args)
-    if models is None:
+    try:
+        detector = create_detector(
+            model_type=args.model_type,
+            onnx_path=args.model_path,
+            conf_thres=args.conf_thres,
+            iou_thres=args.iou_thres
+        )
+    except Exception as e:
+        logging.error(f"检测模型初始化失败: {e}")
         return
 
-    detector, color_layer_classifier, ocr_model, _, _, _, _ = models
-
-    # 如果没有启用OCR，不使用这些模型
-    if not args.enable_ocr:
-        color_layer_classifier = None
-        ocr_model = None
+    color_layer_classifier = None
+    ocr_model = None
+    if args.enable_ocr:
+        try:
+            color_layer_classifier = ColorLayerORT(args.color_layer_model)
+            ocr_model = OcrORT(args.ocr_model)
+        except Exception as e:
+            logging.error(f"OCR模型初始化失败: {e}")
+            return
 
     # 处理输入源
     process_source(args, detector, color_layer_classifier, ocr_model)
@@ -433,12 +442,6 @@ if __name__ == '__main__':
     parser.add_argument('--log-level', type=str, default='INFO',
                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                        help='日志级别 (默认: INFO)')
-
-    # 占位符参数（用于兼容 initialize_models）
-    parser.add_argument('--roi-top-ratio', type=float, default=0.0,
-                       help=argparse.SUPPRESS)
-    parser.add_argument('--plate-conf-thres', type=float, default=None,
-                       help=argparse.SUPPRESS)
 
     args = parser.parse_args()
 

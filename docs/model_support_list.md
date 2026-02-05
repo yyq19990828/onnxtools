@@ -58,13 +58,9 @@ YoloOnnx(
 
 ```python
 # 源自 onnx_yolo.py::_preprocess_static()
-if use_ultralytics_preprocess:
-    # Letterbox: 保持宽高比 + padding
-    letterbox = UltralyticsLetterBox(new_shape=(640, 640))
-    input_tensor, scale, original_shape, ratio_pad = letterbox(image)
-else:
-    # 简单resize: 直接拉伸
-    input_tensor, scale, original_shape = preprocess_image(image, (640, 640))
+# Letterbox: 保持宽高比 + padding
+letterbox = UltralyticsLetterBox(new_shape=(640, 640))
+input_tensor, scale, original_shape, ratio_pad = letterbox(image)
 ```
 
 #### 后处理流程

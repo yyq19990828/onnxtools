@@ -222,7 +222,7 @@ from onnxtools import setup_logger
 
 # 其他工具函数通过子模块访问
 from onnxtools.utils import (
-    preprocess_image,
+    UltralyticsLetterBox,
     draw_detections,
     convert_to_supervision_detections,
     create_ocr_labels,
@@ -236,7 +236,7 @@ from onnxtools.utils import (
 ```
 onnxtools/
 ├── __init__.py                 # 根模块，导出公共API
-├── pipeline.py                 # InferencePipeline类和遗留函数
+├── pipeline.py                 # InferencePipeline推理管道
 ├── config.py                   # 配置管理 (扩展: VEHICLE_TYPE_MAP, VEHICLE_COLOR_MAP)
 │
 ├── infer_onnx/                 # 推理引擎子模块

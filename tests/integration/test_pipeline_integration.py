@@ -15,21 +15,13 @@ class TestPipelineIntegration:
 
     def test_pipeline_drawing_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Pipeline should work seamlessly with new drawing functions."""
-        try:
-            from onnxtools.pipeline import process_frame
-            from onnxtools.utils.drawing import draw_detections
+        from onnxtools.utils.drawing import draw_detections
 
-            # Mock the pipeline call to drawing function
-            result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
+        # Mock the pipeline call to drawing function
+        result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
 
-            assert isinstance(result, np.ndarray)
-            assert result.shape == sample_image.shape
-
-        except ImportError:
-            # If pipeline is not available, test direct integration
-            from onnxtools.utils.drawing import draw_detections
-            result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
-            assert isinstance(result, np.ndarray)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == sample_image.shape
 
     def test_pipeline_data_format_compatibility(self, sample_image):
         """Integration: Pipeline detection format should work with new conversion functions."""
