@@ -240,6 +240,10 @@ class InferencePipeline:
             >>> cv2.imwrite('output.jpg', result_img)
             >>> print(output_data[0]['plate_name'])  # 打印第一个车牌号
         """
+        return self._process_frame(frame)
+
+    def _process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+        """内部推理处理流程."""
         # 1. Object Detection - now returns Result object
         result = self.detector(frame)
 
