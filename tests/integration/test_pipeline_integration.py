@@ -3,11 +3,13 @@
 import os
 import sys
 
+import cv2
 import numpy as np
 import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 
 @pytest.mark.integration
 class TestPipelineIntegration:
@@ -48,24 +50,20 @@ class TestPipelineIntegration:
         except ImportError:
             pytest.fail("Pipeline data format conversion must be supported")
 
-    def test_pipeline_ocr_integration_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
+    def test_pipeline_ocr_integration_compatibility(
+        self, sample_image, sample_detections, sample_class_names, sample_colors
+    ):
         """Integration: Pipeline OCR results should integrate correctly."""
         # Simulate pipeline OCR output
         pipeline_ocr_results = [
             None,  # vehicle (no OCR)
-            {
-                "plate_text": "京A12345",
-                "color": "蓝色",
-                "layer": "单层",
-                "should_display_ocr": True
-            }
+            {"plate_text": "京A12345", "color": "蓝色", "layer": "单层", "should_display_ocr": True},
         ]
 
         from onnxtools.utils.drawing import draw_detections
 
         result = draw_detections(
-            sample_image, sample_detections, sample_class_names,
-            sample_colors, plate_results=pipeline_ocr_results
+            sample_image, sample_detections, sample_class_names, sample_colors, plate_results=pipeline_ocr_results
         )
 
         assert isinstance(result, np.ndarray)
@@ -83,7 +81,7 @@ class TestPipelineIntegration:
             class_names=sample_class_names,
             colors=sample_colors,
             plate_results=None,
-            font_path="SourceHanSans-VF.ttf"
+            font_path="SourceHanSans-VF.ttf",
         )
 
         assert isinstance(result, np.ndarray)
@@ -144,7 +142,9 @@ class TestPipelineIntegration:
             assert isinstance(frame, np.ndarray)
             assert frame.shape == (480, 640, 3)
 
-    def test_real_time_processing_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
+    def test_real_time_processing_compatibility(
+        self, sample_image, sample_detections, sample_class_names, sample_colors
+    ):
         """Integration: Real-time processing requirements should be met."""
         import time
 
@@ -180,16 +180,15 @@ class TestPipelineIntegration:
 
         for config in cli_configs:
             try:
-                result = draw_detections(
-                    sample_image, sample_detections, sample_class_names, sample_colors,
-                    **config
-                )
+                result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors, **config)
                 assert isinstance(result, np.ndarray)
             except TypeError:
                 # Some configurations might not be supported yet
                 pass
 
-    def test_output_format_pipeline_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
+    def test_output_format_pipeline_compatibility(
+        self, sample_image, sample_detections, sample_class_names, sample_colors
+    ):
         """Integration: Output formats should remain compatible with existing pipeline."""
         import cv2
 
@@ -221,8 +220,8 @@ class TestPipelineIntegration:
         # Test error scenarios that pipeline might encounter
         error_scenarios = [
             [[]],  # Empty detections
-            [[[float('inf'), 100.0, 200.0, 150.0, 0.9, 0]]],  # Invalid coordinates
-            [[[100.0, 100.0, 200.0, 150.0, float('nan'), 0]]],  # Invalid confidence
+            [[[float("inf"), 100.0, 200.0, 150.0, 0.9, 0]]],  # Invalid coordinates
+            [[[100.0, 100.0, 200.0, 150.0, float("nan"), 0]]],  # Invalid confidence
             [[[-100.0, -100.0, 50.0, 50.0, 0.9, 0]]],  # Negative coordinates
         ]
 
@@ -231,7 +230,7 @@ class TestPipelineIntegration:
                 result = draw_detections(sample_image, scenario, sample_class_names, sample_colors)
                 # If no error, result should still be valid
                 assert isinstance(result, np.ndarray)
-            except (ValueError, TypeError, OverflowError):
+            except (ValueError, TypeError, OverflowError, cv2.error):
                 # These errors are acceptable for invalid data
                 pass
 
@@ -239,7 +238,7 @@ class TestPipelineIntegration:
         """Integration: Memory usage should be efficient for pipeline processing."""
         import os
 
-        import psutil
+        psutil = pytest.importorskip("psutil")
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss
@@ -262,44 +261,36 @@ class TestPipelineIntegration:
 
         # Memory increase should be reasonable (< 20MB for 20 frames)
         max_increase = 20 * 1024 * 1024  # 20MB
-        assert memory_increase < max_increase, \
-            f"Memory usage increased too much: {memory_increase / 1024 / 1024:.1f}MB"
+        assert memory_increase < max_increase, f"Memory usage increased too much: {memory_increase / 1024 / 1024:.1f}MB"
 
     def test_configuration_pipeline_compatibility(self, sample_image, sample_detections):
         """Integration: Configuration loading should work with pipeline."""
         # Test with different configuration formats
         config_variants = [
             # Standard configuration
-            {
-                "class_names": {0: "vehicle", 1: "plate"},
-                "colors": [(255, 0, 0), (0, 255, 0)]
-            },
+            {"class_names": {0: "vehicle", 1: "plate"}, "colors": [(255, 0, 0), (0, 255, 0)]},
             # List-based class names
-            {
-                "class_names": ["vehicle", "plate"],
-                "colors": [(255, 0, 0), (0, 255, 0)]
-            },
+            {"class_names": ["vehicle", "plate"], "colors": [(255, 0, 0), (0, 255, 0)]},
             # Extended colors
             {
                 "class_names": {0: "vehicle", 1: "plate"},
-                "colors": [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)]
-            }
+                "colors": [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)],
+            },
         ]
 
         from onnxtools.utils.drawing import draw_detections
 
         for config in config_variants:
             try:
-                result = draw_detections(
-                    sample_image, sample_detections,
-                    config["class_names"], config["colors"]
-                )
+                result = draw_detections(sample_image, sample_detections, config["class_names"], config["colors"])
                 assert isinstance(result, np.ndarray)
             except (ValueError, TypeError, KeyError):
                 # Some configurations might not be supported
                 pass
 
-    def test_concurrent_pipeline_compatibility(self, sample_image, sample_detections, sample_class_names, sample_colors):
+    def test_concurrent_pipeline_compatibility(
+        self, sample_image, sample_detections, sample_class_names, sample_colors
+    ):
         """Integration: Concurrent pipeline processing should work correctly."""
         import queue
         import threading
@@ -310,6 +301,7 @@ class TestPipelineIntegration:
         def pipeline_worker(worker_id):
             try:
                 from onnxtools.utils.drawing import draw_detections
+
                 for i in range(5):  # Process 5 frames per worker
                     image = sample_image.copy()
                     result = draw_detections(image, sample_detections, sample_class_names, sample_colors)

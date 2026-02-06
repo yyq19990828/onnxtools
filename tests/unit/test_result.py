@@ -30,8 +30,8 @@ class TestResultInitialization:
         class_ids = np.array([0, 1], dtype=np.int32)
         orig_img = np.zeros((640, 640, 3), dtype=np.uint8)
         orig_shape = (640, 640)
-        names = {0: 'vehicle', 1: 'plate'}
-        path = '/path/to/image.jpg'
+        names = {0: "vehicle", 1: "plate"}
+        path = "/path/to/image.jpg"
 
         result = Result(
             boxes=boxes,
@@ -40,7 +40,7 @@ class TestResultInitialization:
             orig_img=orig_img,
             orig_shape=orig_shape,
             names=names,
-            path=path
+            path=path,
         )
 
         assert result is not None
@@ -54,12 +54,7 @@ class TestResultInitialization:
 
     def test_valid_initialization_with_none_boxes(self):
         """Test initialization with None boxes (empty result)."""
-        result = Result(
-            boxes=None,
-            scores=None,
-            class_ids=None,
-            orig_shape=(640, 640)
-        )
+        result = Result(boxes=None, scores=None, class_ids=None, orig_shape=(640, 640))
 
         assert result is not None
         assert len(result) == 0
@@ -73,23 +68,20 @@ class TestResultInitialization:
     def test_v1_orig_shape_required(self):
         """Test V1: orig_shape cannot be None."""
         with pytest.raises(TypeError, match="orig_shape is required and cannot be None"):
-            Result(
-                boxes=np.array([[10, 20, 30, 40]], dtype=np.float32),
-                orig_shape=None
-            )
+            Result(boxes=np.array([[10, 20, 30, 40]], dtype=np.float32), orig_shape=None)
 
     def test_v2_orig_shape_must_be_tuple(self):
         """Test V2: orig_shape must be a tuple of length 2."""
         with pytest.raises(ValueError, match="orig_shape must be a tuple of"):
             Result(
                 boxes=np.array([[10, 20, 30, 40]], dtype=np.float32),
-                orig_shape=[640, 640]  # List instead of tuple
+                orig_shape=[640, 640],  # List instead of tuple
             )
 
         with pytest.raises(ValueError, match="orig_shape must be a tuple of"):
             Result(
                 boxes=np.array([[10, 20, 30, 40]], dtype=np.float32),
-                orig_shape=(640,)  # Wrong length
+                orig_shape=(640,),  # Wrong length
             )
 
     def test_v3_boxes_shape_validation(self):
@@ -97,13 +89,13 @@ class TestResultInitialization:
         with pytest.raises(ValueError, match="boxes must have shape \\(N, 4\\)"):
             Result(
                 boxes=np.array([[10, 20, 30]], dtype=np.float32),  # Wrong shape (N, 3)
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
         with pytest.raises(ValueError, match="boxes must have shape \\(N, 4\\)"):
             Result(
                 boxes=np.array([10, 20, 30, 40], dtype=np.float32),  # Wrong shape (4,)
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
     def test_v4_scores_shape_validation(self):
@@ -111,7 +103,7 @@ class TestResultInitialization:
         with pytest.raises(ValueError, match="scores must have shape \\(N,\\)"):
             Result(
                 scores=np.array([[0.9], [0.8]], dtype=np.float32),  # Wrong shape (N, 1)
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
     def test_v5_class_ids_shape_validation(self):
@@ -119,7 +111,7 @@ class TestResultInitialization:
         with pytest.raises(ValueError, match="class_ids must have shape \\(N,\\)"):
             Result(
                 class_ids=np.array([[0], [1]], dtype=np.int32),  # Wrong shape (N, 1)
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
     def test_v6_length_consistency(self):
@@ -129,7 +121,7 @@ class TestResultInitialization:
                 boxes=np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32),
                 scores=np.array([0.9], dtype=np.float32),  # Length mismatch
                 class_ids=np.array([0, 1], dtype=np.int32),
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
         with pytest.raises(ValueError, match="boxes, scores, and class_ids must have the same length"):
@@ -137,7 +129,7 @@ class TestResultInitialization:
                 boxes=np.array([[10, 20, 30, 40]], dtype=np.float32),
                 scores=np.array([0.9, 0.8], dtype=np.float32),  # Length mismatch
                 class_ids=np.array([0], dtype=np.int32),
-                orig_shape=(640, 640)
+                orig_shape=(640, 640),
             )
 
 
@@ -155,8 +147,9 @@ class TestResultProperties:
     def test_scores_property_access(self):
         """Test scores property returns correct array."""
         scores = np.array([0.95, 0.87], dtype=np.float32)
-        result = Result(boxes=np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32),
-                       scores=scores, orig_shape=(640, 640))
+        result = Result(
+            boxes=np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32), scores=scores, orig_shape=(640, 640)
+        )
 
         np.testing.assert_array_equal(result.scores, scores)
         assert result.scores.shape == (2,)
@@ -164,8 +157,11 @@ class TestResultProperties:
     def test_class_ids_property_access(self):
         """Test class_ids property returns correct array."""
         class_ids = np.array([0, 1], dtype=np.int32)
-        result = Result(boxes=np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32),
-                       class_ids=class_ids, orig_shape=(640, 640))
+        result = Result(
+            boxes=np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32),
+            class_ids=class_ids,
+            orig_shape=(640, 640),
+        )
 
         np.testing.assert_array_equal(result.class_ids, class_ids)
         assert result.class_ids.shape == (2,)
@@ -180,15 +176,15 @@ class TestResultProperties:
 
     def test_names_property_access(self):
         """Test names property returns correct dict."""
-        names = {0: 'vehicle', 1: 'plate'}
+        names = {0: "vehicle", 1: "plate"}
         result = Result(orig_shape=(640, 640), names=names)
 
         assert result.names == names
-        assert result.names[0] == 'vehicle'
+        assert result.names[0] == "vehicle"
 
     def test_path_property_access(self):
         """Test path property returns correct string."""
-        path = '/path/to/image.jpg'
+        path = "/path/to/image.jpg"
         result = Result(orig_shape=(640, 640), path=path)
 
         assert result.path == path
@@ -295,13 +291,13 @@ class TestResultIndexing:
         """Test that indexing preserves shared attributes."""
         boxes = np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32)
         orig_img = np.zeros((640, 640, 3), dtype=np.uint8)
-        names = {0: 'vehicle', 1: 'plate'}
-        result = Result(boxes=boxes, orig_img=orig_img, orig_shape=(640, 640), names=names, path='/test.jpg')
+        names = {0: "vehicle", 1: "plate"}
+        result = Result(boxes=boxes, orig_img=orig_img, orig_shape=(640, 640), names=names, path="/test.jpg")
 
         subset = result[0]
         assert subset.orig_shape == (640, 640)
         assert subset.names == names
-        assert subset.path == '/test.jpg'
+        assert subset.path == "/test.jpg"
         assert subset.orig_img is orig_img  # Shared reference
 
 
@@ -452,7 +448,7 @@ class TestResultFiltering:
             result.filter(classes=0)
 
         # Test non-integer values
-        with pytest.raises(ValueError, match="classes must contain only integer values"):
+        with pytest.raises(ValueError, match="classes must contain int or str values"):
             result.filter(classes=[0.5, 1.5])
 
     def test_filter_returns_empty_result(self):
@@ -473,32 +469,32 @@ class TestResultFiltering:
         boxes = np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32)
         scores = np.array([0.9, 0.8], dtype=np.float32)
         class_ids = np.array([0, 1], dtype=np.int32)
-        names = {0: 'vehicle', 1: 'plate'}
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_shape=(640, 480), names=names, path='/test.jpg')
+        names = {0: "vehicle", 1: "plate"}
+        result = Result(
+            boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 480), names=names, path="/test.jpg"
+        )
 
         # Filter and verify metadata
         filtered = result.filter(conf_threshold=0.85)
         assert filtered.orig_shape == (640, 480)
         assert filtered.names == names
-        assert filtered.path == '/test.jpg'
+        assert filtered.path == "/test.jpg"
 
     def test_summary_with_detections(self):
         """Test summary() returns correct statistics (T046)."""
         boxes = np.array([[10, 20, 30, 40], [50, 60, 70, 80], [90, 100, 110, 120]], dtype=np.float32)
         scores = np.array([0.9, 0.7, 0.8], dtype=np.float32)
         class_ids = np.array([0, 1, 0], dtype=np.int32)
-        names = {0: 'vehicle', 1: 'plate'}
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_shape=(640, 640), names=names)
+        names = {0: "vehicle", 1: "plate"}
+        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640), names=names)
 
         stats = result.summary()
 
-        assert stats['total_detections'] == 3
-        assert stats['class_counts'] == {'vehicle': 2, 'plate': 1}
-        assert stats['avg_confidence'] == pytest.approx(0.8, abs=0.01)
-        assert stats['min_confidence'] == pytest.approx(0.7, abs=0.01)
-        assert stats['max_confidence'] == pytest.approx(0.9, abs=0.01)
+        assert stats["total_detections"] == 3
+        assert stats["class_counts"] == {"vehicle": 2, "plate": 1}
+        assert stats["avg_confidence"] == pytest.approx(0.8, abs=0.01)
+        assert stats["min_confidence"] == pytest.approx(0.7, abs=0.01)
+        assert stats["max_confidence"] == pytest.approx(0.9, abs=0.01)
 
     def test_summary_empty_result(self):
         """Test summary() returns zero statistics for empty result (T046)."""
@@ -506,11 +502,11 @@ class TestResultFiltering:
 
         stats = result.summary()
 
-        assert stats['total_detections'] == 0
-        assert stats['class_counts'] == {}
-        assert stats['avg_confidence'] == 0.0
-        assert stats['min_confidence'] == 0.0
-        assert stats['max_confidence'] == 0.0
+        assert stats["total_detections"] == 0
+        assert stats["class_counts"] == {}
+        assert stats["avg_confidence"] == 0.0
+        assert stats["min_confidence"] == 0.0
+        assert stats["max_confidence"] == 0.0
 
 
 class TestResultConversion:
@@ -534,7 +530,7 @@ class TestResultVisualization:
         boxes = np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32)
         scores = np.array([0.9, 0.8], dtype=np.float32)
         class_ids = np.array([0, 1], dtype=np.int32)
-        names = {0: 'vehicle', 1: 'plate'}
+        names = {0: "vehicle", 1: "plate"}
         result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640), names=names)
 
         sv_detections = result.to_supervision()
@@ -548,8 +544,8 @@ class TestResultVisualization:
         np.testing.assert_array_equal(sv_detections.class_id, class_ids)
 
         # Verify class names
-        assert 'class_name' in sv_detections.data
-        assert sv_detections.data['class_name'] == ['vehicle', 'plate']
+        assert "class_name" in sv_detections.data
+        assert sv_detections.data["class_name"] == ["vehicle", "plate"]
 
     def test_to_supervision_empty_result(self):
         """Test that to_supervision() returns empty Detections for empty result (T030)."""
@@ -564,18 +560,17 @@ class TestResultVisualization:
 
     def test_to_supervision_handles_missing_class_names(self):
         """Test that to_supervision() handles missing class names gracefully (T030)."""
-        import supervision as sv
 
         boxes = np.array([[10, 20, 30, 40]], dtype=np.float32)
         scores = np.array([0.9], dtype=np.float32)
         class_ids = np.array([5], dtype=np.int32)  # Class ID not in names
-        names = {0: 'vehicle', 1: 'plate'}
+        names = {0: "vehicle", 1: "plate"}
         result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640), names=names)
 
         sv_detections = result.to_supervision()
 
         # Should use fallback name
-        assert sv_detections.data['class_name'] == ['class_5']
+        assert sv_detections.data["class_name"] == ["class_5"]
 
     def test_plot_with_default_preset(self):
         """Test plot() method with default annotator_preset (T031)."""
@@ -583,9 +578,10 @@ class TestResultVisualization:
         scores = np.array([0.95], dtype=np.float32)
         class_ids = np.array([0], dtype=np.int32)
         orig_img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-        names = {0: 'vehicle'}
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_img=orig_img, orig_shape=(640, 640), names=names)
+        names = {0: "vehicle"}
+        result = Result(
+            boxes=boxes, scores=scores, class_ids=class_ids, orig_img=orig_img, orig_shape=(640, 640), names=names
+        )
 
         # plot() should return annotated image
         annotated = result.plot()
@@ -602,11 +598,12 @@ class TestResultVisualization:
         scores = np.array([0.95], dtype=np.float32)
         class_ids = np.array([0], dtype=np.int32)
         orig_img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_img=orig_img, orig_shape=(640, 640), names={0: 'test'})
+        result = Result(
+            boxes=boxes, scores=scores, class_ids=class_ids, orig_img=orig_img, orig_shape=(640, 640), names={0: "test"}
+        )
 
         # Test with different presets
-        for preset in ['debug', 'lightweight']:
+        for preset in ["debug", "lightweight"]:
             annotated = result.plot(annotator_preset=preset)
             assert isinstance(annotated, np.ndarray)
             assert annotated.shape == orig_img.shape
@@ -644,4 +641,4 @@ class TestResultVisualization:
         result = Result(boxes=boxes, orig_shape=(640, 640))
 
         with pytest.raises(ValueError, match="Cannot plot detections: orig_img is None"):
-            result.save('/tmp/test.jpg')
+            result.save("/tmp/test.jpg")

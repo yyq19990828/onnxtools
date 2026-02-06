@@ -7,40 +7,12 @@ import supervision as sv
 from onnxtools.utils.supervision_preset import Presets, VisualizationPreset
 
 
-@pytest.fixture
-def test_image():
-    """Create 640x640 test image."""
-    return np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-
-
-@pytest.fixture
-def test_detections():
-    """Create test detections with 5 objects."""
-    xyxy = np.array([
-        [100, 100, 250, 200],
-        [300, 150, 450, 280],
-        [500, 100, 620, 220],
-        [100, 350, 240, 480],
-        [350, 400, 500, 550]
-    ], dtype=np.float32)
-
-    return sv.Detections(
-        xyxy=xyxy,
-        confidence=np.array([0.95, 0.87, 0.92, 0.78, 0.85]),
-        class_id=np.array([0, 1, 0, 1, 0])
-    )
-
-
 class TestPresetScenarios:
     """Integration tests for all preset scenarios."""
 
-    @pytest.mark.parametrize("preset_name", [
-        Presets.STANDARD,
-        Presets.LIGHTWEIGHT,
-        Presets.PRIVACY,
-        Presets.DEBUG,
-        Presets.HIGH_CONTRAST
-    ])
+    @pytest.mark.parametrize(
+        "preset_name", [Presets.STANDARD, Presets.LIGHTWEIGHT, Presets.PRIVACY, Presets.DEBUG, Presets.HIGH_CONTRAST]
+    )
     def test_preset_rendering(self, preset_name, test_image, test_detections):
         """Test that all presets render successfully."""
         preset = VisualizationPreset.from_yaml(preset_name)
@@ -123,9 +95,7 @@ class TestPresetScenarios:
     def test_preset_with_single_detection(self, test_image):
         """Test presets with single detection."""
         single_detection = sv.Detections(
-            xyxy=np.array([[200, 200, 400, 400]], dtype=np.float32),
-            confidence=np.array([0.95]),
-            class_id=np.array([0])
+            xyxy=np.array([[200, 200, 400, 400]], dtype=np.float32), confidence=np.array([0.95]), class_id=np.array([0])
         )
 
         for preset_name in [Presets.STANDARD, Presets.PRIVACY]:

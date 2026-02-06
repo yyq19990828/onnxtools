@@ -8,31 +8,7 @@ import numpy as np
 import pytest
 import supervision as sv
 
-from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorPipeline, AnnotatorType
-
-
-@pytest.fixture
-def test_image():
-    """Create a 640x640 test image."""
-    return np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-
-
-@pytest.fixture
-def test_detections():
-    """Create test detections with 5 objects."""
-    xyxy = np.array([
-        [100, 100, 200, 200],
-        [250, 150, 350, 250],
-        [400, 100, 500, 200],
-        [100, 350, 200, 450],
-        [300, 400, 400, 500]
-    ], dtype=np.float32)
-
-    return sv.Detections(
-        xyxy=xyxy,
-        confidence=np.array([0.95, 0.87, 0.92, 0.78, 0.85]),
-        class_id=np.array([0, 1, 0, 1, 0])
-    )
+from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
 
 
 class TestAnnotatorPipelineContract:
@@ -48,9 +24,7 @@ class TestAnnotatorPipelineContract:
 
     def test_pipeline_chaining(self):
         """Test that multiple add() calls can be chained."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.BOX, {})
-                    .add(AnnotatorType.RICH_LABEL, {}))
+        pipeline = AnnotatorPipeline().add(AnnotatorType.BOX, {}).add(AnnotatorType.RICH_LABEL, {})
 
         assert isinstance(pipeline, AnnotatorPipeline)
 
@@ -88,10 +62,12 @@ class TestAnnotatorPipelineContract:
 
     def test_multiple_annotators_applied_in_order(self, test_image, test_detections):
         """Test that multiple annotators are applied sequentially."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.BOX, {'thickness': 2})
-                    .add(AnnotatorType.DOT, {'radius': 5})
-                    .add(AnnotatorType.RICH_LABEL, {}))
+        pipeline = (
+            AnnotatorPipeline()
+            .add(AnnotatorType.BOX, {"thickness": 2})
+            .add(AnnotatorType.DOT, {"radius": 5})
+            .add(AnnotatorType.RICH_LABEL, {})
+        )
 
         result = pipeline.annotate(test_image, test_detections)
 
@@ -100,10 +76,7 @@ class TestAnnotatorPipelineContract:
 
     def test_add_annotator_instance_directly(self, test_image, test_detections):
         """Test adding pre-created annotator instance."""
-        box_annotator = sv.BoxAnnotator(
-            color=sv.ColorPalette.DEFAULT,
-            thickness=2
-        )
+        box_annotator = sv.BoxAnnotator(color=sv.ColorPalette.DEFAULT, thickness=2)
 
         pipeline = AnnotatorPipeline().add(box_annotator, None)
         result = pipeline.annotate(test_image, test_detections)
@@ -112,48 +85,36 @@ class TestAnnotatorPipelineContract:
 
     def test_add_annotator_by_type_enum(self, test_image, test_detections):
         """Test adding annotator by AnnotatorType enum."""
-        pipeline = AnnotatorPipeline().add(AnnotatorType.ROUND_BOX, {'thickness': 3})
+        pipeline = AnnotatorPipeline().add(AnnotatorType.ROUND_BOX, {"thickness": 3})
 
         result = pipeline.annotate(test_image, test_detections)
         assert isinstance(result, np.ndarray)
 
     def test_check_conflicts_returns_list(self):
-        """Test that check_conflicts() returns a list."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.BOX, {})
-                    .add(AnnotatorType.ROUND_BOX, {}))
+        """Test that check_conflicts() returns a list on non-conflicting pipeline."""
+        pipeline = AnnotatorPipeline().add(AnnotatorType.BOX, {})
 
         warnings = pipeline.check_conflicts()
 
         assert isinstance(warnings, list)
 
     def test_check_conflicts_detects_box_round_box_conflict(self):
-        """Test that BOX + ROUND_BOX conflict is detected."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.BOX, {})
-                    .add(AnnotatorType.ROUND_BOX, {}))
+        """Test that BOX + ROUND_BOX conflict is rejected at add time."""
+        pipeline = AnnotatorPipeline().add(AnnotatorType.BOX, {})
 
-        warnings = pipeline.check_conflicts()
-
-        # Should warn about conflicting box types
-        assert len(warnings) > 0
+        with pytest.raises(ValueError, match="conflicts with existing annotators"):
+            pipeline.add(AnnotatorType.ROUND_BOX, {})
 
     def test_check_conflicts_detects_color_blur_conflict(self):
-        """Test that COLOR + BLUR conflict is detected."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.COLOR, {})
-                    .add(AnnotatorType.BLUR, {}))
+        """Test that COLOR + BLUR conflict is rejected at add time."""
+        pipeline = AnnotatorPipeline().add(AnnotatorType.COLOR, {})
 
-        warnings = pipeline.check_conflicts()
-
-        # Should warn about color + blur conflict
-        assert len(warnings) > 0
+        with pytest.raises(ValueError, match="conflicts with existing annotators"):
+            pipeline.add(AnnotatorType.BLUR, {})
 
     def test_check_conflicts_no_warning_for_valid_combination(self):
         """Test that valid combinations don't generate warnings."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.ROUND_BOX, {})
-                    .add(AnnotatorType.RICH_LABEL, {}))
+        pipeline = AnnotatorPipeline().add(AnnotatorType.ROUND_BOX, {}).add(AnnotatorType.RICH_LABEL, {})
 
         warnings = pipeline.check_conflicts()
 
@@ -162,12 +123,14 @@ class TestAnnotatorPipelineContract:
 
     def test_pipeline_with_five_annotators(self, test_image, test_detections):
         """Test complex pipeline with 5+ annotators."""
-        pipeline = (AnnotatorPipeline()
-                    .add(AnnotatorType.ROUND_BOX, {'thickness': 3})
-                    .add(AnnotatorType.DOT, {'radius': 4})
-                    .add(AnnotatorType.HALO, {'opacity': 0.3})
-                    .add(AnnotatorType.PERCENTAGE_BAR, {'height': 16})
-                    .add(AnnotatorType.RICH_LABEL, {}))
+        pipeline = (
+            AnnotatorPipeline()
+            .add(AnnotatorType.ROUND_BOX, {"thickness": 3})
+            .add(AnnotatorType.DOT, {"radius": 4})
+            .add(AnnotatorType.HALO, {"opacity": 0.3})
+            .add(AnnotatorType.PERCENTAGE_BAR, {"height": 16})
+            .add(AnnotatorType.RICH_LABEL, {})
+        )
 
         result = pipeline.annotate(test_image, test_detections)
 
@@ -176,13 +139,9 @@ class TestAnnotatorPipelineContract:
 
     def test_pipeline_rendering_order_matters(self, test_image, test_detections):
         """Test that annotator order affects final result."""
-        pipeline1 = (AnnotatorPipeline()
-                     .add(AnnotatorType.BOX, {})
-                     .add(AnnotatorType.DOT, {}))
+        pipeline1 = AnnotatorPipeline().add(AnnotatorType.BOX, {}).add(AnnotatorType.DOT, {})
 
-        pipeline2 = (AnnotatorPipeline()
-                     .add(AnnotatorType.DOT, {})
-                     .add(AnnotatorType.BOX, {}))
+        pipeline2 = AnnotatorPipeline().add(AnnotatorType.DOT, {}).add(AnnotatorType.BOX, {})
 
         result1 = pipeline1.annotate(test_image.copy(), test_detections)
         result2 = pipeline2.annotate(test_image.copy(), test_detections)

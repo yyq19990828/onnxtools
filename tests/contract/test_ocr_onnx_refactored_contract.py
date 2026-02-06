@@ -12,9 +12,6 @@ Test Coverage:
 - Type safety and return value contracts
 """
 
-from pathlib import Path
-from typing import Any, Dict, List, Tuple
-
 import cv2
 import numpy as np
 import pytest
@@ -23,22 +20,17 @@ import pytest
 @pytest.fixture
 def color_layer_model(color_layer_model_path, color_map, layer_map):
     """Create ColorLayerORT instance for contract testing."""
-    from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
-    return ColorLayerORT(
-        str(color_layer_model_path),
-        color_map=color_map,
-        layer_map=layer_map
-    )
+    from onnxtools.infer_onnx.onnx_cls import ColorLayerORT
+
+    return ColorLayerORT(str(color_layer_model_path), color_map=color_map, layer_map=layer_map)
 
 
 @pytest.fixture
 def ocr_model_refactored(ocr_model_path, ocr_character):
     """Create refactored OcrORT instance for contract testing."""
     from onnxtools.infer_onnx.onnx_ocr import OcrORT
-    return OcrORT(
-        str(ocr_model_path),
-        character=ocr_character
-    )
+
+    return OcrORT(str(ocr_model_path), character=ocr_character)
 
 
 class TestColorLayerORTContract:
@@ -58,14 +50,10 @@ class TestColorLayerORTContract:
         - conf_thres: float (default 0.5)
         - providers: list (default ['CUDAExecutionProvider', 'CPUExecutionProvider'])
         """
-        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
+        from onnxtools.infer_onnx.onnx_cls import ColorLayerORT
 
         # Test minimal initialization
-        model = ColorLayerORT(
-            str(color_layer_model_path),
-            color_map=color_map,
-            layer_map=layer_map
-        )
+        model = ColorLayerORT(str(color_layer_model_path), color_map=color_map, layer_map=layer_map)
 
         assert model is not None
         assert model.color_map == color_map
@@ -76,11 +64,7 @@ class TestColorLayerORTContract:
 
         # Test with custom parameters
         model_custom = ColorLayerORT(
-            str(color_layer_model_path),
-            color_map=color_map,
-            layer_map=layer_map,
-            input_shape=(64, 200),
-            conf_thres=0.8
+            str(color_layer_model_path), color_map=color_map, layer_map=layer_map, input_shape=(64, 200), conf_thres=0.8
         )
 
         assert model_custom._requested_input_shape == (64, 200)
@@ -107,12 +91,9 @@ class TestColorLayerORTContract:
         assert isinstance(confidence, float), "Confidence must be float"
 
         # Validate output values
-        assert color in color_layer_model.color_map.values(), \
-            f"Color '{color}' not in color_map values"
-        assert layer in color_layer_model.layer_map.values(), \
-            f"Layer '{layer}' not in layer_map values"
-        assert 0.0 <= confidence <= 1.0, \
-            f"Confidence {confidence} out of range [0.0, 1.0]"
+        assert color in color_layer_model.color_map.values(), f"Color '{color}' not in color_map values"
+        assert layer in color_layer_model.layer_map.values(), f"Layer '{layer}' not in layer_map values"
+        assert 0.0 <= confidence <= 1.0, f"Confidence {confidence} out of range [0.0, 1.0]"
 
     def test_call_with_conf_threshold_override(self, color_layer_model, sample_blue_plate):
         """
@@ -126,10 +107,9 @@ class TestColorLayerORTContract:
         # If confidence < 0.9, should return ('unknown', 'unknown', conf)
         # Otherwise, should return valid results
         if confidence >= 0.9:
-            assert color != 'unknown'
-            assert layer != 'unknown'
+            assert color != "unknown"
+            assert layer != "unknown"
         # Note: We can't force low confidence, so we just validate the interface
-
 
     def test_static_method_accessibility(self):
         """
@@ -137,21 +117,19 @@ class TestColorLayerORTContract:
 
         This supports TensorRT engine workflow where preprocessing happens separately.
         """
-        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT
+        from onnxtools.infer_onnx.onnx_cls import ColorLayerORT
 
         # Create test image
         test_img = np.random.randint(0, 255, (100, 200, 3), dtype=np.uint8)
 
-        # Call static method directly
-        preprocessed = ColorLayerORT._image_preprocess_static(
-            test_img,
-            image_shape=(48, 168)
-        )
+        # Call static method directly (new API: preprocess returns tuple)
+        preprocessed, scale, orig_shape = ColorLayerORT.preprocess(test_img, input_shape=(48, 168))
 
         # Validate preprocessing output
-        assert preprocessed.shape == (1, 3, 48, 168), \
-            f"Expected (1, 3, 48, 168), got {preprocessed.shape}"
+        assert preprocessed.shape == (1, 3, 48, 168), f"Expected (1, 3, 48, 168), got {preprocessed.shape}"
         assert preprocessed.dtype == np.float32
+        assert scale == 1.0
+        assert orig_shape == (100, 200)
 
 
 class TestOcrORTContract:
@@ -173,19 +151,14 @@ class TestOcrORTContract:
         from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Test minimal initialization
-        model = OcrORT(
-            str(ocr_model_path),
-            character=ocr_character
-        )
+        model = OcrORT(str(ocr_model_path), character=ocr_character)
 
         assert model is not None
         assert model.character == ocr_character
         # Note: input_shape is None before initialization (lazy loading)
         assert model._requested_input_shape == (48, 168)  # Default value
 
-    def test_call_interface_single_layer_contract(
-        self, ocr_model_refactored, sample_single_layer_plate
-    ):
+    def test_call_interface_single_layer_contract(self, ocr_model_refactored, sample_single_layer_plate):
         """
         Contract: OcrORT.__call__() must return valid OCR results for single-layer plates.
 
@@ -199,10 +172,7 @@ class TestOcrORTContract:
         - len(char_confidences) == len(text)
         """
         # Call the model
-        text, avg_conf, char_confs = ocr_model_refactored(
-            sample_single_layer_plate,
-            is_double_layer=False
-        )
+        text, avg_conf, char_confs = ocr_model_refactored(sample_single_layer_plate, is_double_layer=False)
 
         # Validate output structure
         assert isinstance(text, str), "Text must be string"
@@ -211,32 +181,23 @@ class TestOcrORTContract:
 
         # Validate output values
         assert len(text) > 0, "OCR text should not be empty"
-        assert 0.0 <= avg_conf <= 1.0, \
-            f"Average confidence {avg_conf} out of range [0.0, 1.0]"
+        assert 0.0 <= avg_conf <= 1.0, f"Average confidence {avg_conf} out of range [0.0, 1.0]"
 
         # Validate character confidences
-        assert len(char_confs) == len(text), \
-            f"Confidence count {len(char_confs)} != text length {len(text)}"
+        assert len(char_confs) == len(text), f"Confidence count {len(char_confs)} != text length {len(text)}"
 
         for i, conf in enumerate(char_confs):
-            assert isinstance(conf, (int, float)), \
-                f"Character confidence[{i}] must be numeric"
-            assert 0.0 <= conf <= 1.0, \
-                f"Character confidence[{i}] = {conf} out of range [0.0, 1.0]"
+            assert isinstance(conf, (int, float)), f"Character confidence[{i}] must be numeric"
+            assert 0.0 <= conf <= 1.0, f"Character confidence[{i}] = {conf} out of range [0.0, 1.0]"
 
-    def test_call_interface_double_layer_contract(
-        self, ocr_model_refactored, sample_double_layer_plate
-    ):
+    def test_call_interface_double_layer_contract(self, ocr_model_refactored, sample_double_layer_plate):
         """
         Contract: OcrORT.__call__() must handle double-layer plates.
 
         Double-layer processing may fail for synthetic images, which is acceptable.
         """
         # Call the model with double-layer flag
-        result = ocr_model_refactored(
-            sample_double_layer_plate,
-            is_double_layer=True
-        )
+        result = ocr_model_refactored(sample_double_layer_plate, is_double_layer=True)
 
         # Result could be tuple (success) or None (processing failed)
         if result is not None:
@@ -249,7 +210,6 @@ class TestOcrORTContract:
         else:
             # Processing failure is acceptable for synthetic images
             pytest.skip("Double-layer processing failed (expected for synthetic images)")
-
 
     def test_static_preprocessing_methods_accessibility(self):
         """
@@ -309,12 +269,7 @@ class TestOcrORTContract:
         text_index = np.array([[0, 1, 2, 3, 4]])  # Fake indices
         text_prob = np.array([[0.9, 0.85, 0.95, 0.88, 0.92]])  # Fake probs
 
-        results = OcrORT._decode_static(
-            ocr_character,
-            text_index,
-            text_prob,
-            is_remove_duplicate=True
-        )
+        results = OcrORT._decode_static(ocr_character, text_index, text_prob, is_remove_duplicate=True)
 
         assert isinstance(results, list)
 
@@ -334,32 +289,24 @@ class TestOcrORTContract:
         # We test the static method directly
         # Create mock prediction for '苏A12345'
         # This is a white-box test of the post-processing logic
-        test_characters = ['blank'] + list('苏ABCDEFG0123456789')
+        test_characters = ["blank"] + list("苏ABCDEFG0123456789")
 
         # Index for '苏A12345'
         text_index = np.array([[1, 2, 3, 4, 5, 6, 7]])  # '苏' is index 1
         text_prob = np.ones_like(text_index, dtype=np.float32) * 0.95
 
-        results = OcrORT._decode_static(
-            test_characters,
-            text_index,
-            text_prob,
-            is_remove_duplicate=False
-        )
+        results = OcrORT._decode_static(test_characters, text_index, text_prob, is_remove_duplicate=False)
 
         if len(results) > 0:
             text, _, _ = results[0]
             # Should replace '苏' with '京'
-            assert text.startswith('京') or not text.startswith('苏'), \
-                "Leading '苏' should be replaced with '京'"
+            assert text.startswith("京") or not text.startswith("苏"), "Leading '苏' should be replaced with '京'"
 
 
 class TestRefactoredClassesIntegration:
     """Integration contract tests for both refactored classes."""
 
-    def test_color_layer_ocr_pipeline(
-        self, color_layer_model, ocr_model_refactored, sample_blue_plate
-    ):
+    def test_color_layer_ocr_pipeline(self, color_layer_model, ocr_model_refactored, sample_blue_plate):
         """
         Contract: ColorLayerORT and OcrORT must work together in pipeline.
 
@@ -372,7 +319,7 @@ class TestRefactoredClassesIntegration:
         color, layer, color_conf = color_layer_model(sample_blue_plate)
 
         # Step 2: Determine if double-layer
-        is_double = (layer == 'double')
+        is_double = layer == "double"
 
         # Step 3: OCR recognition
         ocr_result = ocr_model_refactored(sample_blue_plate, is_double_layer=is_double)
@@ -394,17 +341,18 @@ class TestRefactoredClassesIntegration:
         """
         import inspect
 
-        from onnxtools.infer_onnx.onnx_ocr import ColorLayerORT, OcrORT
+        from onnxtools.infer_onnx.onnx_cls import ColorLayerORT
+        from onnxtools.infer_onnx.onnx_ocr import OcrORT
 
         # Check ColorLayerORT.__call__ signature
         call_sig = inspect.signature(ColorLayerORT.__call__)
-        assert 'image' in call_sig.parameters
-        assert 'conf_thres' in call_sig.parameters
+        assert "image" in call_sig.parameters
+        assert "conf_thres" in call_sig.parameters
 
         # Check OcrORT.__call__ signature
         ocr_call_sig = inspect.signature(OcrORT.__call__)
-        assert 'image' in ocr_call_sig.parameters
-        assert 'is_double_layer' in ocr_call_sig.parameters
+        assert "image" in ocr_call_sig.parameters
+        assert "is_double_layer" in ocr_call_sig.parameters
 
     def test_error_handling_contract(self, ocr_model_refactored):
         """
@@ -433,12 +381,11 @@ class TestRefactoredClassesIntegration:
 
 # Performance contract tests
 
+
 class TestPerformanceContracts:
     """Performance contract tests for refactored classes."""
 
-    def test_color_layer_inference_performance(
-        self, color_layer_model, sample_blue_plate
-    ):
+    def test_color_layer_inference_performance(self, color_layer_model, sample_blue_plate):
         """
         Contract: ColorLayerORT inference must complete within acceptable time.
 
@@ -461,19 +408,16 @@ class TestPerformanceContracts:
 
         avg_time = np.mean(times)
 
-        print(f"\n⏱️  ColorLayerORT Performance:")
+        print("\n⏱️  ColorLayerORT Performance:")
         print(f"   Average: {avg_time:.2f} ms")
         print(f"   Min: {np.min(times):.2f} ms")
         print(f"   Max: {np.max(times):.2f} ms")
 
         # Performance assertion (relaxed for CPU-only mode)
         # Target: < 50ms on GPU, < 150ms on CPU
-        assert avg_time < 150, \
-            f"ColorLayerORT too slow: {avg_time:.2f}ms (target < 150ms on CPU)"
+        assert avg_time < 150, f"ColorLayerORT too slow: {avg_time:.2f}ms (target < 150ms on CPU)"
 
-    def test_ocr_inference_performance(
-        self, ocr_model_refactored, sample_single_layer_plate
-    ):
+    def test_ocr_inference_performance(self, ocr_model_refactored, sample_single_layer_plate):
         """
         Contract: OcrORT inference must complete within acceptable time.
 
@@ -496,11 +440,10 @@ class TestPerformanceContracts:
 
         avg_time = np.mean(times)
 
-        print(f"\n⏱️  OcrORT Performance:")
+        print("\n⏱️  OcrORT Performance:")
         print(f"   Average: {avg_time:.2f} ms")
         print(f"   Min: {np.min(times):.2f} ms")
         print(f"   Max: {np.max(times):.2f} ms")
 
         # Performance assertion
-        assert avg_time < 100, \
-            f"OcrORT too slow: {avg_time:.2f}ms (target < 100ms)"
+        assert avg_time < 100, f"OcrORT too slow: {avg_time:.2f}ms (target < 100ms)"
