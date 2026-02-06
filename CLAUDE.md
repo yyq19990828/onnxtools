@@ -33,6 +33,9 @@ ONNX-based vehicle and license plate recognition system supporting multiple dete
 uv sync
 
 # Install with TensorRT support (optional, 2-5x speedup)
+# Requires NVIDIA PyPI source and local GPU environment
+# 1. Uncomment pypi.nvidia.com in pyproject.toml [tool.uv] extra-index-url
+# 2. Uncomment tensorrt packages in [project.optional-dependencies] trt
 uv pip install pip setuptools wheel
 uv pip install -e ".[trt]"
 
@@ -701,7 +704,7 @@ Last updated: 2026-02-03
 
 ## Active Technologies
 - Python 3.10+ + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1
-- ONNX Runtime GPU 1.22.0 + TensorRT 8.6.1 (optional)
+- ONNX Runtime GPU 1.22.0 + TensorRT 8.6.1 (optional, requires NVIDIA PyPI source)
 - Polygraphy 0.49.26+ for debugging and optimization
 
 ## Recent Changes

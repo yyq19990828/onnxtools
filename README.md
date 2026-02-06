@@ -120,16 +120,22 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ```
 
-### 3. 安装TensorRT支持（可选）
+### 3. 安装TensorRT支持（可选，仅限本地GPU环境）
 
-TensorRT可以将推理速度提升2-5倍，但安装较为复杂。如果不需要极致性能，可以跳过此步骤。
+TensorRT可以将推理速度提升2-5倍，但需要本地NVIDIA GPU环境和NVIDIA PyPI源访问。
+
+> **前提条件**: TensorRT依赖包托管在 `https://pypi.nvidia.com`，需要先在 `pyproject.toml` 中启用NVIDIA PyPI源：
+> 1. 取消注释 `[tool.uv]` 下 `extra-index-url` 中的 `"https://pypi.nvidia.com"`
+> 2. 取消注释 `[project.optional-dependencies]` 下 `trt` 中的三个 tensorrt 包
 
 **使用uv安装TensorRT:**
 ```bash
-# 步骤1: 安装构建依赖
+# 步骤1: 启用 NVIDIA PyPI 源（编辑 pyproject.toml，见上方说明）
+
+# 步骤2: 安装构建依赖
 uv pip install pip setuptools wheel
 
-# 步骤2: 安装TensorRT可选依赖组
+# 步骤3: 安装TensorRT可选依赖组
 uv pip install -e ".[trt]"
 ```
 
@@ -143,7 +149,7 @@ pip install tensorrt==8.6.1.post1 tensorrt-bindings==8.6.1 tensorrt-libs==8.6.1 
     --extra-index-url https://pypi.nvidia.com
 ```
 
-> **注意**: TensorRT需要CUDA 11.x+支持，且安装过程依赖特殊的构建配置。如果遇到安装问题，请参考[TensorRT官方安装指南](https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html)。
+> **注意**: TensorRT需要CUDA 11.x+支持，且安装过程依赖特殊的构建配置。远程/云开发环境（如 Claude Code on the web）通常无法访问 NVIDIA PyPI 源，TensorRT功能不可用。如果遇到安装问题，请参考[TensorRT官方安装指南](https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html)。
 
 ### 环境要求
 

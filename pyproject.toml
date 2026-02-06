@@ -29,9 +29,10 @@ dependencies = [
 # 安装方式: uv pip install -e ".[trt]"
 # 注意: 需要先安装 pip setuptools wheel: uv pip install pip setuptools wheel
 trt = [
-    "tensorrt==8.6.1.post1",
-    "tensorrt-bindings==8.6.1",
-    "tensorrt-libs==8.6.1",
+    # 需要 NVIDIA PyPI 源 (https://pypi.nvidia.com)，远程环境不可用
+    # "tensorrt==8.6.1.post1",
+    # "tensorrt-bindings==8.6.1",
+    # "tensorrt-libs==8.6.1",
 ]
 
 # MCP (Model Context Protocol) 支持 (可选)
@@ -65,7 +66,8 @@ exclude = ["tests*", "docs*", "data*", "specs*", "models*", "configs*", "tools*"
 index-url = "https://pypi.org/simple/"
 extra-index-url = [
     # NVIDIA NGC PyPI 镜像，用于TensorRT相关包
-    "https://pypi.nvidia.com",
+    # 远程环境无法访问，已禁用；本地需要TRT时手动添加：
+    # "https://pypi.nvidia.com",
 ]
 
 # TensorRT包需要禁用构建隔离，因为它的安装脚本依赖pip模块
