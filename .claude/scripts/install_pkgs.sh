@@ -21,11 +21,14 @@ fi
 # 安装项目依赖
 echo "[install_pkgs] 安装项目依赖 (uv sync)..."
 cd "$CLAUDE_PROJECT_DIR"
-uv sync
 
-# 持久化 PATH 到后续 bash 命令
+uv sync --extra mcp --no-extra trt
+
+# 持久化虚拟环境和 PATH 到后续 bash 命令
 if [ -n "$CLAUDE_ENV_FILE" ]; then
-  echo "PATH=$HOME/.local/bin:$PATH" >> "$CLAUDE_ENV_FILE"
+  VENV_DIR="$CLAUDE_PROJECT_DIR/.venv"
+  echo "VIRTUAL_ENV=$VENV_DIR" >> "$CLAUDE_ENV_FILE"
+  echo "PATH=$VENV_DIR/bin:$HOME/.local/bin:$PATH" >> "$CLAUDE_ENV_FILE"
 fi
 
 echo "[install_pkgs] 依赖安装完成"

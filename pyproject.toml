@@ -46,6 +46,12 @@ mcp = [
 # MCP 服务器入口点
 onnxtools-mcp = "mcp_tools.server:main"
 
+# 构建工具依赖组：安装到 .venv 中，供 no-build-isolation-package (tensorrt) 使用
+# 注意: 这与 [build-system].requires 不同，后者仅在构建 onnxtools 自身时的临时隔离环境中可用
+[dependency-groups]
+build = ["setuptools>=61.0", "wheel"]
+dev = ["pre-commit>=4.0.0"]
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
