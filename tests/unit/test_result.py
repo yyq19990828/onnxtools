@@ -516,30 +516,6 @@ class TestResultFiltering:
 class TestResultConversion:
     """Test Result class conversion methods (T024)."""
 
-    def test_to_dict_returns_correct_format(self):
-        """Test to_dict() returns dictionary with correct keys."""
-        boxes = np.array([[10, 20, 30, 40]], dtype=np.float32)
-        scores = np.array([0.9], dtype=np.float32)
-        class_ids = np.array([0], dtype=np.int32)
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640))
-
-        with pytest.warns(DeprecationWarning, match="to_dict.*已废弃"):
-            result_dict = result.to_dict()
-
-        assert 'boxes' in result_dict
-        assert 'scores' in result_dict
-        assert 'class_ids' in result_dict
-        np.testing.assert_array_equal(result_dict['boxes'], boxes)
-        np.testing.assert_array_equal(result_dict['scores'], scores)
-        np.testing.assert_array_equal(result_dict['class_ids'], class_ids)
-
-    def test_to_dict_triggers_deprecation_warning(self):
-        """Test that to_dict() triggers DeprecationWarning."""
-        result = Result(orig_shape=(640, 640))
-
-        with pytest.warns(DeprecationWarning, match="to_dict.*v0.3.0.*移除"):
-            _ = result.to_dict()
-
     def test_numpy_method_returns_self(self):
         """Test numpy() method returns self (idempotent)."""
         result = Result(orig_shape=(640, 640))

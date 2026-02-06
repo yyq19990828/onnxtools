@@ -252,10 +252,9 @@ python main.py \
 - 向后兼容：未指定annotator时自动回退到旧版绘制
 
 ### 代码位置
-- Annotator工厂: `utils/annotator_factory.py`
-- 预设加载器: `utils/visualization_preset.py`
-- Pipeline集成: `utils/pipeline.py::create_annotator_pipeline()`
-- 主程序集成: `utils/pipeline.py::process_frame()`
+- Annotator工厂: `onnxtools/utils/supervision_annotator.py`
+- 预设加载器: `onnxtools/utils/supervision_preset.py`
+- Pipeline集成: `onnxtools/pipeline.py::InferencePipeline`
 
 ---
 

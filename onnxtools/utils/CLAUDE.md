@@ -16,7 +16,7 @@
 ```python
 from onnxtools import setup_logger
 from onnxtools.utils import (
-    preprocess_image,
+    UltralyticsLetterBox,
     draw_detections,
     convert_to_supervision_detections,
     create_ocr_labels,
@@ -28,7 +28,8 @@ from onnxtools.utils import (
 setup_logger('INFO')
 
 # 图像预处理
-processed_img = preprocess_image(image, target_size=(640, 640))
+letterbox = UltralyticsLetterBox(new_shape=(640, 640))
+processed_img, scale, original_shape, ratio_pad = letterbox(image)
 
 # Supervision可视化
 sv_detections = convert_to_supervision_detections(
@@ -43,26 +44,10 @@ result_img = draw_detections(image, sv_detections)
 
 ### 1. 图像预处理
 ```python
-from onnxtools.utils import preprocess_image
+from onnxtools.utils import UltralyticsLetterBox
 
-def preprocess_image(
-    image: np.ndarray,
-    target_size: Tuple[int, int] = (640, 640),
-    keep_ratio: bool = True,
-    pad_color: Tuple[int, int, int] = (114, 114, 114)
-) -> np.ndarray:
-    """图像预处理,调整尺寸并保持宽高比
-
-    Args:
-        image: 输入图像 BGR格式
-        target_size: 目标尺寸 (width, height)
-        keep_ratio: 是否保持宽高比
-        pad_color: 填充颜色
-
-    Returns:
-        np.ndarray: 预处理后的图像
-    """
-    pass
+letterbox = UltralyticsLetterBox(new_shape=(640, 640))
+preprocessed_tensor, scale, original_shape, ratio_pad = letterbox(image)
 ```
 
 ### 2. 结果可视化(Supervision集成)

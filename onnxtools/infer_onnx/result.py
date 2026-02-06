@@ -9,7 +9,6 @@ Date: 2025-11-05
 Version: 1.0.0
 """
 
-import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -363,31 +362,6 @@ class Result:
             >>> result = result.numpy()  # Idempotent
         """
         return self
-
-    def to_dict(self) -> dict[str, np.ndarray]:
-        """Convert Result object to dictionary format (T015).
-
-        .. deprecated:: 0.2.0
-            `to_dict()` will be removed in version 0.3.0.
-            Use Result object's property access instead (e.g., `result.boxes`).
-
-        Returns:
-            dict: Dictionary with 'boxes', 'scores', 'class_ids' keys.
-
-        Example:
-            >>> result_dict = result.to_dict()  # Deprecated, use result.boxes instead
-        """
-        warnings.warn(
-            "to_dict()方法已废弃，将在第2个迭代（v0.3.0）移除。"
-            "请使用Result对象的属性访问（如result.boxes）代替。",
-            DeprecationWarning,
-            stacklevel=2  # Show caller location, not to_dict() itself
-        )
-        return {
-            'boxes': self.boxes,
-            'scores': self.scores,
-            'class_ids': self.class_ids
-        }
 
     def to_supervision(self) -> "sv.Detections":
         """Convert Result object to supervision.Detections format (T025).
