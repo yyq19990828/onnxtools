@@ -8,7 +8,7 @@ onnxtools - ONNX模型推理工具集
 from .eval import DetDatasetEvaluator, OCRDatasetEvaluator, SampleEvaluation
 
 # 从 infer_onnx 子模块导入推理引擎类
-from .infer_onnx import (  # Detection base and implementations; Classification base and implementations; OCR; Result classes; Constants
+from .infer_onnx import (
     RUN,
     BaseClsORT,
     BaseORT,
@@ -32,6 +32,7 @@ from .utils import setup_logger
 # 工厂函数：根据模型类型创建相应的检测器
 # ============================================================================
 
+
 def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
     """
     工厂函数：根据模型类型创建相应的检测器（支持Polygraphy懒加载）
@@ -53,44 +54,43 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
     """
     model_type = model_type.lower()
 
-    if model_type in ['yolo', 'yolov5', 'yolov8', 'yolov11']:
+    if model_type in ["yolo", "yolov5", "yolov8", "yolov11"]:
         return YoloORT(onnx_path, **kwargs)
-    elif model_type in ['rtdetr', 'rt-detr']:
+    elif model_type in ["rtdetr", "rt-detr"]:
         return RtdetrORT(onnx_path, **kwargs)
-    elif model_type in ['rfdetr', 'rf-detr']:
+    elif model_type in ["rfdetr", "rf-detr"]:
         return RfdetrORT(onnx_path, **kwargs)
     else:
         raise ValueError(f"不支持的模型类型: {model_type}. 支持的类型: yolo, rtdetr, rfdetr")
-
 
 
 __version__ = "0.1.0"
 
 __all__ = [
     # Detection base and implementations
-    'BaseORT',
-    'YoloORT',
-    'RtdetrORT',
-    'RfdetrORT',
+    "BaseORT",
+    "YoloORT",
+    "RtdetrORT",
+    "RfdetrORT",
     # Classification base and implementations
-    'BaseClsORT',
-    'ClsResult',
-    'ColorLayerORT',
-    'VehicleAttributeORT',
+    "BaseClsORT",
+    "ClsResult",
+    "ColorLayerORT",
+    "VehicleAttributeORT",
     # OCR
-    'OcrORT',
+    "OcrORT",
     # Result classes
-    'Result',
+    "Result",
     # Factory function
-    'create_detector',
+    "create_detector",
     # Inference pipeline
-    'InferencePipeline',
+    "InferencePipeline",
     # Evaluation tools
-    'DetDatasetEvaluator',
-    'OCRDatasetEvaluator',
-    'SampleEvaluation',
+    "DetDatasetEvaluator",
+    "OCRDatasetEvaluator",
+    "SampleEvaluation",
     # Utilities
-    'setup_logger',
+    "setup_logger",
     # Constants
-    'RUN',
+    "RUN",
 ]

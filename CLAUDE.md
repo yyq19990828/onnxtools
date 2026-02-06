@@ -140,6 +140,30 @@ polygraphy run models/yolov8s_640.onnx \
     --onnxrt --trt --compare
 ```
 
+### MCP Server
+```bash
+# Install MCP support
+uv pip install -e ".[mcp]"
+
+# Start MCP server
+onnxtools-mcp
+# or
+python -m mcp_tools.server
+```
+
+Claude Code 配置 (`~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "onnxtools": {
+      "command": "python",
+      "args": ["-m", "mcp_tools.server"],
+      "cwd": "/path/to/onnx_vehicle_plate_recognition"
+    }
+  }
+}
+```
+
 ### OpenSpec Workflow
 ```bash
 # List active changes and specs
@@ -212,6 +236,7 @@ graph TD
     A --> G["docs/"];
     A --> H["openspec/"];
     A --> I["models/"];
+    A --> J["mcp_tools/"];
 
     B --> B1["infer_onnx/"];
     B --> B2["utils/"];
@@ -264,6 +289,10 @@ graph TD
     I --> I1["*.onnx模型"];
     I --> I2["*.engine引擎"];
 
+    J --> J1["server.py - FastMCP服务器"];
+    J --> J2["tools/ - MCP工具定义"];
+    J --> J3["utils/ - 图像加载/模型管理"];
+
     click B "onnxtools/CLAUDE.md" "查看onnxtools模块文档"
     click B1 "onnxtools/infer_onnx/CLAUDE.md" "查看推理引擎文档"
     click B2 "onnxtools/utils/CLAUDE.md" "查看工具模块文档"
@@ -274,6 +303,7 @@ graph TD
     click G "docs/CLAUDE.md" "查看项目文档"
     click H "openspec/CLAUDE.md" "查看OpenSpec系统文档"
     click I "models/CLAUDE.md" "查看模型资源文档"
+    click J "mcp_tools/CLAUDE.md" "查看MCP服务器文档"
 ```
 
 ### Module Index
@@ -292,6 +322,7 @@ graph TD
 | `openspec/` | 规范管理系统 | OpenSpec变更提案和规范归档 | [CLAUDE.md](openspec/CLAUDE.md) |
 | `docs/` | 项目文档 | 使用指南、Polygraphy文档、API文档 | [CLAUDE.md](docs/CLAUDE.md) |
 | `third_party/` | 第三方集成 | Ultralytics、Polygraphy、RF-DETR、TRT Explorer | [CLAUDE.md](third_party/CLAUDE.md) |
+| `mcp_tools/` | MCP服务器 | Model Context Protocol服务器,LLM工具接口 | [CLAUDE.md](mcp_tools/CLAUDE.md) |
 
 ### Detailed Module Structure
 
@@ -368,6 +399,21 @@ docs/                           # Project documentation
 
 models/                         # ONNX models and TensorRT engines (.gitignore)
 └── CLAUDE.md                   # 模型资源文档
+
+mcp_tools/                      # MCP Server for LLM integration
+├── server.py                   # FastMCP server definition
+├── models.py                   # Pydantic input/output models
+├── config.py                   # Configuration constants
+├── tools/                      # MCP tool implementations
+│   ├── detection.py            # Detection tools
+│   ├── ocr.py                  # OCR recognition tools
+│   ├── classification.py       # Classification tools
+│   └── visualization.py        # Visualization tools
+├── utils/                      # Utility functions
+│   ├── image_loader.py         # Image loading (file/URL/base64)
+│   ├── model_manager.py        # Model lazy loading and caching
+│   └── response_formatter.py   # Response formatting
+└── CLAUDE.md                   # MCP module documentation
 ```
 
 ### Key Data Flows
@@ -587,10 +633,16 @@ Key docs:
 - `docs/CLAUDE.md` - Project documentation
 - `openspec/CLAUDE.md` - OpenSpec system
 - `third_party/CLAUDE.md` - Third-party integrations
+- `mcp_tools/CLAUDE.md` - MCP server integration
 - `docs/polygraphy使用指南/` - Polygraphy debugging
 - `README.md` - User-facing documentation
 
 ## Change Log
+
+**2026-02-03** - MCP Server Documentation
+- 添加 `mcp_tools/` 模块到 Module Index 和结构图
+- 添加 MCP 服务器快速启动命令到 Essential Commands
+- 文档覆盖率: 12/12个模块已有文档
 
 **2025-11-07** - 模块文档完善更新
 - 新增5个模块的完整CLAUDE.md文档:
@@ -645,7 +697,7 @@ Key docs:
 
 ---
 
-Last updated: 2025-11-07 16:35:25
+Last updated: 2026-02-03
 
 ## Active Technologies
 - Python 3.10+ + numpy>=2.2.6, opencv-contrib-python>=4.12.0, supervision==0.26.1
@@ -653,7 +705,8 @@ Last updated: 2025-11-07 16:35:25
 - Polygraphy 0.49.26+ for debugging and optimization
 
 ## Recent Changes
+- **MCP Server Integration**: Added `mcp_tools/` module for LLM tool interface via Model Context Protocol
 - 001-baseort-result-third: Added Result class as unified detection result object
 - Mermaid module structure diagram with clickable navigation
 - Module Index table for clear module overview
-- **Complete documentation coverage**: All 11 modules now have CLAUDE.md files
+- **Complete documentation coverage**: All 12 modules now have CLAUDE.md files
