@@ -39,6 +39,7 @@ Given that feature description, do this:
 2. **Check for existing branches before creating new one**:
 
    a. First, fetch all remote branches to ensure we have the latest information:
+
       ```bash
       git fetch --all --prune
       ```
