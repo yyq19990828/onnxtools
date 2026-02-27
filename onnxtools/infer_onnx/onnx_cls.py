@@ -205,9 +205,9 @@ class BaseClsORT(ABC):
         """
         model_input_shape = self._onnx_session.get_inputs()[0].shape
 
-        if (len(model_input_shape) == 4 and
-            model_input_shape[2] is not None and
-            model_input_shape[3] is not None):
+        if (len(model_input_shape) == 4
+                and model_input_shape[2] is not None
+                and model_input_shape[3] is not None):
             # Shape format: [batch, channels, height, width]
             actual_height = int(model_input_shape[2])
             actual_width = int(model_input_shape[3])
@@ -793,4 +793,221 @@ class VehicleAttributeORT(BaseClsORT):
             confidences=[type_conf, color_conf],
             avg_confidence=avg_conf,
             logits=[type_probs, color_probs]  # Store probs instead of logits
+        )
+
+
+class HelmetORT(BaseClsORT):
+    """Helmet wearing binary classification (ConvNeXtV2-Pico).
+
+    Single-branch classifier for helmet detection:
+    - Class 0: normal (wearing helmet)
+    - Class 1: helmet_missing (not wearing helmet)
+
+    Model specifics:
+    - Input: [4, 3, 128, 128] (fixed batch=4, RGB, float32)
+    - Output: [4, 2] (raw logits, softmax applied in postprocess)
+    - Preprocessing: LetterBox (pad=127) + ImageNet normalization
+
+    The ONNX model has a fixed batch size of 4. This is handled transparently
+    by overriding ``_execute_inference`` to pad single inputs to batch=4 and
+    extract only the first result.
+
+    Example:
+        >>> helmet = HelmetORT('models/helmet.onnx')
+        >>> result = helmet(head_image)
+        >>> print(f"Status: {result.labels[0]}, Conf: {result.avg_confidence:.3f}")
+        >>>
+        >>> # Tuple unpacking
+        >>> label, conf = helmet(head_image)
+    """
+
+    # ImageNet normalization constants
+    IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+
+    # LetterBox padding value
+    LETTERBOX_PAD_VALUE = 127
+
+    # Fixed batch size of the ONNX model
+    FIXED_BATCH_SIZE = 4
+
+    def __init__(
+        self,
+        onnx_path: str,
+        helmet_map: Optional[Dict[int, str]] = None,
+        input_shape: Tuple[int, int] = (128, 128),
+        conf_thres: float = 0.5,
+        providers: Optional[List[str]] = None
+    ):
+        """Initialize helmet classification model.
+
+        Args:
+            onnx_path: Path to ONNX model file
+            helmet_map: Mapping from class index to label name (optional)
+            input_shape: Input image size (height, width), default (128, 128)
+            conf_thres: Confidence threshold, default 0.5
+            providers: ONNX Runtime execution providers
+        """
+        if helmet_map is None:
+            from onnxtools.config import HELMET_MAP
+            helmet_map = HELMET_MAP
+            logging.info(f"Using default helmet_map: {len(helmet_map)} classes")
+
+        if not helmet_map:
+            raise ValueError("helmet_map cannot be empty")
+
+        super().__init__(onnx_path, input_shape, conf_thres, providers)
+
+        self.helmet_map = helmet_map
+
+        logging.info(f"HelmetORT initialized: {len(helmet_map)} classes")
+
+    @staticmethod
+    def _letterbox(
+        image: NDArray[np.uint8],
+        target_size: Tuple[int, int],
+        pad_value: int = 127
+    ) -> NDArray[np.uint8]:
+        """Resize image with LetterBox (preserve aspect ratio, pad to square).
+
+        Args:
+            image: Input image [H, W, C]
+            target_size: Target size (height, width)
+            pad_value: Padding pixel value
+
+        Returns:
+            LetterBoxed image [target_h, target_w, C]
+        """
+        h, w = image.shape[:2]
+        target_h, target_w = target_size
+
+        scale = min(target_w / w, target_h / h)
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+
+        resized = cv2.resize(image, (new_w, new_h))
+
+        canvas = np.full((target_h, target_w, 3), pad_value, dtype=np.uint8)
+        top = (target_h - new_h) // 2
+        left = (target_w - new_w) // 2
+        canvas[top:top + new_h, left:left + new_w] = resized
+
+        return canvas
+
+    @staticmethod
+    def preprocess(
+        image: NDArray[np.uint8],
+        input_shape: Tuple[int, int],
+        **kwargs
+    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        """Preprocess image for helmet classification.
+
+        Processing pipeline:
+        1. Store original shape
+        2. BGR -> RGB conversion
+        3. LetterBox resize to 128x128 (pad=127)
+        4. ImageNet normalization: mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225]
+        5. HWC -> CHW conversion
+        6. Add batch dimension
+
+        Args:
+            image: Input image, BGR format [H, W, C]
+            input_shape: Target size (height, width)
+            **kwargs: Unused, for interface compatibility
+
+        Returns:
+            Tuple containing:
+                - input_tensor: Preprocessed tensor [1, 3, H, W] float32
+                - scale: Fixed scale value (1.0)
+                - original_shape: Original image shape (H, W)
+        """
+        original_shape = (image.shape[0], image.shape[1])
+
+        # BGR -> RGB
+        img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # LetterBox resize
+        img = HelmetORT._letterbox(img_rgb, input_shape, pad_value=HelmetORT.LETTERBOX_PAD_VALUE)
+
+        # Normalize with ImageNet mean/std
+        img = img.astype(np.float32) / 255.0
+        img = (img - HelmetORT.IMAGENET_MEAN) / HelmetORT.IMAGENET_STD
+
+        # HWC -> CHW
+        img = img.transpose([2, 0, 1])
+
+        # Add batch dimension
+        input_tensor = img[np.newaxis, :, :, :].astype(np.float32)
+
+        return input_tensor, 1.0, original_shape
+
+    def _execute_inference(
+        self,
+        input_tensor: NDArray[np.float32]
+    ) -> List[NDArray[np.float32]]:
+        """Execute inference with fixed batch=4 padding.
+
+        The ONNX model requires exactly batch=4 input. This method
+        pads a single input by repeating it to fill the batch, runs
+        inference, and returns only the first sample's output.
+
+        Args:
+            input_tensor: Preprocessed tensor [1, 3, H, W]
+
+        Returns:
+            List of model outputs with batch dimension trimmed to 1
+        """
+        # Pad to batch=4 by repeating the single input
+        batch_tensor = np.repeat(input_tensor, self.FIXED_BATCH_SIZE, axis=0)
+
+        # Run inference
+        feed_dict = {self.input_name: batch_tensor}
+        outputs = self._onnx_session.run(self.output_names, feed_dict)
+
+        # Extract only the first sample from each output
+        trimmed = [out[:1] for out in outputs]
+        return trimmed
+
+    def postprocess(
+        self,
+        outputs: List[NDArray[np.float32]],
+        conf_thres: float,
+        **kwargs
+    ) -> ClsResult:
+        """Post-process helmet classification output.
+
+        Processing:
+        1. Apply softmax to raw logits
+        2. Get argmax prediction and confidence
+        3. Map index to helmet_map label
+        4. Return single-branch ClsResult
+
+        Args:
+            outputs: Model outputs [logits] with shape [1, 2]
+            conf_thres: Confidence threshold for warnings
+            **kwargs: Unused
+
+        Returns:
+            ClsResult with labels=[helmet_status], confidences=[conf]
+        """
+        logits = outputs[0]  # Shape: [1, 2]
+
+        # Apply softmax
+        probs = ColorLayerORT._softmax(logits)
+
+        # Get prediction
+        pred_idx = int(np.argmax(probs, axis=-1)[0])
+        pred_conf = float(probs[0, pred_idx])
+
+        # Map to label
+        label = self.helmet_map.get(pred_idx, f'unknown_{pred_idx}')
+
+        if pred_conf < conf_thres:
+            logging.warning(f"Low helmet confidence: {pred_conf:.3f}")
+
+        return ClsResult(
+            labels=[label],
+            confidences=[pred_conf],
+            avg_confidence=pred_conf,
+            logits=[logits]
         )

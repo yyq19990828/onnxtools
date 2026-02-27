@@ -14,6 +14,7 @@ from .infer_onnx import (
     BaseORT,
     ClsResult,
     ColorLayerORT,
+    HelmetORT,
     OcrORT,
     Result,
     RfdetrORT,
@@ -76,6 +77,7 @@ __all__ = [
     "BaseClsORT",
     "ClsResult",
     "ColorLayerORT",
+    "HelmetORT",
     "VehicleAttributeORT",
     # OCR
     "OcrORT",

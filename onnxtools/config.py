@@ -346,6 +346,12 @@ VEHICLE_COLOR_MAP: dict[int, str] = {
     10: "other",
 }
 
+# Helmet Classification (binary: normal / helmet_missing)
+HELMET_MAP: dict[int, str] = {
+    0: "normal",
+    1: "helmet_missing",
+}
+
 # ============================================================================
 # 可视化预设配置
 # ============================================================================

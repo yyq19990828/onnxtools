@@ -17,7 +17,7 @@ OCR Models (independent):
 from .onnx_base import BaseORT
 
 # Import classification classes (new architecture)
-from .onnx_cls import BaseClsORT, ClsResult, ColorLayerORT, VehicleAttributeORT
+from .onnx_cls import BaseClsORT, ClsResult, ColorLayerORT, HelmetORT, VehicleAttributeORT
 
 # Import OCR class
 from .onnx_ocr import OcrORT
@@ -41,6 +41,7 @@ __all__ = [
     'BaseClsORT',
     'ClsResult',
     'ColorLayerORT',
+    'HelmetORT',
     'VehicleAttributeORT',
     # OCR
     'OcrORT',
