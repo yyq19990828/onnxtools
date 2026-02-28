@@ -5,7 +5,14 @@ onnxtools - ONNX模型推理工具集
 """
 
 # 从 eval 子模块导入评估工具
-from .eval import DetDatasetEvaluator, OCRDatasetEvaluator, SampleEvaluation
+from .eval import (
+    BranchConfig,
+    ClsDatasetEvaluator,
+    ClsSampleEvaluation,
+    DetDatasetEvaluator,
+    OCRDatasetEvaluator,
+    SampleEvaluation,
+)
 
 # 从 infer_onnx 子模块导入推理引擎类
 from .infer_onnx import (
@@ -91,6 +98,9 @@ __all__ = [
     "DetDatasetEvaluator",
     "OCRDatasetEvaluator",
     "SampleEvaluation",
+    "ClsDatasetEvaluator",
+    "ClsSampleEvaluation",
+    "BranchConfig",
     # Utilities
     "setup_logger",
     # Constants

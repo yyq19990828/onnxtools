@@ -2,24 +2,25 @@
 
 本文档基于推理类源码,详细描述项目支持的所有模型及其输入/输出规格、动态维度支持、前后处理流程。
 
-> **最后更新**: 2025-10-11
+> **最后更新**: 2026-02-27
 > **兼容性**: Python 3.10+, ONNX Runtime 1.22.0+
 
 ---
 
 ## 检测模型
 
-### 1. YOLO系列 (YoloOnnx)
+检测模型继承 `BaseORT` 基类，返回 `Result` 对象。
 
-**实现类**: `infer_onnx/onnx_yolo.py::YoloOnnx`
+### 1. YOLO系列 (YoloORT)
+
+**实现类**: `infer_onnx/onnx_yolo.py::YoloORT`
 **支持版本**: YOLOv5, YOLOv8, YOLO11
 **特点**: 成熟稳定,需要NMS后处理
 
 #### 初始化参数
 
 ```python
-# 源自 onnx_yolo.py::__init__()
-YoloOnnx(
+YoloORT(
     onnx_path: str,
     input_shape: Tuple[int, int] = (640, 640),      # 输入尺寸 (H, W)
     conf_thres: float = 0.5,                        # 置信度阈值
@@ -34,12 +35,12 @@ YoloOnnx(
 #### 输入输出规格
 
 ```python
-# 输入 (基于BaseOnnx懒加载机制)
+# 输入 (基于BaseORT机制)
 输入名称: 从模型自动读取 (通常 "images")
 输入形状: [1, 3, H, W]  # NCHW格式
 动态维度支持:
   - batch: 固定为1 (代码使用batch=1推理)
-  - H, W: 智能加载 (源自onnx_base.py:115-122)
+  - H, W: 智能加载
     * 模型固定尺寸 -> 从模型自动读取
     * 模型动态尺寸 -> 使用input_shape参数
 数据类型: float32
@@ -48,10 +49,9 @@ YoloOnnx(
 
 # 输出 (基于 _postprocess 自适应处理)
 输出形状: [B, N, 4+C] 或 [B, 4+C, N]  # 自动检测并转换
-         # 例如: [1, 8400, 84] 或 [1, 84, 8400]
-坐标格式: [x_center, y_center, width, height]  # 可能归一化或像素
+坐标格式: [x_center, y_center, width, height]
 类别输出: [conf1, ..., confC]  # 每类独立置信度
-最终输出: [x1, y1, x2, y2, conf, class_id]  # 经NMS后
+最终输出: Result(boxes=[x1,y1,x2,y2], scores, class_ids)  # 经NMS后
 ```
 
 #### 前处理流程
@@ -71,21 +71,21 @@ input_tensor, scale, original_shape, ratio_pad = letterbox(image)
 # 2. 坐标归一化检测并转换为像素坐标
 # 3. NMS后处理 (multi_label, has_objectness)
 # 4. 坐标还原: letterbox需考虑ratio_pad, 否则简单缩放
+# 5. 返回 Result 对象
 ```
 
 ---
 
-### 2. RT-DETR (RTDETROnnx)
+### 2. RT-DETR (RtdetrORT)
 
-**实现类**: `infer_onnx/onnx_rtdetr.py::RTDETROnnx`
+**实现类**: `infer_onnx/onnx_rtdetr.py::RtdetrORT`
 **原始框架**: Ultralytics RT-DETR
 **特点**: 端到端检测,无需NMS,300个query
 
 #### 初始化参数
 
 ```python
-# 源自 onnx_rtdetr.py::__init__()
-RTDETROnnx(
+RtdetrORT(
     onnx_path: str,
     input_shape: Tuple[int, int] = (640, 640),  # 输入尺寸
     conf_thres: float = 0.001,                  # 置信度阈值 (推荐低阈值)
@@ -99,22 +99,15 @@ RTDETROnnx(
 ```python
 # 输入
 输入形状: [batch, 3, 640, 640]
-动态维度支持:
-  - batch: 固定为1 (代码使用batch=1推理)
-  - H, W: 智能加载 (源自onnx_base.py:115-122)
-    * 模型固定尺寸 -> 从模型自动读取
-    * 模型动态尺寸 -> 使用input_shape参数
-    * 当前默认: 640×640
 数值范围: [0.0, 1.0]
 颜色空间: RGB
 
-# 输出 (源自 onnx_rtdetr.py 注释)
+# 输出
 输出形状: [batch, 300, num_features]
          # 300 = query数量
-         # num_features = 4 bbox + C classes (例如19=4+15)
+         # num_features = 4 bbox + C classes
 坐标格式: [x_center, y_center, width, height]  # 归一化 [0,1]
-类别输出: [logit1, ..., logitC]  # 智能检测:logits/sigmoid/softmax
-最终输出: [x1, y1, x2, y2, conf, class_id]  # 排序+过滤后
+最终输出: Result(boxes, scores, class_ids)  # 排序+过滤后
 ```
 
 #### 前处理流程
@@ -126,7 +119,6 @@ resized = cv2.resize(image, (640, 640), interpolation=cv2.INTER_LINEAR)
 rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
 normalized = rgb_image.astype(np.float32) / 255.0
 tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
-scale = (640/original_width, 640/original_height)
 ```
 
 #### 后处理流程
@@ -134,26 +126,25 @@ scale = (640/original_width, 640/original_height)
 ```python
 # 源自 onnx_rtdetr.py::_postprocess()
 # 1. 分离bbox和scores
-# 2. 智能归一化 (_smart_normalize_scores): 自动检测并处理
+# 2. 智能归一化 (_smart_normalize_scores)
 # 3. bbox缩放: 归一化坐标 * 640 -> 像素坐标
 # 4. 坐标转换: xywh -> xyxy
-# 5. 提取最大类别和置信度
-# 6. 排序 + 置信度过滤
+# 5. 排序 + 置信度过滤
+# 6. 返回 Result 对象
 ```
 
 ---
 
-### 3. RF-DETR (RFDETROnnx)
+### 3. RF-DETR (RfdetrORT)
 
-**实现类**: `infer_onnx/onnx_rfdetr.py::RFDETROnnx`
+**实现类**: `infer_onnx/onnx_rfdetr.py::RfdetrORT`
 **原始框架**: RF-DETR (ResNet + FPN + DETR)
 **特点**: 双输出,ImageNet标准化,TopK选择
 
 #### 初始化参数
 
 ```python
-# 源自 onnx_rfdetr.py::__init__()
-RFDETROnnx(
+RfdetrORT(
     onnx_path: str,
     input_shape: Tuple[int, int] = (576, 576),  # 注意: 默认576×576
     conf_thres: float = 0.001,
@@ -166,29 +157,21 @@ RFDETROnnx(
 
 ```python
 # 输入
-输入形状: [batch, 3, 576, 576]  # 注意尺寸差异
-动态维度支持:
-  - batch: 固定为1 (代码使用batch=1推理)
-  - H, W: 智能加载 (源自onnx_base.py:115-122)
-    * 模型固定尺寸 -> 从模型自动读取
-    * 模型动态尺寸 -> 使用input_shape参数
-    * 当前默认: 576×576
-数值范围: ImageNet标准化
-          mean=[0.485, 0.456, 0.406]
-          std=[0.229, 0.224, 0.225]
+输入形状: [batch, 3, 576, 576]
+数值范围: ImageNet标准化 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
 颜色空间: RGB
 
 # 输出 (双输出)
 输出1 (pred_boxes): [batch, num_queries, 4]  # bbox, 归一化
 输出2 (pred_logits): [batch, num_queries, C]  # 类别logits
-最终输出: [x1, y1, x2, y2, conf, class_id]  # TopK选择后
+最终输出: Result(boxes, scores, class_ids)  # TopK选择后
 ```
 
 #### 前处理流程
 
 ```python
 # 源自 onnx_rfdetr.py::_preprocess_static()
-resized = cv2.resize(image, (576, 576), interpolation=cv2.INTER_LINEAR)
+resized = cv2.resize(image, (576, 576))
 rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
 normalized = rgb.astype(np.float32) / 255.0
 
@@ -196,8 +179,6 @@ normalized = rgb.astype(np.float32) / 255.0
 imagenet_mean = np.array([0.485, 0.456, 0.406]).reshape(1, 1, 3)
 imagenet_std = np.array([0.229, 0.224, 0.225]).reshape(1, 1, 3)
 normalized = (normalized - imagenet_mean) / imagenet_std
-
-tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
 ```
 
 #### 后处理流程
@@ -206,18 +187,200 @@ tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
 # 源自 onnx_rfdetr.py::_postprocess()
 # 1. 应用sigmoid激活
 # 2. TopK选择 (展平所有query×classes, 选top 300)
-# 3. 坐标转换: cxcywh -> xyxy (clamp w,h >= 0)
-# 4. 缩放到输入图像尺寸 (* 576)
-# 5. 置信度过滤
+# 3. 坐标转换: cxcywh -> xyxy
+# 4. 缩放到输入图像尺寸
+# 5. 置信度过滤, 返回 Result 对象
 ```
 
 ---
 
-## OCR与分类模型
+## 分类模型
 
-### 4. OCR模型 (OCRONNX)
+分类模型继承 `BaseClsORT` 基类，返回 `ClsResult` 对象，支持元组解包。
 
-**实现类**: `infer_onnx/onnx_ocr.py::OCRONNX`
+### 4. 颜色层级分类 (ColorLayerORT)
+
+**实现类**: `infer_onnx/onnx_cls.py::ColorLayerORT`
+**基类**: `BaseClsORT`
+**功能**: 车牌颜色和层级分类 (双分支)
+**特点**: 双输出,同时预测颜色和层级,返回 `ClsResult`
+
+#### 初始化参数
+
+```python
+ColorLayerORT(
+    onnx_path: str,
+    color_map: Optional[Dict[int, str]] = None,    # 默认从config加载
+    layer_map: Optional[Dict[int, str]] = None,    # 默认从config加载
+    input_shape: Tuple[int, int] = (48, 168),
+    conf_thres: float = 0.5,
+    providers: Optional[List[str]] = None,
+    plate_config_path: Optional[str] = None        # 外部配置文件
+)
+```
+
+#### 输入输出规格
+
+```python
+# 输入
+输入形状: [1, 3, 48, 168]
+数值范围: [-1.0, 1.0]  # (x/255 - 0.5) / 0.5
+颜色空间: RGB (从BGR转换)
+
+# 输出 (双输出)
+输出1 (color_logits): [batch, 5]  # 5个颜色类别
+输出2 (layer_logits): [batch, 2]  # 2个层级类别
+类别映射:
+  color: {0:'black', 1:'blue', 2:'green', 3:'white', 4:'yellow'}
+  layer: {0:'single', 1:'double'}
+最终输出: ClsResult(labels=[color, layer], confidences=[c1, c2])
+```
+
+#### 使用示例
+
+```python
+from onnxtools import ColorLayerORT
+
+classifier = ColorLayerORT('models/color_layer.onnx')
+result = classifier(plate_image)  # ClsResult
+print(f"Color: {result.labels[0]}, Layer: {result.labels[1]}")
+
+# 元组解包 (向后兼容)
+color, layer, conf = classifier(plate_image)
+```
+
+---
+
+### 5. 车辆属性分类 (VehicleAttributeORT)
+
+**实现类**: `infer_onnx/onnx_cls.py::VehicleAttributeORT`
+**基类**: `BaseClsORT`
+**功能**: 车辆类型和颜色分类 (多标签)
+**特点**: 单输出拆分为两个分支,sigmoid已在模型内部应用
+
+#### 初始化参数
+
+```python
+VehicleAttributeORT(
+    onnx_path: str,
+    type_map: Optional[Dict[int, str]] = None,     # 默认13类车型
+    color_map: Optional[Dict[int, str]] = None,     # 默认11种颜色
+    input_shape: Tuple[int, int] = (224, 224),
+    conf_thres: float = 0.5,
+    providers: Optional[List[str]] = None
+)
+```
+
+#### 输入输出规格
+
+```python
+# 输入
+输入形状: [1, 3, 224, 224]
+数值范围: [0.0, 1.0]  # 仅 /255, 无mean/std
+颜色空间: RGB (从BGR转换)
+
+# 输出 (单输出,内部拆分)
+输出: [batch, 24]  # 已sigmoid, 前13为车型, 后11为颜色
+类别映射:
+  type: {0:'car', 1:'truck', 2:'bus', ..., 12:'school_bus'}
+  color: {0:'black', 1:'white', 2:'gray', ..., 10:'other'}
+最终输出: ClsResult(labels=[type, color], confidences=[c1, c2])
+```
+
+#### 使用示例
+
+```python
+from onnxtools import VehicleAttributeORT
+
+classifier = VehicleAttributeORT('models/vehicle_attribute.onnx')
+result = classifier(vehicle_image)
+print(f"Type: {result.labels[0]}, Color: {result.labels[1]}")
+
+# 元组解包
+vehicle_type, color, conf = classifier(vehicle_image)
+```
+
+---
+
+### 6. 头盔佩戴分类 (HelmetORT)
+
+**实现类**: `infer_onnx/onnx_cls.py::HelmetORT`
+**基类**: `BaseClsORT`
+**模型架构**: ConvNeXtV2-Pico
+**功能**: 头盔佩戴二分类 (单分支)
+**精度**: ~94% accuracy
+**特点**: 固定batch=4 ONNX模型,LetterBox预处理,ImageNet归一化
+
+#### 初始化参数
+
+```python
+HelmetORT(
+    onnx_path: str,
+    helmet_map: Optional[Dict[int, str]] = None,   # 默认 {0:'normal', 1:'helmet_missing'}
+    input_shape: Tuple[int, int] = (128, 128),
+    conf_thres: float = 0.5,
+    providers: Optional[List[str]] = None
+)
+```
+
+#### 输入输出规格
+
+```python
+# 输入
+输入形状: [4, 3, 128, 128]  # 固定batch=4 (内部透明处理,调用方无感知)
+数值范围: ImageNet标准化 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+颜色空间: RGB (从BGR转换)
+预处理: LetterBox (保持宽高比, padding值=127)
+
+# 输出
+输出: [4, 2]  # raw logits, 内部应用softmax
+类别映射:
+  {0: 'normal', 1: 'helmet_missing'}
+最终输出: ClsResult(labels=[status], confidences=[conf])
+```
+
+#### 固定batch=4处理
+
+该ONNX模型的batch维度固定为4。`HelmetORT` 通过重写 `_execute_inference` 透明处理：
+- 将单张输入 `[1,3,128,128]` 复制填充到 `[4,3,128,128]`
+- 推理后只取第一个结果 `outputs[:1]`
+- 上层调用完全无感知,接口与其他分类器一致
+
+> 建议后续重新导出动态batch的ONNX模型,届时只需删除 `_execute_inference` 重写即可。
+
+#### 前处理流程
+
+```python
+# 源自 onnx_cls.py::HelmetORT.preprocess()
+# 1. BGR -> RGB
+# 2. LetterBox resize到128×128 (保持宽高比, padding=127)
+# 3. ImageNet归一化: (x/255 - mean) / std
+# 4. HWC -> CHW, 添加batch维度
+```
+
+#### 使用示例
+
+```python
+from onnxtools import HelmetORT
+
+helmet = HelmetORT('models/convnextv2_pico_2cls_i128-1226-20_batch4_simplified.onnx')
+result = helmet(head_image)  # ClsResult
+print(f"Status: {result.labels[0]}, Conf: {result.avg_confidence:.3f}")
+
+# 元组解包 (单分支: label, conf)
+label, conf = helmet(head_image)
+# label: 'normal' 或 'helmet_missing'
+```
+
+---
+
+## OCR模型
+
+OCR模型为独立推理类,不继承BaseORT/BaseClsORT,返回 `Optional[Tuple]`。
+
+### 7. OCR模型 (OcrORT)
+
+**实现类**: `infer_onnx/onnx_ocr.py::OcrORT`
 **支持模型**: rec_ppocr_v3, rec_ppocr_v5
 **功能**: 车牌号码识别
 **特点**: 支持单层/双层车牌,倾斜校正,分割拼接
@@ -225,8 +388,7 @@ tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
 #### 初始化参数
 
 ```python
-# 源自 onnx_ocr.py::__init__()
-OCRONNX(
+OcrORT(
     onnx_path: str,
     character: List[str],                       # OCR字符字典 (必需)
     input_shape: Tuple[int, int] = (48, 168),  # 输入尺寸
@@ -239,13 +401,7 @@ OCRONNX(
 
 ```python
 # 输入
-输入形状: [batch, 3, 48, 168]
-动态维度支持:
-  - batch: 固定为1 (代码使用batch=1推理)
-  - H, W: 智能加载 (源自onnx_base.py:115-122)
-    * 模型固定尺寸 -> 从模型自动读取
-    * 模型动态尺寸 -> 使用input_shape参数
-    * 当前默认: 48×168
+输入形状: [1, 3, 48, 168]
 数值范围: [-1.0, 1.0]
 颜色空间: BGR (不转换)
 
@@ -254,19 +410,18 @@ OCRONNX(
          # seq_len: 序列长度 (动态, 通常21)
          # num_classes: 字符类别数 (例如85)
 输出格式: CTC格式, 每个时间步的字符概率分布
-最终输出: (text, avg_confidence, char_confidences)
+最终输出: Optional[(text, avg_confidence, char_confidences)]
 ```
 
 #### 前处理流程
 
 ```python
-# 源自 onnx_ocr.py::_preprocess()
+# 源自 onnx_ocr.py
 # 1. 倾斜检测和校正 (Hough线变换 + 仿射变换)
 # 2. 双层车牌处理 (if is_double_layer=True):
 #    - CLAHE对比度增强
 #    - 水平投影寻找分割线
-#    - 分割上下层
-#    - 拼接成单层 (上层缩小50%宽度)
+#    - 分割上下层, 拼接成单层
 # 3. 保持宽高比resize (max_w=168)
 # 4. 归一化到 [-1, 1]
 # 5. 右侧padding到168
@@ -275,80 +430,12 @@ OCRONNX(
 #### 后处理流程
 
 ```python
-# 源自 onnx_ocr.py::_postprocess()
 # CTC解码:
 # 1. argmax提取字符索引
 # 2. 移除连续重复字符
-# 3. 过滤忽略token (blank token 0)
+# 3. 过滤blank token
 # 4. 映射索引到字符
-# 5. 后处理规则 (例如: '苏'->'京')
-# 6. 计算平均置信度
-```
-
----
-
-### 5. 颜色层级分类 (ColorLayerONNX)
-
-**实现类**: `infer_onnx/onnx_ocr.py::ColorLayerONNX`
-**功能**: 车牌颜色和层级分类
-**特点**: 双输出,同时预测颜色和层级
-
-#### 初始化参数
-
-```python
-# 源自 onnx_ocr.py::__init__()
-ColorLayerONNX(
-    onnx_path: str,
-    color_map: Dict[int, str],                  # 颜色索引映射 (必需)
-    layer_map: Dict[int, str],                  # 层级索引映射 (必需)
-    input_shape: Tuple[int, int] = (48, 168),
-    conf_thres: float = 0.5,
-    providers: Optional[List[str]] = None
-)
-```
-
-#### 输入输出规格
-
-```python
-# 输入
-输入形状: [batch, 3, 48, 168]
-动态维度支持:
-  - batch: 固定为1 (代码使用batch=1推理)
-  - H, W: 智能加载 (源自onnx_base.py:115-122)
-    * 模型固定尺寸 -> 从模型自动读取
-    * 模型动态尺寸 -> 使用input_shape参数
-    * 当前默认: 48×168
-数值范围: [-1.0, 1.0]
-颜色空间: BGR
-
-# 输出 (双输出)
-输出1 (color_logits): [batch, 5]  # 5个颜色类别
-输出2 (layer_logits): [batch, 2]  # 2个层级类别
-类别映射 (示例):
-  color: {0:'blue', 1:'yellow', 2:'white', 3:'black', 4:'green'}
-  layer: {0:'single', 1:'double'}
-最终输出: (color_name, layer_name, average_confidence)
-```
-
-#### 前处理流程
-
-```python
-# 源自 onnx_ocr.py::_preprocess_static()
-img = cv2.resize(img, (168, 48))
-img = (img / 255.0 - 0.5) / 0.5  # 归一化到 [-1, 1]
-img = img.transpose([2, 0, 1])   # HWC -> CHW
-input_tensor = img[np.newaxis, :, :, :]
-```
-
-#### 后处理流程
-
-```python
-# 源自 onnx_ocr.py::__call__()
-# 1. 获取color_logits和layer_logits
-# 2. 应用softmax
-# 3. argmax获取预测类别
-# 4. 映射到名称
-# 5. 置信度过滤
+# 5. 计算平均置信度
 ```
 
 ---
@@ -357,29 +444,36 @@ input_tensor = img[np.newaxis, :, :, :]
 
 ### 检测模型对比
 
-| 模型 | 推理类 | 输入尺寸 | Batch动态 | 前处理 | 后处理 | 推荐场景 |
-|------|--------|---------|----------|--------|--------|---------|
-| YOLO | YoloOnnx | 640×640 | ✅ | Letterbox | NMS | 实时检测 |
-| RT-DETR | RTDETROnnx | 640×640 | ✅ | Resize | 排序过滤 | 平衡场景 |
-| RF-DETR | RFDETROnnx | 576×576 | ✅ | ImageNet | TopK | 高精度 |
+| 模型 | 推理类 | 基类 | 输入尺寸 | 前处理 | 后处理 | 返回类型 | 推荐场景 |
+|------|--------|------|---------|--------|--------|---------|---------|
+| YOLO | `YoloORT` | BaseORT | 640×640 | Letterbox | NMS | `Result` | 实时检测 |
+| RT-DETR | `RtdetrORT` | BaseORT | 640×640 | Resize | 排序过滤 | `Result` | 平衡场景 |
+| RF-DETR | `RfdetrORT` | BaseORT | 576×576 | ImageNet | TopK | `Result` | 高精度 |
 
-### OCR与分类模型对比
+### 分类模型对比
 
-| 模型 | 推理类 | 输入尺寸 | Batch动态 | 特殊处理 | 推荐场景 |
-|------|--------|---------|----------|---------|---------|
-| OCR | OCRONNX | 48×168 | ✅ | 倾斜校正+双层分割 | 车牌识别 |
-| 颜色层级 | ColorLayerONNX | 48×168 | ✅ | Softmax | 属性分类 |
+| 模型 | 推理类 | 基类 | 输入尺寸 | 分支数 | 归一化 | 返回类型 | 推荐场景 |
+|------|--------|------|---------|--------|--------|---------|---------|
+| 颜色层级 | `ColorLayerORT` | BaseClsORT | 48×168 | 2 (颜色+层级) | [-1,1] | `ClsResult` | 车牌属性 |
+| 车辆属性 | `VehicleAttributeORT` | BaseClsORT | 224×224 | 2 (车型+颜色) | [0,1] | `ClsResult` | 车辆分类 |
+| 头盔检测 | `HelmetORT` | BaseClsORT | 128×128 | 1 (佩戴状态) | ImageNet | `ClsResult` | 安全检测 |
+
+### OCR模型
+
+| 模型 | 推理类 | 输入尺寸 | 特殊处理 | 返回类型 | 推荐场景 |
+|------|--------|---------|---------|---------|---------|
+| 车牌OCR | `OcrORT` | 48×168 | 倾斜校正+双层分割 | `Optional[Tuple]` | 车牌识别 |
 
 ### 关键差异总结
 
-| 特性 | YOLO | RT-DETR | RF-DETR | OCR | ColorLayer |
-|------|------|---------|---------|-----|-----------|
-| **预处理** | Letterbox | Resize | ImageNet | 倾斜+拼接 | Resize |
-| **归一化** | [0,1] | [0,1] | ImageNet | [-1,1] | [-1,1] |
-| **颜色空间** | RGB | RGB | RGB | BGR | BGR |
-| **后处理** | NMS | 排序 | TopK | CTC | Softmax |
-| **置信度阈值** | 0.5 | 0.001 | 0.001 | 0.5 | 0.5 |
-| **NMS需求** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| 特性 | YOLO | RT-DETR | RF-DETR | ColorLayer | VehicleAttr | Helmet | OCR |
+|------|------|---------|---------|-----------|-------------|--------|-----|
+| **预处理** | Letterbox | Resize | Resize | Resize | Resize | LetterBox | 倾斜+拼接 |
+| **归一化** | [0,1] | [0,1] | ImageNet | [-1,1] | [0,1] | ImageNet | [-1,1] |
+| **颜色空间** | RGB | RGB | RGB | RGB | RGB | RGB | BGR |
+| **后处理** | NMS | 排序 | TopK | Softmax | Sigmoid | Softmax | CTC |
+| **NMS需求** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **固定Batch** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (4) | ❌ |
 
 ---
 
@@ -393,97 +487,53 @@ input_tensor = img[np.newaxis, :, :, :]
 
 ### Q2: 输入尺寸是如何确定的？
 
-**A**: BaseOnnx使用智能加载机制 (源自 `onnx_base.py:115-122`):
+**A**: `BaseORT` 和 `BaseClsORT` 使用智能加载机制:
 
-1. **从ONNX模型读取输入形状**:
-   ```python
-   input_shape_from_model = input_metadata[self.input_name].shape
-   # 例如: [1, 3, 640, 640] 或 ['batch', 3, 'height', 'width']
-   ```
-
-2. **判断H, W是否固定**:
-   - 如果 `input_shape_from_model[2]` 和 `[3]` 是**整数且>0** → **固定尺寸**,从模型读取
-   - 如果是**字符串/符号** (如`'height'`, `'p2o.DynamicDimension.0'`) → **动态尺寸**,使用用户指定的`input_shape`
-
-3. **batch维度**: 模型可能支持动态batch,但代码始终使用`batch=1`
-
-4. **查看模型尺寸**:
+1. 从ONNX模型元数据读取输入形状
+2. 如果H, W是固定整数 → 使用模型值
+3. 如果是动态符号 → 使用用户指定的 `input_shape`
+4. 查看模型尺寸:
    ```python
    import onnxruntime as ort
    session = ort.InferenceSession("model.onnx")
-   shape = session.get_inputs()[0].shape
-   print(shape)  # [1, 3, 640, 640] 或 ['batch', 3, 640, 640]
+   print(session.get_inputs()[0].shape)
    ```
 
-### Q3: 如何验证模型输入输出格式？
+### Q3: HelmetORT的batch=4是怎么回事？
 
-**A**: 使用`onnxruntime`检查:
+**A**: 当前ONNX模型在导出时固定了batch=4。`HelmetORT` 重写了 `_execute_inference` 方法:
+- 单张输入复制4份填充batch维度
+- 推理后只取第一个结果
+- 调用方完全无感知,接口与其他分类器一致
+
+建议后续重新导出动态batch模型,届时只需删除该重写方法即可。
+
+### Q4: 检测器和分类器的区别？
+
+**A**: 项目提供三类推理架构:
+
+| 类型 | 基类 | 返回类型 | 用途 |
+|------|------|---------|------|
+| 检测器 | `BaseORT` | `Result` | 目标检测,输出框+置信度+类别 |
+| 分类器 | `BaseClsORT` | `ClsResult` | 图像分类,支持单/双/多分支 |
+| OCR | 独立 | `Optional[Tuple]` | 序列识别,可变长度字符输出 |
+
+### Q5: ClsResult怎么使用？
+
+**A**: `ClsResult` 支持属性访问和元组解包:
+
 ```python
-import onnxruntime as ort
-session = ort.InferenceSession("model.onnx", providers=['CPUExecutionProvider'])
+result = classifier(image)
 
-for inp in session.get_inputs():
-    print(f"Input: {inp.name}, Shape: {inp.shape}, Type: {inp.type}")
-for out in session.get_outputs():
-    print(f"Output: {out.name}, Shape: {out.shape}, Type: {out.type}")
+# 属性访问
+result.labels         # ['blue', 'single']
+result.confidences    # [0.95, 0.88]
+result.avg_confidence # 0.915
+
+# 元组解包 (向后兼容)
+# 单分支: label, conf = result
+# 双分支: label1, label2, conf = result
 ```
-
-### Q5: 如何实现真正的批处理推理？
-
-**A**:
-- **模型层面**: RT-DETR、RF-DETR、OCR、ColorLayer支持动态batch
-- **推理类层面**: 当前实现都使用`batch=1`
-- **如需批处理**: 需要修改推理类的`__call__()`方法
-
-### Q6: 坐标还原到原图为什么不准确？
-
-**A**: 检查:
-1. **预处理方式**: Letterbox (保持比例+padding) vs 直接Resize (拉伸)
-2. **坐标格式**: 归一化[0,1] vs 像素坐标
-3. **ratio_pad**: YOLO使用Letterbox时必须考虑padding
-
-### Q7: batch=1 是什么意思？模型不是支持动态batch吗？
-
-**A**: 你的理解完全正确！虽然某些模型支持动态batch维度，但**代码实现始终是一张一张图片喂进去**。
-
-1. **输入始终是单张图片** (源自 `onnx_base.py:255,269-272`):
-   ```python
-   # __call__() 方法只接受单张图片
-   def __call__(self, image: np.ndarray, ...):
-       # image是单张图片，shape [H, W, 3]
-       input_tensor, ... = self._prepare_inference(image)
-       # input_tensor.shape = [1, 3, H, W]，batch=1
-   ```
-
-2. **特殊情况处理** (如果模型固定batch>1):
-   ```python
-   if expected_batch_size > 1 and input_tensor.shape[0] == 1:
-       # 重复同一张图片来满足模型要求
-       input_tensor = np.repeat(input_tensor, expected_batch_size, axis=0)
-       # 这不是真正的批处理，只是适配模型
-   ```
-
-3. **返回结果也只取第一个**:
-   ```python
-   if (expected_batch_size > 1 and len(detections) > 1):
-       detections = [detections[0]]  # 只返回第一个batch结果
-   ```
-
-4. **为什么不支持真正的批处理？**
-   - **简化接口**: 单张图片推理更直观
-   - **实时应用**: 大多数应用场景是实时视频流，本身就是逐帧处理
-   - **内存效率**: 批处理需要积累图片，增加延迟和内存占用
-   - **灵活性**: 每张图片独立处理，可以有不同的预处理参数
-
-5. **如果需要批处理**:
-   需要修改 `__call__()` 方法，接受图片列表并批量预处理：
-   ```python
-   def __call__(self, images: List[np.ndarray], ...):
-       # 批量预处理
-       batch_tensor = np.stack([self._preprocess(img)[0] for img in images])
-       # batch_tensor.shape = [N, 3, H, W]
-       ...
-   ```
 
 ---
 
@@ -493,26 +543,30 @@ for out in session.get_outputs():
 
 ```
 检测模型:
-- yolo11n.onnx           # YOLO11 Nano
-- rtdetr-2024080100.onnx # RT-DETR, 日期戳
-- rfdetr-20250811.onnx   # RF-DETR, 日期戳
+- yolo11n.onnx                                          # YOLO11 Nano
+- rtdetr-2024080100.onnx                                 # RT-DETR, 日期戳
+- rfdetr-20250811.onnx                                   # RF-DETR, 日期戳
 
-OCR/分类模型:
-- ocr.onnx              # OCR模型
-- color_layer.onnx      # 颜色层级分类
+分类模型:
+- color_layer.onnx                                       # 颜色层级分类
+- vehicle_attribute.onnx                                 # 车辆属性分类
+- convnextv2_pico_2cls_i128-1226-20_batch4_simplified.onnx  # 头盔分类
+
+OCR模型:
+- ocr.onnx                                              # OCR模型
 ```
 
 ### 相关文档
 
 - [项目总览](../README.md)
-- [模块文档](../CLAUDE.md)
-- [推理引擎](../infer_onnx/CLAUDE.md)
+- [根目录CLAUDE.md](../CLAUDE.md)
+- [推理引擎文档](../onnxtools/infer_onnx/CLAUDE.md)
 - [测试文档](../tests/CLAUDE.md)
 
 ---
 
 **文档维护**: 本文档基于推理类源码生成,与代码同步更新。
 
-**最后更新**: 2025-10-11
+**最后更新**: 2026-02-27
 **作者**: yyq19990828
-**版本**: v2.1.0
+**版本**: v3.0.0
