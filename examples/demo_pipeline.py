@@ -6,16 +6,16 @@ end-to-end inference workflow including detection, OCR, and visualization.
 
 Example usage:
     # Single image
-    python main.py --model-path models/rtdetr.onnx --model-type rtdetr \\
+    python examples/demo_pipeline.py --model-path models/rtdetr.onnx --model-type rtdetr \\
                    --input data/sample.jpg --output-mode save
 
     # Video with frame skip
-    python main.py --model-path models/yolo11n.onnx --model-type yolo \\
+    python examples/demo_pipeline.py --model-path models/yolo11n.onnx --model-type yolo \\
                    --input video.mp4 --source-type video \\
                    --frame-skip 2 --output-mode save
 
     # Camera stream
-    python main.py --model-path models/rtdetr.onnx --model-type rtdetr \\
+    python examples/demo_pipeline.py --model-path models/rtdetr.onnx --model-type rtdetr \\
                    --input 0 --source-type camera --output-mode show
 """
 

@@ -55,7 +55,7 @@ def sample_colors():
 def font_path():
     """Font path for testing."""
     candidates = [
-        "SourceHanSans-VF.ttf",
+        "data/fonts/SourceHanSans-VF.ttf",
         "/System/Library/Fonts/PingFang.ttc",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "C:/Windows/Fonts/simhei.ttf"

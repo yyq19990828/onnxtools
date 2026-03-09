@@ -13,6 +13,8 @@ OCR Models (independent):
 - OcrORT: Optical Character Recognition
 """
 
+from ..eval.eval_ocr import OCRDatasetEvaluator
+
 # Import detection classes from separate modules
 from .onnx_base import BaseORT
 
@@ -45,6 +47,7 @@ __all__ = [
     'VehicleAttributeORT',
     # OCR
     'OcrORT',
+    'OCRDatasetEvaluator',
     # Result classes
     'Result',
     # Constants

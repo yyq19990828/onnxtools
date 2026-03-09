@@ -30,14 +30,14 @@ python -c "import onnxtools; print('OK')"
 ./run.sh
 
 # Image inference
-python main.py \
+python examples/demo_pipeline.py \
     --model-path models/rtdetr-2024080100.onnx \
     --model-type rtdetr \
     --input data/sample.jpg \
     --output-mode show
 
 # Video inference with frame skip
-python main.py \
+python examples/demo_pipeline.py \
     --model-path models/yolo11n.onnx \
     --model-type yolo \
     --input video.mp4 \
@@ -46,7 +46,7 @@ python main.py \
     --frame-skip 2
 
 # Camera inference
-python main.py \
+python examples/demo_pipeline.py \
     --model-path models/rtdetr.onnx \
     --model-type rtdetr \
     --input 0 \
@@ -221,6 +221,7 @@ graph TD
     A --> H["openspec/"];
     A --> I["models/"];
     A --> J["mcp_tools/"];
+    A --> K["examples/"];
 
     B --> B1["infer_onnx/"];
     B --> B2["utils/"];
@@ -277,6 +278,9 @@ graph TD
     J --> J2["tools/ - MCP工具定义"];
     J --> J3["utils/ - 图像加载/模型管理"];
 
+    K --> K1["demo_pipeline.py"];
+    K --> K2["demo_crop.py"];
+
     click B "onnxtools/CLAUDE.md" "查看onnxtools模块文档"
     click B1 "onnxtools/infer_onnx/CLAUDE.md" "查看推理引擎文档"
     click B2 "onnxtools/utils/CLAUDE.md" "查看工具模块文档"
@@ -307,6 +311,7 @@ graph TD
 | `docs/` | 项目文档 | 使用指南、Polygraphy文档、API文档 | [CLAUDE.md](docs/CLAUDE.md) |
 | `third_party/` | 第三方集成 | Ultralytics、Polygraphy、RF-DETR、TRT Explorer | [CLAUDE.md](third_party/CLAUDE.md) |
 | `mcp_tools/` | MCP服务器 | Model Context Protocol服务器,LLM工具接口 | [CLAUDE.md](mcp_tools/CLAUDE.md) |
+| `examples/` | 示例脚本 | 演示脚本(推理管道、目标裁剪) | - |
 
 ### Detailed Module Structure
 
@@ -338,6 +343,10 @@ onnxtools/                      # Core Python package
 ├── config.py                   # Configuration management
 └── __init__.py                 # Public API exports
 
+examples/                       # Demo scripts
+├── demo_pipeline.py            # Full inference pipeline demo
+└── demo_crop.py                # Object cropping demo
+
 tools/                          # Debugging and optimization
 ├── eval.py                     # Model evaluation
 ├── eval_ocr.py                 # OCR evaluation
@@ -345,6 +354,10 @@ tools/                          # Debugging and optimization
 ├── compare_onnx_engine.py      # ONNX vs TensorRT comparison
 ├── draw_engine.py              # Engine visualization
 ├── layer_statistics.py         # Layer statistics analysis
+├── scripts/                    # Shell script wrappers
+│   ├── build.sh                # ONNX optimization and TensorRT build
+│   ├── eval.sh                 # Model evaluation script
+│   └── third_party.sh          # Third-party library initialization
 └── README.md                   # Tools documentation
 
 tests/                          # Test suite
@@ -619,9 +632,18 @@ Key docs:
 - `third_party/CLAUDE.md` - Third-party integrations
 - `mcp_tools/CLAUDE.md` - MCP server integration
 - `docs/polygraphy使用指南/` - Polygraphy debugging
+- `examples/demo_pipeline.py` - Full inference pipeline demo
 - `README.md` - User-facing documentation
 
 ## Change Log
+
+**2026-03-09** - Project Root and Tools Reorganization
+- 新增 `examples/` 目录，移入 `demo_pipeline.py` 和 `demo_crop.py`
+- 新增 `tools/scripts/` 目录，移入 shell 脚本 (`build.sh`, `eval.sh`, `third_party.sh`)
+- 移动字体文件到 `data/fonts/SourceHanSans-VF.ttf`
+- 删除冗余的 `requirements.txt` 和无效的 `crop.sh`
+- 更新 `.gitignore`，移除 `run.sh` 忽略规则
+- 更新所有字体路径引用
 
 **2026-02-03** - MCP Server Documentation
 - 添加 `mcp_tools/` 模块到 Module Index 和结构图

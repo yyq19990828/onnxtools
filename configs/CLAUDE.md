@@ -202,7 +202,7 @@ for annotator in annotators:
     image = annotator.annotate(image, detections)
 
 # 方式2: 命令行使用
-# python main.py --annotator-preset debug --input test.jpg
+# python examples/demo_pipeline.py --annotator-preset debug --input test.jpg
 ```
 
 ## 模块结构
@@ -430,7 +430,7 @@ A: 包含:
 ### 使用配置的模块
 - `onnxtools/infer_onnx/onnx_ocr.py` - 使用ocr_dict和color/layer映射
 - `onnxtools/utils/supervision_preset.py` - 加载visualization_presets
-- `main.py` - 加载det_config获取类别名称
+- `examples/demo_pipeline.py` - 加载det_config获取类别名称
 
 ### 测试文件
 - `tests/unit/test_configs.py` - 配置文件格式验证(建议创建)

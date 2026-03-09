@@ -12,7 +12,7 @@ def get_chinese_font_path() -> Optional[str]:
         Path to Chinese font file or None if not found
     """
     candidates = [
-        "SourceHanSans-VF.ttf",  # Project local font (highest priority)
+        "data/fonts/SourceHanSans-VF.ttf",  # Project local font (highest priority)
         "/System/Library/Fonts/PingFang.ttc",  # macOS
         "/System/Library/Fonts/Helvetica.ttc",  # macOS fallback
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux

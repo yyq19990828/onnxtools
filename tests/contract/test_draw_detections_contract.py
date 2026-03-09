@@ -36,7 +36,7 @@ class TestDrawDetectionsContract:
 
         # Check default values are preserved
         assert sig.parameters['plate_results'].default is None
-        assert sig.parameters['font_path'].default == "SourceHanSans-VF.ttf"
+        assert sig.parameters['font_path'].default == "data/fonts/SourceHanSans-VF.ttf"
 
     def test_draw_detections_input_validation(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Contract: draw_detections must validate input parameters and handle edge cases."""

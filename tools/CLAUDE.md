@@ -171,8 +171,10 @@ A: 1) 增加测试迭代次数; 2) 确保GPU处于稳定状态; 3) 关闭其他G
 ### 核心工具脚本
 - `eval.py` - COCO数据集模型评估主程序
 - **`eval_ocr.py`** - OCR数据集评估命令行工具 (支持深度错误分析)
+- `eval_cls.py` - 分类模型评估命令行工具
 - `build_engine.py` - TensorRT引擎构建工具
 - `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
+- `modify_onnx_io_names.py` - ONNX模型输入输出重命名工具
 - `network_postprocess.py` - 网络后处理分析工具
 
 ### 可视化和分析
@@ -180,13 +182,16 @@ A: 1) 增加测试迭代次数; 2) 确保GPU处于稳定状态; 3) 关闭其他G
 - `layer_statistics.py` - 模型层统计分析
 - `tensor_selector.py` - 张量选择和分析工具
 
-### 调试脚本
+### Shell脚本 (scripts/)
+- `scripts/build.sh` - 批量构建脚本
+- `scripts/eval.sh` - 批量评估脚本
+- `scripts/third_party.sh` - 第三方库初始化脚本
+
+### 调试脚本 (debug/)
 - `debug/01_debug_subonnx_fp16.sh` - FP16子图调试
 - `debug/01_debug_subonnx_fp32.sh` - FP32子图调试
 - `debug/02_debug_subonnx_fp32.sh` - 高级FP32调试
 - `debug/debug_fp16.sh` - FP16精度调试
-- `build.sh` - 批量构建脚本
-- `eval.sh` - 批量评估脚本
 
 ### 模板和配置
 - `debug/data_loader.py.template` - 数据加载器模板

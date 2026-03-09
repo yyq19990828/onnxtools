@@ -81,7 +81,7 @@ class TestPipelineIntegration:
             class_names=sample_class_names,
             colors=sample_colors,
             plate_results=None,
-            font_path="SourceHanSans-VF.ttf",
+            font_path="data/fonts/SourceHanSans-VF.ttf",
         )
 
         assert isinstance(result, np.ndarray)
@@ -173,7 +173,7 @@ class TestPipelineIntegration:
 
         # Test different CLI-like configurations
         cli_configs = [
-            {"font_path": "SourceHanSans-VF.ttf"},
+            {"font_path": "data/fonts/SourceHanSans-VF.ttf"},
             {"font_path": None},
             {},  # Default configuration
         ]

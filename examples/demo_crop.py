@@ -8,16 +8,16 @@
 
 使用示例:
     # 裁剪行人
-    python demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
+    python examples/demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
         --input data/sample.jpg --target-classes person --output-dir runs/person
 
     # 裁剪车牌并进行OCR识别
-    python demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
+    python examples/demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
         --input data/sample.jpg --target-classes plate --output-dir runs/plate \\
         --enable-ocr
 
     # 裁剪多个类别
-    python demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
+    python examples/demo_crop.py --model-path models/yolo11n.onnx --model-type yolo \\
         --input data/sample.jpg --target-classes person car truck \\
         --output-dir runs/multi
 

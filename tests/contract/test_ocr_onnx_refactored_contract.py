@@ -274,12 +274,6 @@ class TestOcrORTContract:
         assert isinstance(results, list)
 
     def test_special_character_post_processing(self, ocr_model_refactored):
-        """
-        Contract: OcrORT must apply special post-processing rules.
-
-        Known rules:
-        - Replace leading '苏' with '京' (historical correction)
-        """
         # This is tested indirectly through the decode logic
         # The actual behavior is in _decode_static()
         from onnxtools.infer_onnx.onnx_ocr import OcrORT
@@ -299,8 +293,7 @@ class TestOcrORTContract:
 
         if len(results) > 0:
             text, _, _ = results[0]
-            # Should replace '苏' with '京'
-            assert text.startswith("京") or not text.startswith("苏"), "Leading '苏' should be replaced with '京'"
+            assert text.startswith("苏"), "Leading character should be preserved without forced replacement"
 
 
 class TestRefactoredClassesIntegration:

@@ -109,6 +109,8 @@ class OcrORT:
         if not character:
             raise ValueError("character list cannot be empty")
 
+        self._requested_input_shape = input_shape
+
         # Initialize ONNX Runtime session
         if providers is None:
             providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
@@ -132,7 +134,7 @@ class OcrORT:
             logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}")
         else:
             # Fallback to provided input_shape
-            self.input_shape = input_shape
+            self.input_shape = self._requested_input_shape
             logging.info(f"使用默认输入形状: {self.input_shape}")
 
         self.conf_thres = conf_thres

@@ -117,7 +117,7 @@ source .venv/bin/activate  # Linux/macOS
 # 或 .venv\Scripts\activate  # Windows
 
 # 安装依赖
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 3. 安装TensorRT支持（可选，仅限本地GPU环境）
@@ -169,7 +169,7 @@ pip install tensorrt==8.6.1.post1 tensorrt-bindings==8.6.1 tensorrt-libs==8.6.1 
 
 ## 使用方法
 
-使用必要的参数运行demo_pipeline.py主脚本。
+使用必要的参数运行 examples/demo_pipeline.py 主脚本。
 
 ### 命令行参数
 
@@ -246,22 +246,22 @@ if result:
 ```bash
 # 1. 处理单张图片并保存结果
 # 使用YOLO模型
-python demo_pipeline.py --model-path models/yolov8s_640.onnx --input data/sample.jpg --source-type image --output-mode save
+python examples/demo_pipeline.py --model-path models/yolov8s_640.onnx --input data/sample.jpg --source-type image --output-mode save
 # 使用RT-DETR模型（推荐）
-python demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input data/sample.jpg --output-mode show
+python examples/demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input data/sample.jpg --output-mode show
 
 # 2. 处理本地视频并实时显示结果
 # 使用RF-DETR模型（高精度）
-bash run.sh  # 使用预配置的RF-DETR模型
+./run.sh  # 使用预配置的RF-DETR模型
 # 自定义参数
-python demo_pipeline.py --model-path models/rfdetr-2024072800.onnx --input /path/to/your/video.mp4 --source-type video --output-mode show
+python examples/demo_pipeline.py --model-path models/rfdetr-2024072800.onnx --input /path/to/your/video.mp4 --source-type video --output-mode show
 
 # 3. 使用摄像头进行实时识别
 # 使用YOLO11（最快）
-python demo_pipeline.py --model-path models/yolo11n.onnx --input 0 --source-type camera --output-mode show --frame-skip 2
+python examples/demo_pipeline.py --model-path models/yolo11n.onnx --input 0 --source-type camera --output-mode show --frame-skip 2
 
 # 4. 处理视频并保存完整结果
-python demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input /path/to/your/video.mp4 --source-type video --output-mode save --save-frame --save-json
+python examples/demo_pipeline.py --model-path models/rtdetr-2024080100.onnx --input /path/to/your/video.mp4 --source-type video --output-mode save --save-frame --save-json
 
 # 5. 使用TensorRT加速（需要先构建引擎）
 # 构建TensorRT引擎
@@ -328,6 +328,7 @@ onnx_vehicle_plate_recognition/
 ├── configs/                        # 配置文件（检测类别、OCR字典、可视化预设）
 ├── models/                         # 模型文件（ONNX模型和TensorRT引擎）
 ├── tools/                          # 调试和优化工具（评估、构建引擎、对比分析）
+│   └── scripts/                    # 工具脚本的 Shell 封装
 ├── tests/                          # 测试体系（单元/集成/合约/性能测试）
 ├── specs/                          # 功能规范（Spec-kit规范驱动开发）
 ├── openspec/                       # OpenSpec规范管理系统
@@ -335,15 +336,17 @@ onnx_vehicle_plate_recognition/
 ├── third_party/                    # 第三方库集成（Ultralytics、Polygraphy、RF-DETR）
 ├── docs/                           # 项目文档（使用指南和API文档）
 ├── data/                           # 数据资源（示例图片和测试数据）
+├── examples/                       # 示例脚本（推理管道、目标裁剪）
+│   ├── demo_pipeline.py            # 完整推理管道示例
+│   └── demo_crop.py                # 目标裁剪示例
 ├── runs/                           # 运行输出（自动生成的结果）
-├── demo_pipeline.py                # 演示脚本（完整推理管道示例）
-├── run.sh                          # 快速运行脚本
 ├── pyproject.toml                  # 项目配置（uv包管理）
 ├── CLAUDE.md                       # AI助手开发指南
 └── README.md                       # 用户文档（本文件）
 ```
 
 **关键变更说明**：
+- 项目结构重构，演示脚本移动至 `examples/`，Shell 脚本移动至 `tools/scripts/`
 - 核心代码已迁移到 `onnxtools/` Python包，提供统一的API接口
 - 推理类重命名：`BaseOnnx` → `BaseORT`，`YoloOnnx` → `YoloORT` 等
 - 使用工厂函数 `create_detector()` 创建检测器实例

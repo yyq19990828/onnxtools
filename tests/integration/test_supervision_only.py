@@ -77,7 +77,7 @@ class TestSupervisionOnlyRendering:
         result = draw_detections(
             image, detections, class_names, colors,
             plate_results=plate_results,
-            font_path="SourceHanSans-VF.ttf"
+            font_path="data/fonts/SourceHanSans-VF.ttf"
         )
 
         assert result.shape == image.shape

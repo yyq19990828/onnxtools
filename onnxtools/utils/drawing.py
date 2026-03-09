@@ -145,7 +145,7 @@ def draw_detections(image: np.ndarray,
                    class_names: Union[Dict[int, str], List[str]],
                    colors: List[tuple],
                    plate_results: Optional[List[Optional[Dict[str, Any]]]] = None,
-                   font_path: str = "SourceHanSans-VF.ttf") -> np.ndarray:
+                   font_path: str = "data/fonts/SourceHanSans-VF.ttf") -> np.ndarray:
     """
     Draw detection boxes using supervision library for enhanced performance and visuals.
 

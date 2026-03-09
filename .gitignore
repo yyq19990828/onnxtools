@@ -50,7 +50,11 @@ data/*.wav
 data/*.jpg
 
 runs/
-run.sh
 DEBUG/
 
 third_party/
+
+# data/ 目录：忽略大文件，但保留字体等必要资源
+data/*
+!data/fonts/
+!data/fonts/**
