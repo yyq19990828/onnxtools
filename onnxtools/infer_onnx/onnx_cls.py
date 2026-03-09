@@ -192,18 +192,30 @@ class BaseClsORT(ABC):
         self.output_names = [output.name for output in self._onnx_session.get_outputs()]
         logging.info(f"Model info: input={self.input_name}, outputs={self.output_names}")
 
-        # Get actual input shape from model metadata
-        self.input_shape = self._get_model_input_shape()
+        # Get actual input shape and batch size from model metadata
+        self.input_shape, self._expected_batch_size = self._get_model_input_shape()
 
         logging.info(f"Classification model initialized: {self.onnx_path}")
 
-    def _get_model_input_shape(self) -> Tuple[int, int]:
-        """Get input shape from model metadata.
+    def _get_model_input_shape(self) -> Tuple[Tuple[int, int], int]:
+        """Get input shape and batch size from model metadata.
+
+        Detects whether the model has a fixed or dynamic batch dimension.
+        Fixed batch (e.g. [4, 3, 128, 128]) will be auto-padded during inference.
+        Dynamic batch (e.g. ['batch', 3, 128, 128]) defaults to batch=1.
 
         Returns:
-            Tuple[int, int]: Input shape (height, width)
+            Tuple of (input_shape (height, width), expected_batch_size)
         """
         model_input_shape = self._onnx_session.get_inputs()[0].shape
+
+        # Detect batch dimension: int > 0 means fixed, str/None means dynamic
+        if (len(model_input_shape) >= 4
+                and isinstance(model_input_shape[0], int)
+                and model_input_shape[0] > 0):
+            batch_size = model_input_shape[0]
+        else:
+            batch_size = 1
 
         if (len(model_input_shape) == 4
                 and model_input_shape[2] is not None
@@ -211,11 +223,11 @@ class BaseClsORT(ABC):
             # Shape format: [batch, channels, height, width]
             actual_height = int(model_input_shape[2])
             actual_width = int(model_input_shape[3])
-            logging.info(f"Input shape from model: ({actual_height}, {actual_width})")
-            return (actual_height, actual_width)
+            logging.info(f"Input shape from model: ({actual_height}, {actual_width}), batch_size: {batch_size}")
+            return (actual_height, actual_width), batch_size
         else:
-            logging.info(f"Using default input shape: {self._requested_input_shape}")
-            return self._requested_input_shape
+            logging.info(f"Using default input shape: {self._requested_input_shape}, batch_size: {batch_size}")
+            return self._requested_input_shape, batch_size
 
     @staticmethod
     @abstractmethod
@@ -289,16 +301,29 @@ class BaseClsORT(ABC):
         self,
         input_tensor: NDArray[np.float32]
     ) -> List[NDArray[np.float32]]:
-        """Phase 2: Execute ONNX Runtime inference.
+        """Phase 2: Execute ONNX Runtime inference with automatic batch adaptation.
+
+        For fixed-batch models (e.g. batch=4), the single input is repeated
+        to fill the expected batch, and only the first sample's output is returned.
+        For dynamic-batch models, the input is passed through as-is.
 
         Args:
-            input_tensor: Preprocessed input tensor
+            input_tensor: Preprocessed input tensor [1, C, H, W]
 
         Returns:
-            List of model output arrays
+            List of model output arrays (always batch=1)
         """
+        if self._expected_batch_size > 1 and input_tensor.shape[0] == 1:
+            input_tensor = np.repeat(
+                input_tensor, self._expected_batch_size, axis=0
+            )
+
         feed_dict = {self.input_name: input_tensor}
         outputs = self._onnx_session.run(self.output_names, feed_dict)
+
+        if self._expected_batch_size > 1:
+            outputs = [out[:1] for out in outputs]
+
         return outputs
 
     def _finalize_inference(
@@ -804,13 +829,12 @@ class HelmetORT(BaseClsORT):
     - Class 1: helmet_missing (not wearing helmet)
 
     Model specifics:
-    - Input: [4, 3, 128, 128] (fixed batch=4, RGB, float32)
-    - Output: [4, 2] (raw logits, softmax applied in postprocess)
+    - Input: [N, 3, 128, 128] (supports both fixed and dynamic batch, RGB, float32)
+    - Output: [N, 2] (raw logits, softmax applied in postprocess)
     - Preprocessing: LetterBox (pad=127) + ImageNet normalization
 
-    The ONNX model has a fixed batch size of 4. This is handled transparently
-    by overriding ``_execute_inference`` to pad single inputs to batch=4 and
-    extract only the first result.
+    Batch handling is automatic via BaseClsORT: fixed-batch models are
+    padded and trimmed transparently, dynamic-batch models work as-is.
 
     Example:
         >>> helmet = HelmetORT('models/helmet.onnx')
@@ -827,9 +851,6 @@ class HelmetORT(BaseClsORT):
 
     # LetterBox padding value
     LETTERBOX_PAD_VALUE = 127
-
-    # Fixed batch size of the ONNX model
-    FIXED_BATCH_SIZE = 4
 
     def __init__(
         self,
@@ -940,33 +961,6 @@ class HelmetORT(BaseClsORT):
         input_tensor = img[np.newaxis, :, :, :].astype(np.float32)
 
         return input_tensor, 1.0, original_shape
-
-    def _execute_inference(
-        self,
-        input_tensor: NDArray[np.float32]
-    ) -> List[NDArray[np.float32]]:
-        """Execute inference with fixed batch=4 padding.
-
-        The ONNX model requires exactly batch=4 input. This method
-        pads a single input by repeating it to fill the batch, runs
-        inference, and returns only the first sample's output.
-
-        Args:
-            input_tensor: Preprocessed tensor [1, 3, H, W]
-
-        Returns:
-            List of model outputs with batch dimension trimmed to 1
-        """
-        # Pad to batch=4 by repeating the single input
-        batch_tensor = np.repeat(input_tensor, self.FIXED_BATCH_SIZE, axis=0)
-
-        # Run inference
-        feed_dict = {self.input_name: batch_tensor}
-        outputs = self._onnx_session.run(self.output_names, feed_dict)
-
-        # Extract only the first sample from each output
-        trimmed = [out[:1] for out in outputs]
-        return trimmed
 
     def postprocess(
         self,

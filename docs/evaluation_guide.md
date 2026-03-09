@@ -6,31 +6,48 @@
 
 ```
 onnx_vehicle_plate_recognition/
-├── utils/
-│   ├── detection_metrics.py      # 核心指标计算模块
-│   └── output_transforms.py      # 输出格式转换函数
-├── infer_onnx/
-│   └── yolo_models.py            # 统一的YOLO模型API
-├── demo_evaluation.py            # 评估演示脚本
-└── test_metrics.py              # 指标计算测试
+├── onnxtools/
+│   ├── eval/
+│   │   ├── eval_coco.py          # COCO数据集评估器 (DatasetEvaluator)
+│   │   ├── eval_ocr.py           # OCR数据集评估器
+│   │   └── eval_cls.py           # 分类数据集评估器 (ClsDatasetEvaluator)
+│   ├── infer_onnx/
+│   │   ├── onnx_base.py          # BaseORT 检测基类
+│   │   ├── onnx_cls.py           # BaseClsORT 分类基类
+│   │   ├── onnx_yolo.py          # YoloORT
+│   │   ├── onnx_rtdetr.py        # RtdetrORT
+│   │   └── onnx_rfdetr.py        # RfdetrORT
+│   └── utils/
+│       └── ocr_metrics.py        # OCR评估指标
+├── tools/
+│   ├── eval.py                   # 检测模型评估CLI
+│   ├── eval_cls.py               # 分类模型评估CLI
+│   └── eval_ocr.py               # OCR模型评估CLI
+└── tests/                        # 测试套件
 ```
 
 ## 主要特性
 
 1. **标准检测指标**: mAP@0.5、mAP@0.5:0.95、精度、召回率、F1分数
-2. **多模型支持**: 原生支持YOLO和RF-DETR，可通过转换函数支持任意模型
-3. **YOLO数据集格式**: 完全兼容YOLO训练数据集格式
-4. **输出格式转换**: 内置转换函数，支持不同模型的输出格式
+2. **多模型支持**: 原生支持YOLO、RT-DETR、RF-DETR，可通过转换函数支持任意模型
+3. **分类模型评估**: 支持CSV和ImageFolder格式，多分支模型，Precision/Recall/F1指标
+4. **OCR评估**: 完全准确率、归一化编辑距离、编辑距离相似度
+5. **YOLO数据集格式**: 完全兼容YOLO训练数据集格式
+6. **输出格式转换**: 内置转换函数，支持不同模型的输出格式
 
 ## 快速开始
 
-### 1. 基本评估（YOLO模型）
+### 1. 基本评估（检测模型）
 
 ```python
-from infer_onnx import YoloOnnx, DatasetEvaluator
+from onnxtools import create_detector, DatasetEvaluator
 
-# 初始化检测器
-detector = YoloOnnx("models/yolo_model.onnx", conf_thres=0.25)
+# 初始化检测器 (支持 'yolo', 'rtdetr', 'rfdetr')
+detector = create_detector(
+    model_type='yolo',
+    onnx_path='models/yolo_model.onnx',
+    conf_thres=0.25
+)
 
 # 使用统一评估器
 evaluator = DatasetEvaluator(detector)
@@ -46,51 +63,69 @@ print(f"mAP@0.5: {results['map50']:.3f}")
 print(f"mAP@0.5:0.95: {results['map']:.3f}")
 ```
 
-### 2. 使用输出转换（非YOLO模型）
+#### CLI方式
+```bash
+python tools/eval.py \
+    --model-type yolo \
+    --model-path models/yolo_model.onnx \
+    --dataset-path /path/to/coco \
+    --conf-threshold 0.25
+```
+
+### 2. 分类模型评估
 
 ```python
-from infer_onnx import RFDETROnnx, DatasetEvaluator
-from utils.output_transforms import get_transform_function
+from onnxtools import HelmetORT, ClsDatasetEvaluator
+from onnxtools.eval.eval_cls import BranchConfig
 
-# 初始化RF-DETR检测器
-detector = RFDETROnnx("models/rf-detr.onnx")
-evaluator = DatasetEvaluator(detector)
+# 初始化分类器
+model = HelmetORT('models/helmet.onnx')
+evaluator = ClsDatasetEvaluator(model)
 
-# 获取预定义的转换函数
-transform_fn = get_transform_function('rfdetr')
-
-# 运行评估
+# CSV格式评估
+branch = BranchConfig(
+    branch_index=0,
+    column_name='helmet_missing',
+    label_map={0: 'normal', 1: 'helmet_missing'},
+    branch_name='helmet_missing'
+)
 results = evaluator.evaluate_dataset(
-    dataset_path="path/to/dataset",
-    output_transform=transform_fn,  # 指定输出转换函数
-    conf_threshold=0.001
+    csv_path='data/val.csv',
+    image_dir='data/images/',
+    branches=[branch],
+    output_format='table'
+)
+
+# ImageFolder格式评估
+results = evaluator.evaluate_dataset(
+    dataset_dir='data/helmet_val/',  # dataset_dir/class_name/image.jpg
+    output_format='table'
 )
 ```
 
-### 3. 自定义转换函数
-
-```python
-def my_custom_transform(detections, original_shape):
-    """
-    将自定义模型输出转换为YOLO格式
-    输入: 任意格式的检测结果
-    输出: [x1, y1, x2, y2, confidence, class_id] 格式
-    """
-    # 实现你的转换逻辑
-    converted_detections = []
-    for detection_batch in detections:
-        # 转换每个批次的检测结果
-        # ...转换逻辑...
-        converted_detections.append(converted_batch)
-
-    return converted_detections
-
-# 使用自定义转换函数
-results = detector.evaluate_dataset(
-    dataset_path="path/to/dataset",
-    output_transform=my_custom_transform
-)
+#### CLI方式
+```bash
+python tools/eval_cls.py \
+    --model-type helmet \
+    --model-path models/helmet.onnx \
+    --csv-path data/val.csv \
+    --image-dir data/images/ \
+    --branches "helmet_missing:0:0=normal,1=helmet_missing" \
+    --output-format table
 ```
+
+### 3. OCR模型评估
+
+```bash
+python -m onnxtools.eval.eval_ocr \
+    --label-file data/val.txt \
+    --dataset-base data/ \
+    --ocr-model models/ocr.onnx \
+    --config configs/plate.yaml \
+    --conf-threshold 0.5
+```
+
+指标：完全准确率、归一化编辑距离、编辑距离相似度。
 
 ## 数据集格式
 
@@ -199,23 +234,25 @@ names:
 4. **AP计算**: 基于Precision-Recall曲线计算平均精度
 5. **mAP汇总**: 对所有类别求平均得到mAP
 
-## 内置转换函数
+## 支持的模型类型
 
-系统提供了以下预定义的转换函数：
+### 检测模型 (tools/eval.py)
 
-| 函数名 | 用途 | 输入格式 | 输出格式 |
-|--------|------|----------|----------|
-| `rfdetr` | RF-DETR模型 | 标准YOLO格式 | 标准YOLO格式 |
-| `yolov5` | YOLOv5模型 | 标准YOLO格式 | 标准YOLO格式 |
-| `normalize_bbox` | 归一化坐标转换 | 归一化xyxy | 绝对坐标xyxy |
-| `cxcywh_to_xyxy` | 中心点格式转换 | [cx,cy,w,h,...] | [x1,y1,x2,y2,...] |
+| 模型类型 | 推理类 | 默认输入尺寸 | 创建方式 |
+|---------|--------|------------|---------|
+| `yolo` | `YoloORT` | 640×640 | `create_detector('yolo', ...)` |
+| `rtdetr` | `RtdetrORT` | 640×640 | `create_detector('rtdetr', ...)` |
+| `rfdetr` | `RfdetrORT` | 576×576 | `create_detector('rfdetr', ...)` |
 
-使用方法：
-```python
-from utils.output_transforms import get_transform_function
+### 分类模型 (tools/eval_cls.py)
 
-transform_fn = get_transform_function('cxcywh_to_xyxy')
-```
+| 模型类型 | 推理类 | 默认输入尺寸 | Batch处理 |
+|---------|--------|------------|----------|
+| `helmet` | `HelmetORT` | 128×128 | 自动适配固定/动态batch |
+| `color_layer` | `ColorLayerORT` | 48×168 | 自动适配 |
+| `vehicle_attribute` | `VehicleAttributeORT` | 224×224 | 自动适配 |
+
+> **Batch自动适配**: `BaseClsORT` 基类自动检测ONNX模型的batch维度。固定batch模型（如batch=4）会自动补全输入并截取结果；动态batch模型直接以batch=1推理。无需修改代码即可切换。
 
 ## 性能优化建议
 
@@ -256,40 +293,41 @@ transform_fn = get_transform_function('cxcywh_to_xyxy')
 
 1. **检查检测结果**：
    ```python
-   detections, _ = detector(image)
-   print(f"检测结果形状: {detections[0].shape}")
-   print(f"前5个检测: {detections[0][:5]}")
+   result = detector(image)
+   print(f"检测到 {len(result.boxes)} 个目标")
+   print(f"类别: {result.class_ids}, 置信度: {result.scores}")
    ```
 
-2. **验证转换函数**：
+2. **检查分类结果**：
    ```python
-   transformed = transform_function(detections, original_shape)
-   assert transformed[0].shape[1] == 6  # 确保6列输出
+   result = classifier(image)
+   print(f"标签: {result.labels}, 置信度: {result.confidences}")
+   print(f"Batch size: {classifier._expected_batch_size}")  # 查看自动检测的batch
    ```
 
 3. **小规模测试**：
-   ```python
-   results = detector.evaluate_dataset(dataset_path, max_images=10)
+   ```bash
+   python tools/eval.py --model-type yolo --model-path models/yolo.onnx \
+       --dataset-path /path/to/dataset --max-images 10
    ```
 
 ## 扩展开发
 
-### 添加新的转换函数
+### 添加新的检测模型评估支持
 
-1. 在`utils/output_transforms.py`中实现新函数
-2. 添加到`TRANSFORM_FUNCTIONS`字典
-3. 编写文档和测试
+1. 在 `onnxtools/infer_onnx/` 中实现新推理类（继承 `BaseORT`）
+2. 在 `onnxtools/__init__.py` 的 `create_detector()` 中注册
+3. 在 `tools/eval.py` 中添加 model-type 选项
 
-### 添加新的评估指标
+### 添加新的分类模型评估支持
 
-1. 在`utils/detection_metrics.py`中实现新指标
-2. 更新`DetectionMetrics.process()`方法
-3. 更新`print_metrics()`函数
+1. 在 `onnxtools/infer_onnx/onnx_cls.py` 中实现新分类类（继承 `BaseClsORT`）
+2. 在 `tools/eval_cls.py` 的 `create_model()` 中注册
+3. Batch维度会由 `BaseClsORT` 自动处理
 
-## 完整示例
+### 相关文档
 
-参考`demo_evaluation.py`文件中的完整示例代码，包含：
-- YOLO模型评估
-- RF-DETR模型评估  
-- 自定义转换函数使用
-- 错误处理和日志记录
+- [模型支持列表](model_support_list.md) - 所有模型输入/输出规格
+- [项目总览](../README.md)
+- [推理引擎文档](../onnxtools/infer_onnx/CLAUDE.md)
+- [评估模块文档](../onnxtools/eval/CLAUDE.md)

@@ -2,7 +2,7 @@
 
 本文档基于推理类源码,详细描述项目支持的所有模型及其输入/输出规格、动态维度支持、前后处理流程。
 
-> **最后更新**: 2026-02-27
+> **最后更新**: 2026-03-02
 > **兼容性**: Python 3.10+, ONNX Runtime 1.22.0+
 
 ---
@@ -309,7 +309,7 @@ vehicle_type, color, conf = classifier(vehicle_image)
 **模型架构**: ConvNeXtV2-Pico
 **功能**: 头盔佩戴二分类 (单分支)
 **精度**: ~94% accuracy
-**特点**: 固定batch=4 ONNX模型,LetterBox预处理,ImageNet归一化
+**特点**: 自动适配固定/动态batch,LetterBox预处理,ImageNet归一化
 
 #### 初始化参数
 
@@ -327,26 +327,26 @@ HelmetORT(
 
 ```python
 # 输入
-输入形状: [4, 3, 128, 128]  # 固定batch=4 (内部透明处理,调用方无感知)
+输入形状: [N, 3, 128, 128]  # 支持固定batch和动态batch (BaseClsORT自动适配)
 数值范围: ImageNet标准化 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
 颜色空间: RGB (从BGR转换)
 预处理: LetterBox (保持宽高比, padding值=127)
 
 # 输出
-输出: [4, 2]  # raw logits, 内部应用softmax
+输出: [N, 2]  # raw logits, 内部应用softmax
 类别映射:
   {0: 'normal', 1: 'helmet_missing'}
 最终输出: ClsResult(labels=[status], confidences=[conf])
 ```
 
-#### 固定batch=4处理
+#### Batch自动适配
 
-该ONNX模型的batch维度固定为4。`HelmetORT` 通过重写 `_execute_inference` 透明处理：
-- 将单张输入 `[1,3,128,128]` 复制填充到 `[4,3,128,128]`
-- 推理后只取第一个结果 `outputs[:1]`
+`BaseClsORT` 基类在初始化时自动检测模型的batch维度：
+- **固定batch** (如 `[4, 3, 128, 128]`): 自动将单张输入复制填充到期望batch,推理后只取第一个结果
+- **动态batch** (如 `['batch', 3, 128, 128]`): 直接以batch=1推理,无需额外处理
 - 上层调用完全无感知,接口与其他分类器一致
 
-> 建议后续重新导出动态batch的ONNX模型,届时只需删除 `_execute_inference` 重写即可。
+可使用 `polygraphy surgeon sanitize` 将固定batch模型转为动态batch,无需修改代码。
 
 #### 前处理流程
 
@@ -473,7 +473,7 @@ OcrORT(
 | **颜色空间** | RGB | RGB | RGB | RGB | RGB | RGB | BGR |
 | **后处理** | NMS | 排序 | TopK | Softmax | Sigmoid | Softmax | CTC |
 | **NMS需求** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **固定Batch** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (4) | ❌ |
+| **固定Batch** | ❌ | ❌ | ❌ | ❌ | ❌ | 自动适配 | ❌ |
 
 ---
 
@@ -485,13 +485,13 @@ OcrORT(
 - **YOLO (0.5)**: 输出是类别置信度,范围[0,1]
 - **RT-DETR/RF-DETR (0.001)**: 输出300个queries,需要低阈值保留候选,无NMS依靠排序过滤
 
-### Q2: 输入尺寸是如何确定的？
+### Q2: 输入尺寸和batch是如何确定的？
 
 **A**: `BaseORT` 和 `BaseClsORT` 使用智能加载机制:
 
-1. 从ONNX模型元数据读取输入形状
-2. 如果H, W是固定整数 → 使用模型值
-3. 如果是动态符号 → 使用用户指定的 `input_shape`
+1. 从ONNX模型元数据读取输入形状 `[batch, C, H, W]`
+2. **Batch维度**: 正整数 → 固定batch（自动补全）; 字符串/None → 动态batch（默认1）
+3. **H, W维度**: 固定整数 → 使用模型值; 动态符号 → 使用用户指定的 `input_shape`
 4. 查看模型尺寸:
    ```python
    import onnxruntime as ort
@@ -499,14 +499,13 @@ OcrORT(
    print(session.get_inputs()[0].shape)
    ```
 
-### Q3: HelmetORT的batch=4是怎么回事？
+### Q3: 分类模型如何处理固定/动态batch？
 
-**A**: 当前ONNX模型在导出时固定了batch=4。`HelmetORT` 重写了 `_execute_inference` 方法:
-- 单张输入复制4份填充batch维度
-- 推理后只取第一个结果
-- 调用方完全无感知,接口与其他分类器一致
-
-建议后续重新导出动态batch模型,届时只需删除该重写方法即可。
+**A**: `BaseClsORT` 基类在初始化时自动从ONNX模型元数据检测batch维度：
+- 第0维为正整数 → 固定batch,推理时自动 `np.repeat` 补全,完成后截取第一个结果
+- 第0维为字符串或None → 动态batch,直接以batch=1推理
+- 所有分类模型（HelmetORT、ColorLayerORT、VehicleAttributeORT）共享此机制
+- 可使用 `polygraphy surgeon sanitize --override-input-shapes` 在固定/动态batch间转换,无需修改代码
 
 ### Q4: 检测器和分类器的区别？
 
@@ -567,6 +566,6 @@ OCR模型:
 
 **文档维护**: 本文档基于推理类源码生成,与代码同步更新。
 
-**最后更新**: 2026-02-27
+**最后更新**: 2026-03-02
 **作者**: yyq19990828
-**版本**: v3.0.0
+**版本**: v3.1.0

@@ -164,21 +164,23 @@ class TestHelmetORTPostprocess:
 
 
 class TestHelmetORTBatchPadding:
-    """Tests for the batch=4 padding logic in _execute_inference."""
+    """Tests for the automatic batch padding logic in BaseClsORT._execute_inference."""
 
     def test_batch_padding_shape(self):
-        """Input [1,3,128,128] should be padded to [4,3,128,128]."""
+        """Input [1,3,128,128] should be padded to [N,3,128,128] for fixed batch."""
+        fixed_batch_size = 4
         single_input = np.random.randn(1, 3, 128, 128).astype(np.float32)
-        batch = np.repeat(single_input, HelmetORT.FIXED_BATCH_SIZE, axis=0)
+        batch = np.repeat(single_input, fixed_batch_size, axis=0)
 
         assert batch.shape == (4, 3, 128, 128)
 
     def test_batch_padding_content(self):
         """All batch samples should be identical copies of the input."""
+        fixed_batch_size = 4
         single_input = np.random.randn(1, 3, 128, 128).astype(np.float32)
-        batch = np.repeat(single_input, HelmetORT.FIXED_BATCH_SIZE, axis=0)
+        batch = np.repeat(single_input, fixed_batch_size, axis=0)
 
-        for i in range(HelmetORT.FIXED_BATCH_SIZE):
+        for i in range(fixed_batch_size):
             np.testing.assert_array_equal(batch[i], single_input[0])
 
     def test_trimmed_output(self):
@@ -211,7 +213,6 @@ class TestHelmetORTInit:
 
     def test_constants(self):
         """Class constants should be correct."""
-        assert HelmetORT.FIXED_BATCH_SIZE == 4
         assert HelmetORT.LETTERBOX_PAD_VALUE == 127
         np.testing.assert_array_almost_equal(
             HelmetORT.IMAGENET_MEAN,
