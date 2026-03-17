@@ -14,6 +14,7 @@ OCR Models (independent):
 """
 
 from ..eval.eval_ocr import OCRDatasetEvaluator
+from .experiment import RfdetrUnifiedORT
 
 # Import detection classes from separate modules
 from .onnx_base import BaseORT
@@ -39,6 +40,7 @@ __all__ = [
     'YoloORT',
     'RtdetrORT',
     'RfdetrORT',
+    'RfdetrUnifiedORT',
     # Classification base and implementations
     'BaseClsORT',
     'ClsResult',

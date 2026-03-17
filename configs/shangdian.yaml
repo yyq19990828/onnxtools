@@ -1,0 +1,13 @@
+class_names:
+  0: test_car_1
+  1: test_car_2
+  2: person
+  3: bicycle
+  4: background    # RF-DETR no_object class
+
+visual_colors:
+  - "#FF3838"   # test_car_1 鲜红
+  - "#48F90A"   # test_car_2 亮绿
+  - "#00C2FF"   # person 天蓝
+  - "#FFB21D"   # bicycle 鲜黄
+  - "#808080"   # background 灰色 (不会实际出现)

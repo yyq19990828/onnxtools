@@ -48,6 +48,21 @@ DET_COLORS: list[str] = [
     "#FF00FF",
 ]
 
+SHANGDIAN_CLASSES: dict[int, str] = {
+    0: "test_car_1",
+    1: "test_car_2",
+    2: "person",
+    3: "bicycle",
+    4: "background",  # RF-DETR no_object class, sigmoid ~0, never passes threshold
+}
+
+SHANGDIAN_COLORS: list[str] = [
+    "#FF3838",  # test_car_1
+    "#48F90A",  # test_car_2
+    "#00C2FF",  # person
+    "#FFB21D",  # bicycle
+]
+
 COCO_CLASSES = {
     1: "person",
     2: "bicycle",

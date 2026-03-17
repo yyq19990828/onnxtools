@@ -194,6 +194,149 @@ normalized = (normalized - imagenet_mean) / imagenet_std
 
 ---
 
+## 实验性检测模型
+
+实验性推理类位于 `infer_onnx/experiment.py`，用于经过 ONNX 图改造后的模型。
+
+### 3.1 RF-DETR Unified (RfdetrUnifiedORT) [实验性]
+
+**实现类**: `infer_onnx/experiment.py::RfdetrUnifiedORT`
+**基类**: `BaseORT`
+**状态**: 实验性，用于快速验证和原型开发
+**改造工具**: `tools/modify_rfdetr.py`
+**适用配置**: `configs/shangdian.yaml` / `SHANGDIAN_CLASSES`
+
+**背景**: 原始 RF-DETR 模型 (576×576, 双输出, ImageNet归一化) 经 ONNX 图改造后，将预处理烧入模型内部，使其具备与 RT-DETR 一致的外部接口（640×640, 单输出, [0,1]归一化），同时保留 RF-DETR 的后处理逻辑。
+
+#### 模型改造内容 (tools/modify_rfdetr.py)
+
+```
+原始模型:
+  输入: images [1, 3, 576, 576] (ImageNet归一化)
+  输出: pred_boxes [1, 300, 4] + pred_logits [1, 300, C]
+
+改造后模型:
+  input [batch, 3, 640, 640] ∈ [0,1]
+    → Sub(ImageNet mean) → Div(ImageNet std)   # 归一化烧入
+    → Resize(640→576, bilinear)                # 分辨率适配烧入
+    → 原始 RF-DETR 主干网络
+    → Concat(pred_boxes, pred_logits)          # 双输出合并
+    → output [batch, 300, 4+C]
+
+改造流程:
+  1. 固定 batch=1 → onnxsim 常量折叠 (2217→922 nodes) → 恢复动态 batch
+  2. 支持 TensorRT FP16 构建 (需先 onnxsim 消除动态 Slice)
+```
+
+#### 初始化参数
+
+```python
+from onnxtools.infer_onnx import RfdetrUnifiedORT
+from onnxtools.config import SHANGDIAN_CLASSES
+
+RfdetrUnifiedORT(
+    onnx_path: str,                              # 改造后的 ONNX 模型路径
+    input_shape: Tuple[int, int] = (640, 640),   # 默认 640×640
+    conf_thres: float = 0.001,
+    iou_thres: float = 0.5,                      # 未使用
+    providers: Optional[List[str]] = None,
+    det_config = SHANGDIAN_CLASSES                # shangdian 检测配置
+)
+```
+
+#### 输入输出规格
+
+```python
+# 输入 (与 RT-DETR 一致)
+输入名称: "input"
+输入形状: [batch, 3, 640, 640]
+数值范围: [0.0, 1.0]  # 仅 /255, ImageNet归一化已在模型内部
+颜色空间: RGB
+动态维度: batch 支持动态
+
+# 输出 (单输出, 已concat)
+输出名称: "output"
+输出形状: [batch, 300, 4+C]
+         # 300 = query数量
+         # 前4维: bbox (cxcywh, 归一化[0,1])
+         # 后C维: 类别logits (raw, 需sigmoid)
+         # C = num_classes + 1 (RF-DETR 含背景类, 最后一维为 no_object)
+最终输出: Result(boxes, scores, class_ids)
+```
+
+#### RF-DETR 背景类说明
+
+RF-DETR 遵循 DETR 架构惯例，模型输出维度为 `num_classes + 1`：
+- 前 `num_classes` 维对应实际目标类别
+- **最后一维为 no_object 背景类**（sigmoid 概率始终 < 0.01，不会通过置信度阈值）
+
+例如 shangdian 配置 (4个目标类)，模型输出 5 维 logits：
+```python
+# class 0: test_car_1
+# class 1: test_car_2
+# class 2: person
+# class 3: bicycle
+# class 4: background (no_object, sigmoid ≈ 0.003, 永远不会出现在检测结果中)
+```
+
+#### 前处理流程
+
+```python
+# 源自 experiment.py::RfdetrUnifiedORT.preprocess()
+# 与 RT-DETR 完全一致 (ImageNet归一化已在模型内部)
+resized = cv2.resize(image, (640, 640))
+rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+normalized = rgb.astype(np.float32) / 255.0
+tensor = np.transpose(normalized, (2, 0, 1))[None, ...]
+```
+
+#### 后处理流程
+
+```python
+# 源自 experiment.py::RfdetrUnifiedORT.postprocess()
+# 保留 RF-DETR 原始逻辑 (与 RfdetrORT 一致)
+# 1. 分离 bbox[:4] 和 logits[4:]
+# 2. sigmoid 激活 (非 softmax)
+# 3. 全局 topk 选择 (展平 query×classes, 选 top 300)
+# 4. cxcywh → xyxy 坐标转换
+# 5. 缩放到原图尺寸
+# 6. 置信度过滤, 返回 Result 对象
+```
+
+#### 与原始 RfdetrORT 的对比
+
+| 特性 | RfdetrORT (原始) | RfdetrUnifiedORT (改造) |
+|------|-----------------|----------------------|
+| 输入尺寸 | 576×576 | 640×640 |
+| 输入归一化 | ImageNet mean/std (外部) | [0,1] (模型内部处理) |
+| 输出格式 | 双输出 (boxes + logits) | 单输出 (concat) |
+| 输入/输出名 | images / pred_boxes, pred_logits | input / output |
+| batch | 固定 1 | 动态 |
+| TensorRT | 需 onnxsim 预处理 | 需 onnxsim 预处理 |
+| 后处理 | sigmoid + topk | sigmoid + topk (一致) |
+| 精度差异 | 基准 | max logit diff ~3.8 (双重resize导致, 检测结果一致) |
+| 推理速度 (GPU) | ~17ms | ~17ms (+烧入算子开销可忽略) |
+
+#### 使用示例
+
+```python
+from onnxtools.infer_onnx import RfdetrUnifiedORT
+from onnxtools.config import SHANGDIAN_CLASSES
+
+# 使用改造后的模型
+detector = RfdetrUnifiedORT(
+    'models/rfdetr-medium_上电室内_20260226_modified.onnx',
+    conf_thres=0.3,
+    det_config=SHANGDIAN_CLASSES
+)
+result = detector(image)
+
+# 使用 TRT FP16 引擎 (需通过 Polygraphy TrtRunner 加载)
+# 详见 tools/build_engine.py
+```
+
+---
+
 ## 分类模型
 
 分类模型继承 `BaseClsORT` 基类，返回 `ClsResult` 对象，支持元组解包。
@@ -449,6 +592,7 @@ OcrORT(
 | YOLO | `YoloORT` | BaseORT | 640×640 | Letterbox | NMS | `Result` | 实时检测 |
 | RT-DETR | `RtdetrORT` | BaseORT | 640×640 | Resize | 排序过滤 | `Result` | 平衡场景 |
 | RF-DETR | `RfdetrORT` | BaseORT | 576×576 | ImageNet | TopK | `Result` | 高精度 |
+| RF-DETR Unified | `RfdetrUnifiedORT` | BaseORT | 640×640 | Resize | TopK | `Result` | 实验性 |
 
 ### 分类模型对比
 
@@ -474,6 +618,9 @@ OcrORT(
 | **后处理** | NMS | 排序 | TopK | Softmax | Sigmoid | Softmax | CTC |
 | **NMS需求** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **固定Batch** | ❌ | ❌ | ❌ | ❌ | ❌ | 自动适配 | ❌ |
+
+> **注**: RF-DETR Unified (`RfdetrUnifiedORT`) 预处理与 RT-DETR 一致 ([0,1] + Resize),
+> ImageNet归一化已烧入模型内部;后处理与 RF-DETR 一致 (sigmoid + TopK)。
 
 ---
 
@@ -566,6 +713,6 @@ OCR模型:
 
 **文档维护**: 本文档基于推理类源码生成,与代码同步更新。
 
-**最后更新**: 2026-03-02
+**最后更新**: 2026-03-17
 **作者**: yyq19990828
-**版本**: v3.1.0
+**版本**: v3.2.0

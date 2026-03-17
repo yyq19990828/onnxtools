@@ -103,7 +103,7 @@ fi
 if [ ! -d "rfdetr" ]; then
     echo "拉取 RF-DETR..."
     git clone --depth 1 https://github.com/roboflow/rf-detr.git temp_rfdetr
-    mv temp_rfdetr/rfdetr rfdetr
+    mv temp_rfdetr/src/rfdetr rfdetr
     rm -rf temp_rfdetr
     echo "✅ RF-DETR 拉取完成"
 else
