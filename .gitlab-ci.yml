@@ -1,0 +1,14 @@
+stages:
+  - sync
+
+sync-from-github:
+  stage: sync
+  image: alpine/git:latest
+  only:
+    - schedules
+  script:
+    - git remote add github https://github.com/yyq19990828/onnxtools.git || true
+    - git fetch github --prune
+    - git remote set-url origin "http://gitlab-ci-token:${CI_JOB_TOKEN}@192.168.2.10:82/perception/onnxtools.git"
+    - git push origin --all --force
+    - git push origin --tags --force
