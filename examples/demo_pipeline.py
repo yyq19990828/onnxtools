@@ -281,6 +281,12 @@ def main(args):
         os.makedirs(args.output_dir)
         logging.info(f"Created output directory: {args.output_dir}")
 
+    # Resolve det_config
+    det_config = args.det_config
+    if det_config == 'coco80':
+        from onnxtools.config import COCO_CLASSES
+        det_config = COCO_CLASSES
+
     # Initialize pipeline
     logging.info("Initializing inference pipeline...")
     pipeline = InferencePipeline(
@@ -292,6 +298,7 @@ def main(args):
         plate_conf_thres=args.plate_conf_thres,
         color_layer_model=args.color_layer_model,
         ocr_model=args.ocr_model,
+        det_config=det_config,
         annotator_preset=args.annotator_preset,
         annotator_types=args.annotator_types,
         box_thickness=args.box_thickness,
@@ -345,8 +352,10 @@ Examples:
     parser.add_argument('--model-path', type=str, required=True,
                         help='Path to the ONNX detection model')
     parser.add_argument('--model-type', type=str, default='rtdetr',
-                        choices=['rtdetr', 'yolo', 'rfdetr'],
+                        choices=['rtdetr', 'yolo', 'rfdetr', 'rfdetr_unified'],
                         help='Model type (default: rtdetr)')
+    parser.add_argument('--det-config', type=str, default=None,
+                        help='Detection config: "coco80" for COCO 80 classes, or path to YAML config file')
     parser.add_argument('--conf-thres', type=float, default=0.5,
                         help='Confidence threshold for detection (default: 0.25)')
     parser.add_argument('--iou-thres', type=float, default=0.5,
@@ -377,7 +386,7 @@ Examples:
     # OCR model parameters
     parser.add_argument('--color-layer-model', type=str, default='models/color_layer_20251222.onnx',
                         help='Path to color/layer ONNX model (default: models/color_layer.onnx)')
-    parser.add_argument('--ocr-model', type=str, default='models/ocr_20251222.onnx',
+    parser.add_argument('--ocr-model', type=str, default='models/ocr_20251126.onnx',
                         help='Path to OCR ONNX model (default: models/ocr.onnx)')
 
     # Visualization parameters

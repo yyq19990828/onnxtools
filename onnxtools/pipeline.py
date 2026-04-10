@@ -142,7 +142,16 @@ class InferencePipeline:
             det_config_data = load_det_config(None)
             logging.info("使用默认检测配置")
 
-        if self.detector.class_names:
+        # 当用户显式传入 det_config 时，优先使用用户配置（覆盖模型metadata）
+        if det_config is not None:
+            class_names_dict = det_config_data.get("class_names", {})
+            if class_names_dict:
+                max_class_id = max(class_names_dict.keys())
+                self.class_names = [class_names_dict.get(i, f"class_{i}") for i in range(max_class_id + 1)]
+                logging.info(f"使用用户指定的检测配置: {len(class_names_dict)} 个类别")
+            else:
+                self.class_names = []
+        elif self.detector.class_names:
             logging.info(f"从ONNX模型metadata读取到类别名称: {self.detector.class_names}")
             max_class_id = max(self.detector.class_names.keys())
             self.class_names = [self.detector.class_names.get(i, f"class_{i}") for i in range(max_class_id + 1)]
