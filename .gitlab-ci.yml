@@ -13,5 +13,5 @@ sync-from-github:
   script:
     - git clone --bare https://github.com/yyq19990828/onnxtools.git /tmp/onnxtools-mirror
     - cd /tmp/onnxtools-mirror
-    - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --all
-    - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --tags
+    - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --all --force
+    - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --tags --force
