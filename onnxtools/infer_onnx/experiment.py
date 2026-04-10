@@ -19,7 +19,7 @@ class RfdetrUnifiedORT(BaseORT):
     适用于经 modify_rfdetr.py 改造后的模型，特征:
     - 预处理: 直接 resize + /255 (与 RT-DETR 一致，ImageNet 归一化在模型内部)
     - 后处理: sigmoid 激活 + 全局 topk 选择 (保留 RF-DETR 原始逻辑)
-    - 单输出: [batch, 300, 9] = concat(pred_boxes, pred_logits)
+    - 单输出: [batch, 300, 4+num_classes] = concat(pred_boxes, pred_logits)
     """
 
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
@@ -66,7 +66,7 @@ class RfdetrUnifiedORT(BaseORT):
         """
         后处理: sigmoid 激活 + 全局 topk (保留 RF-DETR 原始逻辑)
 
-        输出格式: [batch, 300, 9] 其中 [:4]=bbox(cxcywh 归一化), [4:]=logits
+        输出格式: [batch, 300, 4+num_classes] 其中 [:4]=bbox(cxcywh 归一化), [4:]=logits
 
         Args:
             outputs: 模型输出列表，outputs[0] 为 [batch, 300, 9]
@@ -84,14 +84,14 @@ class RfdetrUnifiedORT(BaseORT):
 
         # 分离 bbox 和 logits
         pred_boxes = preds[:, :, :4]    # [batch, 300, 4] cxcywh 归一化
-        pred_logits = preds[:, :, 4:]   # [batch, 300, 5] raw logits
+        pred_logits = preds[:, :, 4:]   # [batch, 300, num_classes] raw logits
         num_classes = pred_logits.shape[2]
 
         results = []
 
         for i in range(bs):
             out_bbox = pred_boxes[i]      # [300, 4]
-            out_logits = pred_logits[i]   # [300, 5]
+            out_logits = pred_logits[i]   # [300, num_classes]
 
             # sigmoid 激活
             prob = 1.0 / (1.0 + np.exp(-out_logits))

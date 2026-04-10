@@ -29,6 +29,7 @@ from .infer_onnx import (
     VehicleAttributeORT,
     YoloORT,
 )
+from .infer_onnx.experiment import RfdetrUnifiedORT
 
 # 从 pipeline 子模块导入推理管道类
 from .pipeline import InferencePipeline
@@ -68,6 +69,8 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
         return RtdetrORT(onnx_path, **kwargs)
     elif model_type in ["rfdetr", "rf-detr"]:
         return RfdetrORT(onnx_path, **kwargs)
+    elif model_type in ["rfdetr_unified", "rfdetr-unified"]:
+        return RfdetrUnifiedORT(onnx_path, **kwargs)
     else:
         raise ValueError(f"不支持的模型类型: {model_type}. 支持的类型: yolo, rtdetr, rfdetr")
 
