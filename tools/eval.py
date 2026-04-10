@@ -6,7 +6,7 @@ from typing import Dict, List
 # 添加项目路径到系统路径
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
-from onnxtools import DetDatasetEvaluator, create_detector, setup_logger
+from onnxtools import DetDatasetEvaluator, create_detector, setup_logger  # noqa: E402
 
 
 def parse_class_mapping_arg(mapping_str: str) -> Dict[str, List[str]]:
@@ -38,7 +38,7 @@ def parse_class_mapping_arg(mapping_str: str) -> Dict[str, List[str]]:
 def main():
     parser = argparse.ArgumentParser(description='评估ONNX模型在数据集上的性能')
     parser.add_argument('--model-type', type=str, default='rtdetr',
-                        choices=['rtdetr', 'yolo', 'rfdetr'], help='模型类型')
+                        choices=['rtdetr', 'yolo', 'rfdetr', 'rfdetr_unified'], help='模型类型')
     parser.add_argument('--model-path', type=str, required=True,
                         help='ONNX模型文件路径')
     parser.add_argument('--dataset-path', type=str, required=True,
@@ -84,6 +84,7 @@ def main():
         eval_kwargs['class_mapping'] = parse_class_mapping_arg(args.class_mapping)
 
     evaluator.evaluate_dataset(**eval_kwargs)
+
 
 if __name__ == '__main__':
     main()

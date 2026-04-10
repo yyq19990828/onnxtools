@@ -110,7 +110,7 @@ class DetDatasetEvaluator:
                 labels_dir = dataset_path / "labels"
                 split_name = "root"
                 if not images_dir.exists():
-                    raise ValueError(f"未找到有效的图像目录")
+                    raise ValueError("未找到有效的图像目录")
                 if not labels_dir.exists():
                     raise ValueError(f"标签目录不存在: {labels_dir}")
                 logging.info("使用根目录下的images/labels进行评估")
@@ -250,12 +250,17 @@ class DetDatasetEvaluator:
 
         # 应用类别映射（如果提供）
         if class_mapping is not None:
-            id_mapping, new_names = self._parse_class_mapping(class_mapping, names)
+            gt_id_mapping, pred_id_mapping, new_names = self._parse_class_mapping(
+                class_mapping, names
+            )
             predictions, ground_truths = self._apply_class_mapping(
-                predictions, ground_truths, id_mapping
+                predictions, ground_truths, gt_id_mapping, pred_id_mapping
             )
             names = new_names
-            logging.info(f"类别映射已应用: {len(id_mapping)} 个源类别 -> {len(new_names)} 个目标类别")
+            logging.info(
+                f"类别映射已应用: GT {len(gt_id_mapping)} 个源类别, "
+                f"Pred {len(pred_id_mapping)} 个源类别 -> {len(new_names)} 个目标类别"
+            )
 
         # 计算指标
         results = evaluate_detection(predictions, ground_truths, names)
@@ -306,70 +311,94 @@ class DetDatasetEvaluator:
         self,
         class_mapping: Dict[Union[int, str], List[Union[int, str]]],
         names: Dict[int, str]
-    ) -> Tuple[Dict[int, int], Dict[int, str]]:
+    ) -> Tuple[Dict[int, int], Dict[int, int], Dict[int, str]]:
         """
-        解析类别映射，将 {目标: [源列表]} 转换为 {原ID: 新ID} 格式
+        解析类别映射，分别为 GT 和 Pred 构建 {原ID: 新ID} 映射
+
+        GT 使用数据集的类别名称（names参数），Pred 使用模型的类别名称
+        （self.detector.class_names），两者可能完全不同。
 
         Args:
             class_mapping: {目标类别: [源类别列表]}，支持字符串或数字
-            names: 原始类别名称字典 {id: name}
+                - 目标类别: 模型输出的类别名称（如 'truck', 'pedestrian'）
+                - 源类别列表: 数据集标注的类别名称（如 ['test_car_1', 'test_car_2']）
+            names: 数据集的类别名称字典 {class_id: class_name}
 
         Returns:
-            (id_mapping, new_names)
-            - id_mapping: {原始class_id: 新class_id}
+            (gt_id_mapping, pred_id_mapping, new_names)
+            - gt_id_mapping: {数据集class_id: 新class_id}
+            - pred_id_mapping: {模型class_id: 新class_id}
             - new_names: {新class_id: 新类别名称}
         """
-        # 构建 name -> id 的反向映射
-        name_to_id = {v: k for k, v in names.items()}
+        # 构建数据集 name -> id 的反向映射
+        gt_name_to_id = {v: k for k, v in names.items()}
 
-        id_mapping = {}  # {原始ID: 新ID}
-        new_names = {}   # {新ID: 新名称}
+        # 构建模型 name -> id 的反向映射
+        model_names = getattr(self.detector, 'class_names', {})
+        pred_name_to_id = {v: k for k, v in model_names.items()}
+
+        gt_id_mapping = {}    # {数据集class_id: 新ID}
+        pred_id_mapping = {}  # {模型class_id: 新ID}
+        new_names = {}        # {新ID: 新名称}
 
         for new_idx, (target, sources) in enumerate(class_mapping.items()):
             # 确定目标类别名称
             if isinstance(target, int):
-                target_name = names.get(target, f"class_{target}")
+                target_name = model_names.get(target, names.get(target, f"class_{target}"))
             else:
                 target_name = str(target)
 
             new_names[new_idx] = target_name
 
-            # 处理源类别列表
+            # 为预测建立映射：目标类别名称 -> 模型的class_id
+            if isinstance(target, int):
+                pred_id_mapping[target] = new_idx
+            else:
+                pred_id = pred_name_to_id.get(target)
+                if pred_id is not None:
+                    pred_id_mapping[pred_id] = new_idx
+                else:
+                    # 目标名称在模型类别中未找到，尝试作为数字
+                    if target.isdigit():
+                        pred_id_mapping[int(target)] = new_idx
+                    else:
+                        logging.warning(f"目标类别 '{target}' 在模型类别中未找到")
+
+            # 为GT建立映射：源类别列表 -> 数据集的class_id
             for src in sources:
                 if isinstance(src, int):
-                    src_id = src
+                    gt_id_mapping[src] = new_idx
                 elif isinstance(src, str):
-                    # 尝试将字符串解析为数字
                     if src.isdigit():
-                        src_id = int(src)
+                        gt_id_mapping[int(src)] = new_idx
                     else:
-                        # 通过名称查找ID
-                        src_id = name_to_id.get(src)
-                        if src_id is None:
-                            logging.warning(f"类别名称 '{src}' 未找到，跳过")
-                            continue
-                else:
-                    continue
+                        src_id = gt_name_to_id.get(src)
+                        if src_id is not None:
+                            gt_id_mapping[src_id] = new_idx
+                        else:
+                            logging.warning(f"数据集类别名称 '{src}' 未找到，跳过")
 
-                id_mapping[src_id] = new_idx
-
-        return id_mapping, new_names
+        return gt_id_mapping, pred_id_mapping, new_names
 
     def _apply_class_mapping(
         self,
         predictions: List[np.ndarray],
         ground_truths: List[np.ndarray],
-        id_mapping: Dict[int, int]
+        gt_id_mapping: Dict[int, int],
+        pred_id_mapping: Dict[int, int]
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
-        对 pred 和 gt 应用类别ID映射
+        对 pred 和 gt 分别应用类别ID映射
 
-        未在映射中的类别将被过滤掉（不参与评估）
+        GT 使用 gt_id_mapping（数据集class_id → 新ID），
+        Pred 使用 pred_id_mapping（模型class_id → 新ID）。
+        未在映射中的类别将被过滤掉（不参与评估）。
 
         Args:
             predictions: 预测结果列表，每个元素 [N, 6] (x1,y1,x2,y2,conf,class_id)
             ground_truths: 真值列表，每个元素 [M, 5] (class_id,x1,y1,x2,y2)
-            id_mapping: {原始class_id: 新class_id}
+            gt_id_mapping: {数据集class_id: 新class_id}
+            pred_id_mapping: {模型class_id: 新class_id}
 
         Returns:
             映射后的 (predictions, ground_truths)
@@ -385,8 +414,8 @@ class DetDatasetEvaluator:
             # pred 格式: [x1, y1, x2, y2, conf, class_id]
             class_ids = pred[:, 5].astype(int)
 
-            # 创建映射后的 class_id
-            new_class_ids = np.array([id_mapping.get(cid, -1) for cid in class_ids])
+            # 使用 pred_id_mapping（模型class_id → 新ID）
+            new_class_ids = np.array([pred_id_mapping.get(cid, -1) for cid in class_ids])
 
             # 只保留在映射中的检测
             valid_mask = new_class_ids >= 0
@@ -405,8 +434,8 @@ class DetDatasetEvaluator:
             # gt 格式: [class_id, x1, y1, x2, y2]
             class_ids = gt[:, 0].astype(int)
 
-            # 创建映射后的 class_id
-            new_class_ids = np.array([id_mapping.get(cid, -1) for cid in class_ids])
+            # 使用 gt_id_mapping（数据集class_id → 新ID）
+            new_class_ids = np.array([gt_id_mapping.get(cid, -1) for cid in class_ids])
 
             # 只保留在映射中的真值
             valid_mask = new_class_ids >= 0
