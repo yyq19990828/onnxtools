@@ -17,11 +17,16 @@ from .onnx_base import BaseORT
 
 
 class RfdetrORT(BaseORT):
-    """
-    RF-DETR模型ORT推理类
+    """RF-DETR (ResNet-FPN + DETR) ONNX 推理类。
 
-    支持RF-DETR (ResNet-based Feature Pyramid + DETR) 模型
-    输出格式：两个独立的输出 - pred_boxes 和 pred_logits
+    模型有两个输出: ``pred_boxes [B, Q, 4]`` (cxcywh, 归一化) 与
+    ``pred_logits [B, Q, C]``。预处理使用 ImageNet 均值方差归一化,
+    后处理通过 sigmoid + top-K 选取候选,无 NMS。
+
+    Example:
+        >>> from onnxtools import RfdetrORT
+        >>> det = RfdetrORT('models/rfdetr.onnx', input_shape=(576, 576))
+        >>> result = det(image)               # Result 对象
     """
 
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (576, 576),
@@ -45,7 +50,9 @@ class RfdetrORT(BaseORT):
     def _validate_rf_detr_format(self):
         """验证RF-DETR输出格式"""
         # 使用ONNX Runtime会话进行验证
-        dummy_input = np.random.randn(self._expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(np.float32)
+        dummy_input = np.random.randn(
+            self._expected_batch_size, 3, self.input_shape[0], self.input_shape[1]
+        ).astype(np.float32)
 
         feed_dict = {self.input_name: dummy_input}
         outputs = self._onnx_session.run(self.output_names, feed_dict)
@@ -107,7 +114,10 @@ class RfdetrORT(BaseORT):
         return tensor, scale, original_shape
 
     @staticmethod
-    def postprocess(outputs: List[np.ndarray], input_shape: Tuple[int, int], conf_thres: float, **kwargs) -> List[np.ndarray]:
+    def postprocess(
+        outputs: List[np.ndarray], input_shape: Tuple[int, int],
+        conf_thres: float, **kwargs,
+    ) -> List[np.ndarray]:
         """
         RF-DETR后处理逻辑（对齐原始实现）
 
@@ -119,7 +129,10 @@ class RfdetrORT(BaseORT):
             **kwargs: 其他参数
 
         Returns:
-            List[np.ndarray]: 后处理后的检测结果
+            List[np.ndarray]: 长度为 batch 的列表,每个元素形状 ``[M, 6]``,
+                列含义为 ``[x1, y1, x2, y2, conf, class_id]``。当
+                ``kwargs['orig_shape']`` 提供时坐标已还原到原图,
+                否则以输入分辨率 ``input_shape`` 为参考系。
         """
         # 根据实际输出形状确定pred_logits和pred_boxes
         # 输出0: (4, 300, 4) - 应该是pred_boxes
@@ -130,7 +143,6 @@ class RfdetrORT(BaseORT):
             pred_logits, pred_boxes = outputs[0], outputs[1]
 
         bs = pred_boxes.shape[0]
-        num_queries = pred_boxes.shape[1]
         num_classes = pred_logits.shape[2]
 
         results = []

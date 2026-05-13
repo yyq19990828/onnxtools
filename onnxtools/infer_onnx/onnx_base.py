@@ -25,7 +25,22 @@ from .result import Result
 
 
 class BaseORT(ABC):
-    """ONNX Runtime模型推理基类 - 使用Polygraphy懒加载"""
+    """ONNX Runtime 检测器抽象基类 (Template Method Pattern)。
+
+    所有目标检测器(YOLO/RT-DETR/RF-DETR)的统一基类,负责模型加载、
+    推理调度与结果包装,具体的预/后处理由子类通过 :meth:`preprocess`
+    与 :meth:`postprocess` 静态方法提供。
+
+    子类契约:
+        - 必须实现 :meth:`preprocess` 和 :meth:`postprocess` 两个 ``@staticmethod``
+        - 调用方通过统一的 ``detector(image)`` 接口取得 :class:`Result` 对象
+
+    Example:
+        >>> from onnxtools import create_detector
+        >>> detector = create_detector('rtdetr', 'models/rtdetr.onnx', conf_thres=0.5)
+        >>> result = detector(image)          # Result 实例
+        >>> result.boxes, result.scores, result.class_ids
+    """
 
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
                  conf_thres: float = 0.5, providers: Optional[List[str]] = None,
@@ -73,8 +88,8 @@ class BaseORT(ABC):
                 self._expected_batch_size = 1
 
             # 提取height和width (第2、3维)
-            if (isinstance(model_input_shape[2], int) and model_input_shape[2] > 0 and
-                isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
+            if (isinstance(model_input_shape[2], int) and model_input_shape[2] > 0
+                    and isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
                 self.input_shape = (model_input_shape[2], model_input_shape[3])
                 logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}, batch_size: {self._expected_batch_size}")
             else:
@@ -154,13 +169,13 @@ class BaseORT(ABC):
                 if isinstance(names_data, dict):
                     try:
                         result['class_names'] = {int(k): str(v) for k, v in names_data.items()}
-                        logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+                        logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
                     except (ValueError, TypeError):
                         result['class_names'] = {i: str(v) for i, v in enumerate(names_data.values())}
-                        logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+                        logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
                 elif isinstance(names_data, list):
                     result['class_names'] = {i: str(name) for i, name in enumerate(names_data)}
-                    logging.info(f"从ONNX模型metadata读取到类别名称 (纯onnx库)")
+                    logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
 
             logging.info(f"从ONNX模型读取信息: input={result['input_name']}, outputs={result['output_names']}")
 
@@ -247,7 +262,7 @@ class BaseORT(ABC):
     @staticmethod
     @abstractmethod
     def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int],
-                   conf_thres: float, **kwargs) -> List[np.ndarray]:
+                    conf_thres: float, **kwargs) -> List[np.ndarray]:
         """
         静态后处理方法，将模型输出转换为检测结果
 
@@ -396,21 +411,36 @@ class BaseORT(ABC):
         # If input is multi-batch but only processing one image, return only first batch result
         if (expected_batch_size > 1 and len(detections) > 1):
             detections = [detections[0]]
-            logging.debug(f"只返回第一个batch的检测结果")
+            logging.debug("只返回第一个batch的检测结果")
 
         return detections
 
     def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Result:
-        """
-        对图像进行推理（使用Polygraphy懒加载）
+        """对单张图像执行推理(预处理 → ONNX 推理 → 后处理 → Result 包装)。
 
         Args:
-            image (np.ndarray): 输入图像，BGR格式
-            conf_thres (Optional[float]): 置信度阈值
-            **kwargs: 其他参数
+            image (np.ndarray): 输入图像,BGR 格式,形状 [H, W, 3]。
+            conf_thres (Optional[float]): 本次推理使用的置信度阈值;
+                若为 None 则使用构造时的 ``self.conf_thres``。
+            **kwargs: 透传给子类 :meth:`postprocess` 的额外参数。
 
         Returns:
-            Result: 包装的检测结果对象
+            Result: 检测结果对象,字段含义:
+
+                - ``boxes`` (np.ndarray[N, 4], float32): xyxy 像素坐标,
+                  已还原到原图尺寸
+                - ``scores`` (np.ndarray[N], float32): 置信度
+                - ``class_ids`` (np.ndarray[N], int32): 类别 ID
+                - ``orig_shape`` (Tuple[int, int]): 原图 (H, W)
+                - ``names`` (Dict[int, str]): 类别名称映射
+
+            当无任何检测时,``boxes/scores/class_ids`` 均为 ``None``,
+            可通过 ``len(result) == 0`` 判定。
+
+        Example:
+            >>> result = detector(cv2.imread('test.jpg'))
+            >>> print(f"找到 {len(result)} 个目标")
+            >>> result.save('out.jpg', annotator_preset='debug')
         """
         # Phase 1: Prepare inference
         input_tensor, scale, original_shape, ratio_pad = self._prepare_inference(image)
@@ -419,7 +449,10 @@ class BaseORT(ABC):
         outputs, expected_batch_size = self._execute_inference(input_tensor)
 
         # Phase 3: Finalize inference
-        detections = self._finalize_inference(outputs, expected_batch_size, scale, ratio_pad, conf_thres, orig_shape=original_shape, **kwargs)
+        detections = self._finalize_inference(
+            outputs, expected_batch_size, scale, ratio_pad, conf_thres,
+            orig_shape=original_shape, **kwargs,
+        )
 
         # Convert list format to Result object (T014)
         # detections is List[np.ndarray] where each array has shape [N, 6] (x1,y1,x2,y2,conf,class_id)
@@ -444,15 +477,16 @@ class BaseORT(ABC):
         )
 
     def create_engine_dataloader(self, **kwargs):
-        """
-        为引擎比较创建适配的数据加载器，并自动赋值给engine_dataloader属性
+        """为引擎比较创建数据加载器,并自动赋值到 ``self.engine_dataloader``。
 
         Args:
-            image_paths: 图片路径列表，可以是文件夹路径或具体图片路径
-            iterations: 迭代次数
+            **kwargs: 透传给 :func:`create_dataloader_from_detector`,常用项:
+
+                - ``image_paths``: 图片路径列表(文件夹或具体图片)
+                - ``iterations``: 迭代次数
 
         Returns:
-            CustomEngineDataLoader: 使用静态预处理方法的自定义数据加载器
+            使用本检测器静态预处理方法的 ``CustomEngineDataLoader`` 实例。
         """
         from .engine_dataloader import create_dataloader_from_detector
         dataloader = create_dataloader_from_detector(self, **kwargs)
@@ -460,7 +494,7 @@ class BaseORT(ABC):
         self.engine_dataloader = dataloader
         return dataloader
 
-    #TODO 输出结果加上后处理，以及一些图像变换的中间超参
+    # TODO 输出结果加上后处理，以及一些图像变换的中间超参
     def compare_engine(
         self,
         engine_path: Optional[str] = None,

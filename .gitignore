@@ -58,3 +58,7 @@ third_party/
 data/*
 !data/fonts/
 !data/fonts/**
+
+# MkDocs 构建产物（由 CI 自动推到 gh-pages 分支，主分支无需提交）
+/site/
+.cache/

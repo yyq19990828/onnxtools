@@ -327,7 +327,6 @@ names:
 
 ### 相关文档
 
-- [模型支持列表](model_support_list.md) - 所有模型输入/输出规格
-- [项目总览](../README.md)
-- [推理引擎文档](../onnxtools/infer_onnx/CLAUDE.md)
-- [评估模块文档](../onnxtools/eval/CLAUDE.md)
+- [模型支持列表](../models/model_support_list.md) - 所有模型输入/输出规格
+- [API 参考: Eval](../api/eval.md)
+- [API 参考: Detectors](../api/detectors.md)

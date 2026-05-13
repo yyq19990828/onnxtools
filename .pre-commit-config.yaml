@@ -11,6 +11,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
+        args: ['--unsafe']  # 允许 mkdocs 的 !!python/name: 等自定义标签
       - id: check-json
       - id: check-added-large-files
         args: ['--maxkb=1000']

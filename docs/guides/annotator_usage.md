@@ -261,5 +261,5 @@ python examples/demo_pipeline.py \
 **更新日期**: 2025-09-30
 **版本**: 1.0.0
 **相关文档**:
-- [性能报告](../specs/003-add-more-annotators/performance_report.md)
-- [快速入门](../specs/003-add-more-annotators/quickstart.md)
+- [API 参考: Utils(Annotator)](../api/utils.md)
+- [API 参考: Result](../api/result.md)

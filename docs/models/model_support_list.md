@@ -704,10 +704,9 @@ OCR模型:
 
 ### 相关文档
 
-- [项目总览](../README.md)
-- [根目录CLAUDE.md](../CLAUDE.md)
-- [推理引擎文档](../onnxtools/infer_onnx/CLAUDE.md)
-- [测试文档](../tests/CLAUDE.md)
+- [快速上手](../getting-started.md)
+- [API 参考: Detectors](../api/detectors.md)
+- [API 参考: Classifiers](../api/classifiers.md)
 
 ---
 

@@ -18,10 +18,16 @@ from .onnx_base import BaseORT
 
 
 class YoloORT(BaseORT):
-    """
-    传统YOLO模型ORT推理类 (原DetONNX)
+    """YOLO 系列(v5 / v8 / v11)的 ONNX 推理类。
 
-    支持YOLOv5、YOLOv8等使用NMS后处理的YOLO模型
+    使用 Ultralytics 风格的 LetterBox 预处理(保持长宽比 + 填充),
+    输出经 NMS 过滤,坐标已还原到原图尺寸。
+
+    Example:
+        >>> from onnxtools import YoloORT
+        >>> det = YoloORT('models/yolo11n.onnx', conf_thres=0.5, iou_thres=0.7)
+        >>> result = det(image)               # Result 对象
+        >>> result.boxes                       # np.ndarray [N, 4] xyxy
     """
 
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
@@ -82,9 +88,9 @@ class YoloORT(BaseORT):
 
     @staticmethod
     def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int], conf_thres: float,
-                   iou_thres: float, multi_label: bool, has_objectness: bool,
-                   scale: float = 1.0, ratio_pad: Optional[tuple] = None,
-                   orig_shape: Optional[tuple] = None) -> List[np.ndarray]:
+                    iou_thres: float, multi_label: bool, has_objectness: bool,
+                    scale: float = 1.0, ratio_pad: Optional[tuple] = None,
+                    orig_shape: Optional[tuple] = None) -> List[np.ndarray]:
         """
         YOLO模型后处理，包含NMS
 
@@ -97,7 +103,9 @@ class YoloORT(BaseORT):
             orig_shape (Optional[tuple]): 原始图像尺寸 (height, width)
 
         Returns:
-            List[np.ndarray]: 后处理后的检测结果
+            List[np.ndarray]: 长度为 batch 的列表,每个元素形状 ``[M, 6]``,
+                列含义为 ``[x1, y1, x2, y2, conf, class_id]``,坐标已
+                还原到原图尺寸(若提供了 ``orig_shape``)。
         """
         # 自适应处理YOLO输出格式
         # YOLO官方库输出: [B, bbox+C, N] 例如 (1, 84, 8400)
@@ -107,9 +115,9 @@ class YoloORT(BaseORT):
         # 鲁棒的维度判断逻辑：
         # 1. 如果第二维小于第三维，且第二维在合理的特征数范围内(4-200)，则可能是[B, C, N]格式
         # 2. 特征数应该是4+类别数，一般在80-200之间比较合理
-        if (prediction.shape[1] < prediction.shape[2] and
-            4 <= prediction.shape[1] <= 200 and
-            prediction.shape[2] > prediction.shape[1]):
+        if (prediction.shape[1] < prediction.shape[2]
+                and 4 <= prediction.shape[1] <= 200
+                and prediction.shape[2] > prediction.shape[1]):
             # 转换为我们期望的格式: [B, N, C]
             prediction = prediction.transpose(0, 2, 1)
             logging.info(f"YOLO输出格式自适应转换: {original_shape} -> {prediction.shape}")
@@ -174,16 +182,17 @@ class YoloORT(BaseORT):
         return detections
 
     def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None,
-                 iou_thres: Optional[float] = None) -> Tuple[List[np.ndarray], tuple]:
-        """
-        YOLO推理接口
+                 iou_thres: Optional[float] = None):
+        """对图像执行 YOLO 推理。
 
         Args:
-            image (np.ndarray): 输入图像，BGR格式
-            conf_thres (Optional[float]): 置信度阈值
-            iou_thres (Optional[float]): IoU阈值
+            image (np.ndarray): 输入图像,BGR 格式,形状 [H, W, 3]。
+            conf_thres (Optional[float]): 本次推理使用的置信度阈值,
+                覆盖构造时的默认值。
+            iou_thres (Optional[float]): 本次推理使用的 NMS IoU 阈值,
+                覆盖构造时的默认值。
 
         Returns:
-            Tuple[List[np.ndarray], tuple]: 检测结果列表和原始图像形状
+            Result: 检测结果对象,字段定义见 :meth:`BaseORT.__call__`。
         """
         return super().__call__(image, conf_thres=conf_thres, iou_thres=iou_thres)

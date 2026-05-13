@@ -247,7 +247,8 @@ class InferencePipeline:
         Example:
             >>> result_img, output_data = pipeline(image)
             >>> cv2.imwrite('output.jpg', result_img)
-            >>> print(output_data[0]['plate_name'])  # 打印第一个车牌号
+            >>> first = output_data[0]
+            >>> print(first.get("plate_name"))  # 第一个车牌号
         """
         return self._process_frame(frame)
 

@@ -1,0 +1,111 @@
+site_name: onnxtools
+site_description: ONNX-based vehicle and license plate recognition toolkit
+site_url: https://example.com/onnxtools/
+repo_url: https://github.com/your-org/onnxtools
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+exclude_docs: |
+  polygraphy使用指南/
+  CLAUDE.md
+  rfdetr_coco_evaluation_report.md
+  _hooks/
+
+hooks:
+  - docs/_hooks/silence_griffe.py
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - mermaid2
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 100
+            members_order: source
+            merge_init_into_class: true
+            docstring_section_style: table
+            show_if_no_docstring: false
+            show_bases: true
+            filters: ["!^_[^_]"]
+            allow_inspection: true
+            unwrap_annotated: true
+
+nav:
+  - 首页: index.md
+  - 快速上手: getting-started.md
+  - 指南:
+      - 可视化标注: guides/annotator_usage.md
+      - 模型评估: guides/evaluation_guide.md
+      - CLI 工具: guides/cli-tools.md
+      - MCP 集成: guides/mcp.md
+  - API 参考:
+      - 总览: api/index.md
+      - Detectors: api/detectors.md
+      - Classifiers: api/classifiers.md
+      - OCR: api/ocr.md
+      - Result: api/result.md
+      - Pipeline: api/pipeline.md
+      - Utils: api/utils.md
+      - Eval: api/eval.md
+      - Config: api/config.md
+  - 模型支持: models/model_support_list.md

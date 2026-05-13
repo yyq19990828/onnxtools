@@ -50,7 +50,28 @@ class AnnotatorType(Enum):
 
 
 class AnnotatorFactory:
-    """Factory for creating supervision annotator instances."""
+    """根据 :class:`AnnotatorType` 枚举创建 supervision annotator 实例的工厂。
+
+    支持 13 种 annotator (见 :class:`AnnotatorType`),分为五类:
+
+    - **边框**: ``BOX`` / ``ROUND_BOX`` / ``BOX_CORNER``
+    - **几何标记**: ``CIRCLE`` / ``TRIANGLE`` / ``ELLIPSE`` / ``DOT``
+    - **填充**: ``COLOR`` / ``BACKGROUND_OVERLAY``
+    - **特效**: ``HALO`` / ``PERCENTAGE_BAR``
+    - **隐私保护**: ``BLUR`` / ``PIXELATE``
+
+    Example:
+        >>> from onnxtools.utils.supervision_annotator import (
+        ...     AnnotatorFactory, AnnotatorPipeline, AnnotatorType
+        ... )
+        >>> pipeline = AnnotatorPipeline([
+        ...     AnnotatorFactory.create(AnnotatorType.ROUND_BOX,
+        ...                             {'roundness': 0.4, 'thickness': 3}),
+        ...     AnnotatorFactory.create(AnnotatorType.PERCENTAGE_BAR, {}),
+        ...     AnnotatorFactory.create(AnnotatorType.RICH_LABEL, {}),
+        ... ])
+        >>> annotated = pipeline.annotate(image, sv_detections)
+    """
 
     @staticmethod
     def create(

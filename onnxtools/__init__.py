@@ -43,23 +43,37 @@ from .utils import setup_logger
 
 
 def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
-    """
-    工厂函数：根据模型类型创建相应的检测器（支持Polygraphy懒加载）
+    """根据模型类型创建相应的检测器实例(工厂函数)。
 
     Args:
-        model_type (str): 模型类型，支持 'yolo', 'rtdetr', 'rfdetr'
-        onnx_path (str): ONNX模型路径
-        **kwargs: 其他参数，包括providers等
+        model_type (str): 模型类型,大小写不敏感。支持以下别名:
+
+            - YOLO 系列: ``'yolo'`` / ``'yolov5'`` / ``'yolov8'`` / ``'yolov11'``
+              → :class:`YoloORT`
+            - RT-DETR: ``'rtdetr'`` / ``'rt-detr'`` → :class:`RtdetrORT`
+            - RF-DETR: ``'rfdetr'`` / ``'rf-detr'`` → :class:`RfdetrORT`
+            - RF-DETR Unified (实验性): ``'rfdetr_unified'`` / ``'rfdetr-unified'``
+
+        onnx_path (str): ONNX 模型文件路径。
+        **kwargs: 透传给具体检测器构造函数,常用项:
+
+            - ``conf_thres`` (float): 置信度阈值
+            - ``iou_thres`` (float): NMS IoU 阈值(仅 YOLO 实际使用)
+            - ``input_shape`` (Tuple[int, int]): 输入尺寸 (H, W)
+            - ``providers`` (List[str]): ONNX Runtime 执行提供程序
+            - ``det_config`` (str | Dict[int, str]): 类别配置文件或字典
 
     Returns:
-        BaseORT: 相应的检测器实例
+        BaseORT: 检测器实例。调用 ``detector(image)`` 得到 :class:`Result` 对象。
 
     Raises:
-        ValueError: 不支持的模型类型
+        ValueError: 当 ``model_type`` 不在支持列表中时抛出。
 
     Examples:
-        >>> detector = create_detector('yolo', 'models/yolo11n.onnx', conf_thres=0.5)
-        >>> detector = create_detector('rtdetr', 'models/rtdetr.onnx', iou_thres=0.7)
+        >>> from onnxtools import create_detector
+        >>> det = create_detector('yolo', 'models/yolo11n.onnx', conf_thres=0.5)
+        >>> det = create_detector('rtdetr', 'models/rtdetr.onnx', iou_thres=0.7)
+        >>> result = det(image)               # Result 实例
     """
     model_type = model_type.lower()
 

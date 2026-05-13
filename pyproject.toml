@@ -43,6 +43,17 @@ mcp = [
     "httpx>=0.27.0",
 ]
 
+# 文档构建支持 (可选)
+# 安装方式: uv pip install -e ".[docs]"
+# 本地预览: mkdocs serve   构建: mkdocs build --strict
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.27",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-literate-nav>=0.6",
+    "mkdocs-mermaid2-plugin>=1.2",
+]
+
 [project.scripts]
 # MCP 服务器入口点
 onnxtools-mcp = "mcp_tools.server:main"

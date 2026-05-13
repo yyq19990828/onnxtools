@@ -69,7 +69,7 @@ def smart_normalize_scores(scores: np.ndarray) -> np.ndarray:
     sum_std = np.std(scores_sum_per_query)
 
     logging.debug(f"分类输出统计: min={scores_min:.4f}, max={scores_max:.4f}, "
-                 f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}")
+                  f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}")
 
     # 判断归一化状态的启发式规则
     is_softmax_normalized = (
@@ -116,11 +116,17 @@ def smart_normalize_scores(scores: np.ndarray) -> np.ndarray:
 
 
 class RtdetrORT(BaseORT):
-    """
-    RT-DETR模型ORT推理类 (原YoloRTDETROnnx，已废弃)
+    """RT-DETR 端到端检测器(无 NMS) ONNX 推理类。
 
-    完全复刻ultralytics RTDETRValidator的后处理逻辑，端到端检测，无需NMS
-    模型输出格式: [batch, 300, 19] = [batch, queries, (4_bbox + 15_classes)]
+    完全复刻 Ultralytics ``RTDETRValidator`` 的后处理流程,内部对分类
+    输出做自适应归一化(logits / softmax / sigmoid 三种状态自动识别)。
+
+    模型输出布局: ``[batch, num_queries=300, 4_bbox + num_classes]``。
+
+    Example:
+        >>> from onnxtools import RtdetrORT
+        >>> det = RtdetrORT('models/rtdetr.onnx', conf_thres=0.5)
+        >>> result = det(image)               # Result 对象
     """
 
     def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
@@ -197,7 +203,10 @@ class RtdetrORT(BaseORT):
             **kwargs: 其他参数（RT-DETR不使用scale等）
 
         Returns:
-            List[np.ndarray]: 检测结果列表，坐标在输入图像尺寸上
+            List[np.ndarray]: 长度为 batch 的列表,每个元素形状 ``[M, 6]``,
+                列含义为 ``[x1, y1, x2, y2, conf, class_id]``。当
+                ``kwargs['orig_shape']`` 提供时坐标已还原到原图,否则
+                以输入分辨率为参考系。
         """
         # 处理预测格式（复刻 ultralytics/models/rtdetr/val.py#L173-L174）
         if not isinstance(preds, (list, tuple)):

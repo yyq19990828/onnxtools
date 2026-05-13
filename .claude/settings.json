@@ -1,4 +1,7 @@
 {
+  "env": {
+    "LD_LIBRARY_PATH": "/usr/local/cuda-12.1/targets/x86_64-linux/lib"
+  },
   "hooks": {
     "SessionStart": [
       {
