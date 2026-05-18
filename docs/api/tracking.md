@@ -180,4 +180,5 @@ result_img, output_data = pipeline(frame)
 * **缩减 pool**:降低 `lost_track_buffer` / `max_age`,或在上游用 NMS 削减进入跟踪的检测数。
 * **类别隔离**:`bytetrack_native(class_aware=True)` 用 cost mask 屏蔽跨类匹配,适合多类共存场景。
 
-更多内部约定与扩展指引参见 [tracking 模块 CLAUDE.md](../../onnxtools/tracking/CLAUDE.md)。
+更多内部约定与扩展指引参见仓库内 `onnxtools/tracking/CLAUDE.md`(GitHub 浏览:
+<https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/CLAUDE.md>)。
