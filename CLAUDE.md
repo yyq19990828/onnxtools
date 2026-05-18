@@ -13,6 +13,7 @@ ONNX-based vehicle and license plate recognition toolkit. Supports YOLO / RT-DET
 | Inference engine internals (BaseORT, Result, ORT subclasses) | [onnxtools/infer_onnx/CLAUDE.md](onnxtools/infer_onnx/CLAUDE.md) |
 | Visualization customization (13 annotators, 5 presets) | [onnxtools/utils/CLAUDE.md](onnxtools/utils/CLAUDE.md) · [docs/annotator_usage.md](docs/annotator_usage.md) |
 | Model evaluation (COCO mAP, OCR metrics) | [onnxtools/eval/CLAUDE.md](onnxtools/eval/CLAUDE.md) · [docs/evaluation_guide.md](docs/evaluation_guide.md) |
+| 2D multi-object tracking (ByteTrack, OC-SORT) | [onnxtools/tracking/CLAUDE.md](onnxtools/tracking/CLAUDE.md) · [docs/api/tracking.md](docs/api/tracking.md) |
 | TensorRT build / ONNX debugging | [tools/README.md](tools/README.md) · [docs/polygraphy使用指南/](docs/polygraphy使用指南/) |
 | Run/write tests | [tests/CLAUDE.md](tests/CLAUDE.md) |
 | Config files (det_config / plate / visualization presets) | [configs/CLAUDE.md](configs/CLAUDE.md) |
@@ -26,6 +27,7 @@ ONNX-based vehicle and license plate recognition toolkit. Supports YOLO / RT-DET
 | `onnxtools/infer_onnx/` | YOLO / RT-DETR / RF-DETR / OCR inference classes | [CLAUDE.md](onnxtools/infer_onnx/CLAUDE.md) |
 | `onnxtools/utils/` | Image processing, Supervision visualization, OCR metrics | [CLAUDE.md](onnxtools/utils/CLAUDE.md) |
 | `onnxtools/eval/` | COCO / OCR dataset evaluators | [CLAUDE.md](onnxtools/eval/CLAUDE.md) |
+| `onnxtools/tracking/` | 2D MOT — ByteTrack (supervision / native) + OC-SORT | [CLAUDE.md](onnxtools/tracking/CLAUDE.md) |
 | `tools/` | Evaluation, TensorRT build, ONNX vs TRT comparison | [README.md](tools/README.md) |
 | `tests/` | unit / integration / contract / performance | [CLAUDE.md](tests/CLAUDE.md) |
 | `configs/` | Detection classes, OCR dict, visualization presets (YAML) | [CLAUDE.md](configs/CLAUDE.md) |

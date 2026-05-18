@@ -423,6 +423,16 @@ VISUALIZATION_PRESETS: dict[str, dict[str, Any]] = {
             {"type": "background_overlay", "opacity": 0.5, "color": "black"},
         ],
     },
+    "tracking": {
+        "name": "跨帧跟踪模式",
+        "description": "转角边框 + 运动轨迹 + 含 tracker_id 的标签",
+        "label_type": "tracking",
+        "annotators": [
+            {"type": "box_corner", "thickness": 2},
+            {"type": "trace", "thickness": 2, "trace_length": 30, "position": "CENTER"},
+            {"type": "rich_label", "font_size": 14},
+        ],
+    },
 }
 
 

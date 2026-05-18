@@ -105,6 +105,7 @@ nav:
       - OCR: api/ocr.md
       - Result: api/result.md
       - Pipeline: api/pipeline.md
+      - Tracking: api/tracking.md
       - Utils: api/utils.md
       - Eval: api/eval.md
       - Config: api/config.md

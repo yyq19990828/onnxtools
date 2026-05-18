@@ -5,17 +5,39 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 
-def create_confidence_labels(scores: np.ndarray) -> List[str]:
+def _format_tracker_prefix(tracker_id: Any) -> str:
+    """Return '#<id> ' if tracker_id is a valid int, else ''."""
+    if tracker_id is None:
+        return ""
+    try:
+        if isinstance(tracker_id, float) and np.isnan(tracker_id):
+            return ""
+        return f"#{int(tracker_id)} "
+    except (TypeError, ValueError):
+        return ""
+
+
+def create_confidence_labels(
+    scores: np.ndarray,
+    tracker_ids: Optional[Any] = None,
+) -> List[str]:
     """
-    Create labels with confidence scores only.
+    Create labels with confidence scores only, optionally prefixed by tracker id.
 
     Args:
         scores: Confidence scores array [N]
+        tracker_ids: Optional iterable of tracker ids aligned with ``scores``.
+            None entries (or absent argument) skip the prefix.
 
     Returns:
-        List of confidence strings like ["0.85", "0.92", ...]
+        List of label strings like ["#7 0.85", "0.92", ...]
     """
-    return [f"{float(score):.2f}" for score in scores]
+    if tracker_ids is None:
+        return [f"{float(score):.2f}" for score in scores]
+    return [
+        f"{_format_tracker_prefix(tid)}{float(score):.2f}"
+        for score, tid in zip(scores, tracker_ids)
+    ]
 
 
 def create_ocr_labels(
@@ -23,7 +45,8 @@ def create_ocr_labels(
     scores: np.ndarray,
     class_ids: np.ndarray,
     plate_results: List[Optional[Dict[str, Any]]],
-    class_names: Union[Dict[int, str], List[str]]
+    class_names: Union[Dict[int, str], List[str]],
+    tracker_ids: Optional[Any] = None,
 ) -> List[str]:
     """
     Create labels for detections including OCR information for plate class.
@@ -53,6 +76,11 @@ def create_ocr_labels(
     for i in range(n_detections):
         class_id = int(class_ids[i])
         confidence = float(scores[i])
+        tracker_prefix = (
+            _format_tracker_prefix(tracker_ids[i])
+            if tracker_ids is not None and i < len(tracker_ids)
+            else ""
+        )
 
         # Get class name
         if isinstance(class_names, dict):
@@ -65,7 +93,7 @@ def create_ocr_labels(
                 class_name = f"unknown_{class_id}"
 
         # Base label
-        base_label = f"{class_name} {confidence:.2f}"
+        base_label = f"{tracker_prefix}{class_name} {confidence:.2f}"
 
         # Add OCR information if available
         if (i < len(plate_results) and plate_results[i] is not None

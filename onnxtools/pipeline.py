@@ -69,6 +69,13 @@ class InferencePipeline:
         det_config: Optional[Union[str, Dict[int, str]]] = None,
         annotator_preset: Optional[str] = None,
         annotator_types: Optional[List[str]] = None,
+        enable_tracking: bool = False,
+        tracker_algo: str = "bytetrack",
+        track_activation_threshold: float = 0.25,
+        lost_track_buffer: int = 30,
+        minimum_matching_threshold: float = 0.8,
+        track_frame_rate: int = 30,
+        tracker_extra_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs
     ):
         """初始化推理管道。
@@ -95,6 +102,27 @@ class InferencePipeline:
         self.iou_thres = iou_thres
         self.roi_top_ratio = roi_top_ratio
         self.plate_conf_thres = plate_conf_thres if plate_conf_thres is not None else conf_thres
+
+        # 2D tracking — optional, default off. Algorithms come from
+        # onnxtools.tracking; "bytetrack" (supervision built-in) is the only
+        # backend shipped today.
+        self.enable_tracking = enable_tracking
+        self._tracker_algo = tracker_algo
+        self._tracker_kwargs = dict(
+            track_activation_threshold=track_activation_threshold,
+            lost_track_buffer=lost_track_buffer,
+            minimum_matching_threshold=minimum_matching_threshold,
+            frame_rate=track_frame_rate,
+        )
+        if tracker_extra_kwargs:
+            self._tracker_kwargs.update(tracker_extra_kwargs)
+        self.tracker = None
+        if self.enable_tracking:
+            from onnxtools.tracking import create_tracker
+            self.tracker = create_tracker(tracker_algo, **self._tracker_kwargs)
+            logging.info(
+                "Tracker '%s' enabled with kwargs=%s", tracker_algo, self._tracker_kwargs
+            )
 
         # 初始化检测器
         try:
@@ -252,6 +280,83 @@ class InferencePipeline:
         """
         return self._process_frame(frame)
 
+    @staticmethod
+    def _align_tracker_ids(
+        boxes: np.ndarray,
+        sv_detections,
+        output_data: List[Dict[str, Any]],
+    ) -> Optional[np.ndarray]:
+        """Align ByteTrack's tracker_id back to per-detection order and JSON output.
+
+        ByteTrack may drop unmatched detections, so it returns a Detections object
+        whose length can be smaller than the input ``boxes``. We match by xyxy
+        (ByteTrack does not modify box coordinates) to recover the alignment.
+
+        Args:
+            boxes: Original per-detection boxes [N, 4] xyxy in pre-tracking order.
+            sv_detections: Tracked sv.Detections returned by ByteTrack.
+            output_data: List of JSON output dicts — receives ``tracker_id`` field.
+
+        Returns:
+            Object array of length N where each entry is an int tracker_id or None.
+            Returns None if no ids were assigned (e.g. empty tracker output).
+        """
+        n = len(boxes)
+        per_box_ids: List[Optional[int]] = [None] * n
+        tracked_ids = getattr(sv_detections, "tracker_id", None)
+        if tracked_ids is not None and len(sv_detections) > 0:
+            tracked_xyxy = sv_detections.xyxy
+            for i in range(n):
+                diffs = np.abs(tracked_xyxy - boxes[i]).sum(axis=1)
+                j = int(np.argmin(diffs))
+                # ByteTrack returns identical xyxy for matched detections;
+                # a small epsilon tolerates float32→float64 promotion.
+                if diffs[j] < 1e-3 and tracked_ids[j] is not None:
+                    per_box_ids[i] = int(tracked_ids[j])
+
+        # Backfill output_data using xyxy match (output_data may be shorter
+        # than boxes because low-confidence plates are skipped earlier).
+        for entry in output_data:
+            box_key = "plate_box2d" if "plate_box2d" in entry else "box2d"
+            ref = np.asarray(entry[box_key], dtype=boxes.dtype)
+            diffs = np.abs(boxes - ref).sum(axis=1)
+            entry["tracker_id"] = per_box_ids[int(np.argmin(diffs))]
+
+        if all(t is None for t in per_box_ids):
+            return None
+        return np.array(per_box_ids, dtype=object)
+
+    @staticmethod
+    def _map_tracked_to_original(
+        boxes: np.ndarray,
+        tracked_xyxy: np.ndarray,
+    ) -> List[int]:
+        """Return original-detection indices for each tracked detection.
+
+        ByteTrack preserves box coordinates exactly, so a near-zero L1 distance
+        identifies the source detection.
+
+        Args:
+            boxes: Original detection boxes [N, 4].
+            tracked_xyxy: Tracked detection boxes [M, 4], M <= N.
+
+        Returns:
+            List of length M with original indices into ``boxes``.
+        """
+        return [
+            int(np.argmin(np.abs(boxes - tracked_xyxy[i]).sum(axis=1)))
+            for i in range(len(tracked_xyxy))
+        ]
+
+    def reset_tracker(self) -> None:
+        """Reset tracker state — call between videos/cameras to restart IDs from 1.
+
+        No-op when tracking is disabled.
+        """
+        if self.tracker is not None:
+            self.tracker.reset()
+            logging.debug("Tracker '%s' state reset", self._tracker_algo)
+
     def _process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
         """内部推理处理流程，供__call__复用并便于子类覆盖."""
         # 1. Object Detection - now returns Result object
@@ -341,6 +446,31 @@ class InferencePipeline:
                         "width": w, "height": h
                     })
 
+        # 2.5 Tracking (optional). Must run every frame — including frames with
+        # zero detections — so lost_track_buffer ages correctly.
+        tracked_sv_detections = None
+        tracker_ids: Optional[np.ndarray] = None
+        if self.tracker is not None:
+            import supervision as sv
+            if len(result) > 0:
+                from onnxtools.infer_onnx import Result
+                track_input = Result(
+                    boxes=boxes,
+                    scores=scores,
+                    class_ids=class_ids,
+                    orig_shape=result.orig_shape,
+                    names=result.names,
+                    path=result.path,
+                    orig_img=frame,
+                ).to_supervision()
+            else:
+                track_input = sv.Detections.empty()
+            tracked_sv_detections = self.tracker.update(track_input, frame)
+            if len(result) > 0:
+                tracker_ids = self._align_tracker_ids(
+                    boxes, tracked_sv_detections, output_data
+                )
+
         # 3. Draw detections
         # Use annotator pipeline if available, otherwise fall back to legacy drawing
         if self.annotator_pipeline and ANNOTATOR_AVAILABLE:
@@ -357,16 +487,47 @@ class InferencePipeline:
                     path=result.path,
                     orig_img=frame
                 )
-                sv_detections = vis_result.to_supervision()
+                # Prefer the already-tracked detections if tracking is enabled
+                # (avoids running ByteTrack twice and ensures visualisations carry
+                # the same tracker_ids that landed in output_data).
+                sv_detections = (
+                    tracked_sv_detections
+                    if tracked_sv_detections is not None
+                    else vis_result.to_supervision()
+                )
 
                 # Import label creation functions
                 from .utils.supervision_labels import create_confidence_labels, create_ocr_labels
 
+                # When tracking is on, ByteTrack may drop unmatched low-score
+                # detections so len(sv_detections) < len(boxes). Re-align the
+                # label inputs to the kept subset by xyxy matching.
+                if self.tracker is not None and len(sv_detections) != len(boxes):
+                    kept = self._map_tracked_to_original(boxes, sv_detections.xyxy)
+                    boxes_lbl = sv_detections.xyxy
+                    scores_lbl = scores[kept]
+                    class_ids_lbl = class_ids[kept]
+                    plate_results_lbl = [plate_results[i] for i in kept]
+                    tracker_ids_lbl = (
+                        sv_detections.tracker_id
+                        if getattr(sv_detections, "tracker_id", None) is not None
+                        else None
+                    )
+                else:
+                    boxes_lbl = boxes
+                    scores_lbl = scores
+                    class_ids_lbl = class_ids
+                    plate_results_lbl = plate_results
+                    tracker_ids_lbl = tracker_ids
+
                 # Create labels based on label_type
                 if self.label_type == "confidence_only":
-                    labels = create_confidence_labels(scores)
+                    labels = create_confidence_labels(scores_lbl, tracker_ids=tracker_ids_lbl)
                 else:
-                    labels = create_ocr_labels(boxes, scores, class_ids, plate_results, self.class_names)
+                    labels = create_ocr_labels(
+                        boxes_lbl, scores_lbl, class_ids_lbl, plate_results_lbl, self.class_names,
+                        tracker_ids=tracker_ids_lbl,
+                    )
 
                 result_frame = self.annotator_pipeline.annotate(frame.copy(), sv_detections, labels=labels)
                 logging.debug(f"Annotated frame with {len(sv_detections)} detections using annotator pipeline")

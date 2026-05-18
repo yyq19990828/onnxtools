@@ -75,7 +75,7 @@ class TestConfigConstants:
         assert "white" in VEHICLE_COLOR_MAP.values()
 
     def test_visualization_presets_keys(self) -> None:
-        expected = {"box_only", "standard", "lightweight", "privacy", "debug", "high_contrast"}
+        expected = {"box_only", "standard", "lightweight", "privacy", "debug", "high_contrast", "tracking"}
         assert set(VISUALIZATION_PRESETS.keys()) == expected
 
     def test_visualization_presets_have_annotators(self) -> None:

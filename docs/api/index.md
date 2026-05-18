@@ -26,6 +26,7 @@ from onnxtools import (
 | [OCR](ocr.md) | `OcrORT` 序列识别 |
 | [Result](result.md) | 检测结果包装类 |
 | [Pipeline](pipeline.md) | 端到端 `InferencePipeline` |
+| [Tracking](tracking.md) | 2D MOT — `BaseTracker` / ByteTrack / OC-SORT / Kalman / matching 基元 |
 | [Utils](utils.md) | 图像预处理、可视化、NMS、OCR 指标等工具 |
 | [Eval](eval.md) | COCO / OCR / 分类数据集评估器 |
 | [Config](config.md) | 全局配置加载(检测类别、OCR 字典、可视化预设) |

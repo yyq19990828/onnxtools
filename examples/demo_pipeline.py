@@ -201,6 +201,10 @@ def process_video(pipeline, video_source, output_dir, output_mode, frame_skip=0,
             logging.error("Could not open video writer")
             writer = None
 
+    # Reset tracker state so IDs restart from 1 for each new video/camera session.
+    if hasattr(pipeline, "reset_tracker"):
+        pipeline.reset_tracker()
+
     # Process frames
     try:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -303,7 +307,13 @@ def main(args):
         annotator_types=args.annotator_types,
         box_thickness=args.box_thickness,
         roundness=args.roundness,
-        blur_kernel_size=args.blur_kernel_size
+        blur_kernel_size=args.blur_kernel_size,
+        enable_tracking=args.enable_tracking,
+        tracker_algo=args.tracker_algo,
+        track_activation_threshold=args.track_activation_threshold,
+        lost_track_buffer=args.lost_track_buffer,
+        minimum_matching_threshold=args.minimum_matching_threshold,
+        track_frame_rate=args.track_frame_rate,
     )
 
     # Infer source type
@@ -391,12 +401,13 @@ Examples:
 
     # Visualization parameters
     parser.add_argument('--annotator-preset', type=str, default='standard',
-                        choices=['standard', 'lightweight', 'privacy', 'debug', 'high_contrast', 'box_only'],
+                        choices=['standard', 'lightweight', 'privacy', 'debug',
+                                 'high_contrast', 'box_only', 'tracking'],
                         help='Visualization preset (default: standard)')
     parser.add_argument('--annotator-types', type=str, nargs='+', default=None,
                         choices=['box', 'rich_label', 'round_box', 'box_corner', 'circle',
                                  'triangle', 'ellipse', 'dot', 'color', 'background_overlay',
-                                 'halo', 'percentage_bar', 'blur', 'pixelate'],
+                                 'halo', 'percentage_bar', 'blur', 'pixelate', 'trace'],
                         help='Custom annotator types (overrides preset)')
     parser.add_argument('--box-thickness', type=int, default=2,
                         help='Thickness for box annotators (default: 2)')
@@ -404,6 +415,21 @@ Examples:
                         help='Roundness for round_box annotator [0.0-1.0] (default: 0.3)')
     parser.add_argument('--blur-kernel-size', type=int, default=15,
                         help='Kernel size for blur annotator (default: 15)')
+
+    # 2D Tracking — video/camera only
+    parser.add_argument('--enable-tracking', action='store_true',
+                        help='Enable 2D tracking; assigns persistent tracker_id per object')
+    parser.add_argument('--tracker-algo', type=str, default='bytetrack',
+                        help='Tracking algorithm. Currently only "bytetrack" '
+                             '(supervision built-in) is shipped.')
+    parser.add_argument('--track-activation-threshold', type=float, default=0.25,
+                        help='ByteTrack: minimum confidence to start a new track (default: 0.25)')
+    parser.add_argument('--lost-track-buffer', type=int, default=30,
+                        help='ByteTrack: frames a track survives without re-detection (default: 30)')
+    parser.add_argument('--minimum-matching-threshold', type=float, default=0.8,
+                        help='ByteTrack: IoU match threshold for associating tracks (default: 0.8)')
+    parser.add_argument('--track-frame-rate', type=int, default=30,
+                        help='ByteTrack: input frame rate hint (default: 30)')
 
     # Logging
     parser.add_argument('--log-level', type=str, default='INFO',

@@ -48,6 +48,9 @@ class AnnotatorType(Enum):
     BLUR = "blur"
     PIXELATE = "pixelate"
 
+    # Tracking annotators (requires detections with tracker_id)
+    TRACE = "trace"
+
 
 class AnnotatorFactory:
     """根据 :class:`AnnotatorType` 枚举创建 supervision annotator 实例的工厂。
@@ -110,6 +113,7 @@ class AnnotatorFactory:
             AnnotatorType.PERCENTAGE_BAR: AnnotatorFactory._create_percentage_bar,
             AnnotatorType.BLUR: AnnotatorFactory._create_blur,
             AnnotatorType.PIXELATE: AnnotatorFactory._create_pixelate,
+            AnnotatorType.TRACE: AnnotatorFactory._create_trace,
         }
 
         creator = creator_map.get(annotator_type)
@@ -343,6 +347,21 @@ class AnnotatorFactory:
         """Create PixelateAnnotator."""
         return sv.PixelateAnnotator(
             pixel_size=config.get('pixel_size', 20)
+        )
+
+    @staticmethod
+    def _create_trace(config: Dict[str, Any]) -> sv.TraceAnnotator:
+        """Create TraceAnnotator.
+
+        Renders motion trails for each tracker_id. Detections without
+        tracker_id are silently ignored by supervision.
+        """
+        return sv.TraceAnnotator(
+            color=config.get('color_palette', sv.ColorPalette.DEFAULT),
+            position=config.get('position', sv.Position.CENTER),
+            trace_length=config.get('trace_length', 30),
+            thickness=config.get('thickness', 2),
+            color_lookup=config.get('color_lookup', sv.ColorLookup.TRACK),
         )
 
 

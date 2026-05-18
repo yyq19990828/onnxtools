@@ -22,9 +22,16 @@ dependencies = [
     "python-levenshtein>=0.25.0",
     "pyyaml>=6.0.2",
     "supervision==0.26.1",
+    "scipy>=1.10.0",
 ]
 
 [project.optional-dependencies]
+# 跟踪加速 (可选) — lap.lapjv 替代 scipy 的 linear_sum_assignment，边缘设备效果显著
+# 安装方式: uv pip install -e ".[tracking-fast]"
+tracking-fast = [
+    "lap>=0.5.0",
+]
+
 # TensorRT加速支持 (可选)
 # 安装方式: uv pip install -e ".[trt]"
 # 注意: 需要先安装 pip setuptools wheel: uv pip install pip setuptools wheel
