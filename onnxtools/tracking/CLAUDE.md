@@ -204,6 +204,7 @@ uv pip install -e ".[tracking-fast]"   # 安装 lap (可选)
 
 ### 文档
 * [`docs/api/tracking.md`](../../docs/api/tracking.md) — 用户 API 参考(mkdocstrings 自动生成)
+* [`docs/guides/tracking/`](../../docs/guides/tracking/index.md) — **2D 跟踪学习手册**(概念/卡尔曼/匈牙利/评测指标 + 传统方法 + 近五年方法,mermaid 图文并茂)
 
 ## 变更日志 (Changelog)
 
