@@ -2,6 +2,9 @@
 
 2D 多目标跟踪 (MOT)。所有 tracker 以 `supervision.Detections` 为输入输出,可通过 [`create_tracker`](#onnxtools.tracking.create_tracker) 工厂统一创建,亦可在 [`InferencePipeline`](pipeline.md) 中开启 `enable_tracking=True` 即插即用。
 
+!!! tip "想系统学习 2D 跟踪原理?"
+    本页是 API 参考。若想理解卡尔曼/匈牙利/评测指标、传统方法 (SORT/DeepSORT) 与近五年方法 (ByteTrack/OC-SORT/BoT-SORT/StrongSORT/Deep OC-SORT/Hybrid-SORT/MOTR…),见图文并茂的 **2D 跟踪学习手册**:[`docs/guides/tracking/`](../guides/tracking/index.md)。
+
 ## 选择哪个算法?
 
 | 算法名 | 实现 | 适用场景 |
