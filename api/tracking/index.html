@@ -2279,6 +2279,10 @@
 
 <h1 id="tracking">Tracking<a class="headerlink" href="#tracking" title="Permanent link">&para;</a></h1>
 <p>2D 多目标跟踪 (MOT)。所有 tracker 以 <code>supervision.Detections</code> 为输入输出,可通过 <a href="#onnxtools.tracking.create_tracker"><code>create_tracker</code></a> 工厂统一创建,亦可在 <a href="../pipeline/"><code>InferencePipeline</code></a> 中开启 <code>enable_tracking=True</code> 即插即用。</p>
+<div class="admonition tip">
+<p class="admonition-title">想系统学习 2D 跟踪原理?</p>
+<p>本页是 API 参考。若想理解卡尔曼/匈牙利/评测指标、传统方法 (SORT/DeepSORT) 与近五年方法 (ByteTrack/OC-SORT/BoT-SORT/StrongSORT/Deep OC-SORT/Hybrid-SORT/MOTR…),见图文并茂的 <strong>2D 跟踪学习手册</strong>:<a href="../../guides/tracking/"><code>docs/guides/tracking/</code></a>。</p>
+</div>
 <h2 id="_1">选择哪个算法?<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

@@ -1,0 +1,686 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="ONNX-based vehicle and license plate recognition toolkit" name="description"/>
+<link href="https://example.com/onnxtools/guides/tracking/strongsort/" rel="canonical"/>
+<link href="../../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.7.6" name="generator"/>
+<title>StrongSORT:让 DeepSORT 再次伟大 - onnxtools</title>
+<link href="../../../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
+<link href="../../../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+</head>
+<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#strongsort-deepsort">
+          跳转至
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="页眉" class="md-header__inner md-grid">
+<a aria-label="onnxtools" class="md-header__button md-logo" data-md-component="logo" href="../../.." title="onnxtools">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            onnxtools
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              StrongSORT:让 DeepSORT 再次伟大
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="切换到深色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="切换到深色模式">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+</label>
+<input aria-label="切换到浅色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="切换到浅色模式">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="搜索" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="搜索" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="查找" class="md-search__options">
+<button aria-label="清空当前内容" class="md-search__icon md-icon" tabindex="-1" title="清空当前内容" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="标签" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../..">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../../getting-started/">
+        
+  
+  
+    
+  
+  快速上手
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../annotator_usage/">
+          
+  
+  
+    
+  
+  指南
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../../api/">
+          
+  
+  
+    
+  
+  API 参考
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../../models/model_support_list/">
+        
+  
+  
+    
+  
+  模型支持
+
+      </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="导航栏" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="onnxtools" class="md-nav__button md-logo" data-md-component="logo" href="../../.." title="onnxtools">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    onnxtools
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../..">
+<span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../getting-started/">
+<span class="md-ellipsis">
+    
+  
+    快速上手
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    指南
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    指南
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../annotator_usage/">
+<span class="md-ellipsis">
+    
+  
+    可视化标注
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../evaluation_guide/">
+<span class="md-ellipsis">
+    
+  
+    模型评估
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../cli-tools/">
+<span class="md-ellipsis">
+    
+  
+    CLI 工具
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../mcp/">
+<span class="md-ellipsis">
+    
+  
+    MCP 集成
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<div class="md-nav__link md-nav__container">
+<a class="md-nav__link" href="../../../api/">
+<span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+</a>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-nav__icon md-icon"></span>
+</label>
+</div>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    API 参考
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/detectors/">
+<span class="md-ellipsis">
+    
+  
+    Detectors
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/classifiers/">
+<span class="md-ellipsis">
+    
+  
+    Classifiers
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/ocr/">
+<span class="md-ellipsis">
+    
+  
+    OCR
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/result/">
+<span class="md-ellipsis">
+    
+  
+    Result
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/pipeline/">
+<span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/tracking/">
+<span class="md-ellipsis">
+    
+  
+    Tracking
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/utils/">
+<span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/eval/">
+<span class="md-ellipsis">
+    
+  
+    Eval
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/config/">
+<span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../models/model_support_list/">
+<span class="md-ellipsis">
+    
+  
+    模型支持
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="目录" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#1-deepsort">
+<span class="md-ellipsis">
+      
+        1. 定位:把 DeepSORT 的每个零件都换成现代版
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#2-strongsort">
+<span class="md-ellipsis">
+      
+        2. StrongSORT 的组件升级
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#3-strongsort">
+<span class="md-ellipsis">
+      
+        3. StrongSORT++ 的两个后处理模块(亮点)
+      
+    </span>
+</a>
+<nav aria-label="3. StrongSORT++ 的两个后处理模块(亮点)" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#31-aflink">
+<span class="md-ellipsis">
+      
+        3.1 AFLink:无外观的轨迹全局拼接
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#32-gsi">
+<span class="md-ellipsis">
+      
+        3.2 GSI:高斯平滑插值
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4">
+<span class="md-ellipsis">
+      
+        4. 完整流程
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#5">
+<span class="md-ellipsis">
+      
+        5. 性能与局限
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_1">
+<span class="md-ellipsis">
+      
+        参考文献
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="strongsort-deepsort">StrongSORT:让 DeepSORT 再次伟大<a class="headerlink" href="#strongsort-deepsort" title="Permanent link">¶</a></h1>
+<blockquote>
+<p>Du et al. <em>StrongSORT: Make DeepSORT Great Again</em>. IEEE TMM 2023(arXiv 2022). arXiv:<a href="https://arxiv.org/abs/2202.13514">2202.13514</a> · 代码 <a href="https://github.com/dyhBUPT/StrongSORT">dyhBUPT/StrongSORT</a></p>
+<p>📚 进阶方向,仓库未实现。其 AFLink/GSI 后处理可叠加到本仓库任意 tracker 输出之上。</p>
+</blockquote>
+<h2 id="1-deepsort">1. 定位:把 DeepSORT 的每个零件都换成现代版<a class="headerlink" href="#1-deepsort" title="Permanent link">¶</a></h2>
+<p>StrongSORT 的论点很直接:DeepSORT 的思路没错,只是<strong>每个组件都老了</strong>。于是它逐一升级,再加两个<strong>即插即用的后处理模块</strong>(AFLink、GSI),刷新当时 MOT17/MOT20 的 HOTA/IDF1 记录。</p>
+<pre class="mermaid"><code>graph LR
+    subgraph DeepSORT 2017
+        D1["弱检测器"]
+        D2["弱 CNN 外观"]
+        D3["朴素卡尔曼"]
+        D4["匹配级联"]
+    end
+    subgraph StrongSORT 现代化
+        S1["强检测器 YOLOX"]
+        S2["强 ReID(BoT)+ EMA 特征库"]
+        S3["NSA 卡尔曼 + 相机运动补偿"]
+        S4["去掉级联,全局线性分配"]
+    end
+    D1 --&gt; S1
+    D2 --&gt; S2
+    D3 --&gt; S3
+    D4 --&gt; S4
+    S1 --&gt; PLUS["+ StrongSORT++ 后处理<br/>AFLink + GSI"]
+    style PLUS fill:#c8e6c9
+</code></pre>
+<h2 id="2-strongsort">2. StrongSORT 的组件升级<a class="headerlink" href="#2-strongsort" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>DeepSORT</th>
+<th>StrongSORT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>检测器</td>
+<td>Faster R-CNN 时代</td>
+<td>YOLOX</td>
+</tr>
+<tr>
+<td>外观特征</td>
+<td>弱 CNN,瞬时特征</td>
+<td>强 ReID(BoTNet),<strong>EMA 指数滑动平均特征库</strong></td>
+</tr>
+<tr>
+<td>卡尔曼</td>
+<td>朴素</td>
+<td><strong>NSA-Kalman</strong>(用检测置信度自适应调测量噪声)</td>
+</tr>
+<tr>
+<td>相机运动</td>
+<td>无</td>
+<td><strong>ECC 相机运动补偿</strong></td>
+</tr>
+<tr>
+<td>关联</td>
+<td>匹配级联</td>
+<td>去掉级联,直接全局匈牙利;运动+外观加权</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">EMA 特征更新</p>
+<p>每条轨迹的外观特征不取当前帧瞬时值,而是 $f_t = \alpha f_{t-1} + (1-\alpha) f_{\text{det}}$ 滑动平均,抗单帧噪声/模糊,显著降低 ID 切换。</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">NSA-Kalman</p>
+<p>检测置信度越低,测量噪声 $R$ 越大(越不信这次观测),让滤波器在低质量检测下更稳。</p>
+</div>
+<h2 id="3-strongsort">3. StrongSORT++ 的两个后处理模块(亮点)<a class="headerlink" href="#3-strongsort" title="Permanent link">¶</a></h2>
+<p>这两个模块<strong>与跟踪器解耦</strong>,可作用在任何跟踪器的输出轨迹上——包括本仓库的 ByteTrack/OC-SORT 结果。</p>
+<h3 id="31-aflink">3.1 AFLink:无外观的轨迹全局拼接<a class="headerlink" href="#31-aflink" title="Permanent link">¶</a></h3>
+<p>跟踪难免把一条长轨迹断成几段短 tracklet。AFLink(Appearance-Free Link)<strong>只用时空信息</strong>(不用外观),用一个轻量网络预测两个 tracklet 是否属于同一目标,把碎片全局接起来。</p>
+<pre class="mermaid"><code>graph LR
+    T1["tracklet A(第1-40帧)"] --&gt; AF["AFLink 网络<br/>仅输入时空轨迹"]
+    T2["tracklet B(第55-90帧)"] --&gt; AF
+    AF --&gt; Q{"同一目标?"}
+    Q --&gt;|是| MERGE["合并为同一 ID"]
+    Q --&gt;|否| KEEP["保持分离"]
+</code></pre>
+<h3 id="32-gsi">3.2 GSI:高斯平滑插值<a class="headerlink" href="#32-gsi" title="Permanent link">¶</a></h3>
+<p>漏检会在轨迹中留下空洞。GSI(Gaussian-Smoothed Interpolation)用<strong>高斯过程回归</strong>填补缺失帧的框,比线性插值更平滑、更贴合真实运动。</p>
+<pre class="mermaid"><code>graph LR
+    OBS["稀疏观测帧 ●"] --&gt; GP["高斯过程回归"]
+    GP --&gt; FILL["平滑补全缺失帧 ○"]
+    FILL --&gt; SMOOTH["输出连续平滑轨迹"]
+</code></pre>
+<h2 id="4">4. 完整流程<a class="headerlink" href="#4" title="Permanent link">¶</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    DET["YOLOX 检测"] --&gt; ECC["ECC 相机运动补偿"]
+    ECC --&gt; NSA["NSA 卡尔曼预测"]
+    NSA --&gt; ASSOC["运动(马氏)+ 外观(EMA 余弦)加权 → 匈牙利"]
+    ASSOC --&gt; RAW["原始轨迹(含碎片/空洞)"]
+    RAW --&gt; AFLINK["AFLink 全局拼接碎片"]
+    AFLINK --&gt; GSI["GSI 高斯插值补洞"]
+    GSI --&gt; OUT["StrongSORT++ 最终轨迹"]
+    style AFLINK fill:#c8e6c9
+    style GSI fill:#c8e6c9
+</code></pre>
+<h2 id="5">5. 性能与局限<a class="headerlink" href="#5" title="Permanent link">¶</a></h2>
+<ul>
+<li><strong>指标</strong>:发布时刷新 MOT17、MOT20 的 HOTA/IDF1 记录;AFLink/GSI 开销极小(MOT17 上约 1.7 ms / 7.1 ms 每图)。</li>
+<li><strong>局限</strong>:AFLink/GSI 偏离线后处理(非严格在线);组件堆叠复杂;在外观贫乏的 DanceTrack 上增益有限。</li>
+</ul>
+<h2 id="_1">参考文献<a class="headerlink" href="#_1" title="Permanent link">¶</a></h2>
+<ul>
+<li>Du et al. <em>StrongSORT: Make DeepSORT Great Again</em>. IEEE TMM 2023. arXiv:<a href="https://arxiv.org/abs/2202.13514">2202.13514</a> · <a href="https://github.com/dyhBUPT/StrongSORT">代码</a></li>
+<li>(基线)Wojke et al. <em>DeepSORT</em>. arXiv:<a href="https://arxiv.org/abs/1703.07402">1703.07402</a></li>
+</ul>
+<p>→ 上一篇:<a href="../botsort/">BoT-SORT</a> · 下一篇:<a href="../deep-ocsort/">Deep OC-SORT:自适应外观增强</a></p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  回到页面顶部
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+<script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>
