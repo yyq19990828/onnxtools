@@ -164,4 +164,4 @@ graph LR
 - Ge et al. *YOLOX: Exceeding YOLO Series in 2021*. arXiv:[2107.08430](https://arxiv.org/abs/2107.08430)
 - Meinhardt et al. *TrackFormer*. CVPR 2022. arXiv:[2101.02702](https://arxiv.org/abs/2101.02702)
 
-→ 上一篇:[MOTR](motr.md) · 下一篇:[评测指标详解](metrics.md)
+→ 上一篇:[MOTR](motr.md) · 下一篇:[MATR](matr.md)

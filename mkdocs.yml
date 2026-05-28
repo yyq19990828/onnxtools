@@ -120,6 +120,10 @@ nav:
               - TrackFormer [2022]: guides/tracking/trackformer.md
               - MOTR [2022]: guides/tracking/motr.md
               - MOTRv2 [2023]: guides/tracking/motrv2.md
+              - MATR [2025]: guides/tracking/matr.md
+              - MeMoSORT [2025]: guides/tracking/memosort.md
+              - PuTR [2024]: guides/tracking/putr.md
+              - FastTrackTr [2024]: guides/tracking/fasttracktr.md
           - 评测指标: guides/tracking/metrics.md
   - API 参考:
       - 总览: api/index.md

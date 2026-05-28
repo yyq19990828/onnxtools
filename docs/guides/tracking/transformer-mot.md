@@ -92,10 +92,10 @@ flowchart LR
 
 | 方法 | 年份 | 亮点 | 代表成绩 |
 |------|------|------|----------|
-| **MATR**(Motion-Aware Transformer) | 2025 | 显式预测运动以预更新 track query,减少 query 冲突 | DanceTrack HOTA 71.3 / SportsMOT 72.2 |
-| **MeMoSORT** | 2025 | 记忆辅助滤波 + 运动自适应关联(tracking-by-detection 前沿) | DanceTrack 67.9 / SportsMOT 82.1 HOTA |
-| **PuTR**(Pure Transformer) | 2024 | 解耦的在线 Transformer 关联,设计简洁 | DanceTrack/SportsMOT 领先 IDF1/HOTA |
-| **FastTrackTr** | 2024 | 面向实时部署的 Transformer 跟踪器 | 效率前沿 |
+| **[MATR](matr.md)**(Motion-Aware Transformer) | 2025 | 显式预测运动以预更新 track query,减少 query 冲突 | DanceTrack HOTA 71.3 / SportsMOT 72.7 |
+| **[MeMoSORT](memosort.md)** | 2025 | 记忆辅助滤波 + 运动自适应关联(tracking-by-detection 前沿) | DanceTrack 67.9 / SportsMOT 82.1 HOTA |
+| **[PuTR](putr.md)**(Pure Transformer) | 2024 | 解耦的在线 Transformer 关联,设计简洁 | SportsMOT HOTA 76.8 / DanceTrack 60.6 |
+| **[FastTrackTr](fasttracktr.md)** | 2024 | 面向实时部署的 Transformer 跟踪器 | DanceTrack HOTA 62.4 / TRT 166 FPS |
 
 > 引用:MATR arXiv:[2509.21715](https://arxiv.org/abs/2509.21715) · MeMoSORT arXiv:[2508.09796](https://arxiv.org/abs/2508.09796) · PuTR arXiv:[2405.14119](https://arxiv.org/abs/2405.14119) · FastTrackTr arXiv:[2411.15811](https://arxiv.org/abs/2411.15811)
 
@@ -103,7 +103,7 @@ flowchart LR
 graph LR
     TF["TrackFormer 2022"] --> MOTR["MOTR 2022"]
     MOTR --> MOTR2["MOTRv2 2023<br/>(借力预训练检测器)"]
-    MOTR2 --> FRONT["2024-25 前沿<br/>MATR / PuTR(端到端)<br/>MeMoSORT(检测后关联)"]
+    MOTR2 --> FRONT["2024-25 前沿<br/>MATR / PuTR / FastTrackTr(端到端)<br/>MeMoSORT(检测后关联)"]
     style FRONT fill:#29b6f6
 ```
 

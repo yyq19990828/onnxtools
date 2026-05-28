@@ -186,4 +186,4 @@ flowchart TD
 - Bernardin & Stiefelhagen. *The CLEAR MOT Metrics*. EURASIP 2008.
 - Ristani et al. *Performance Measures and a Data Set for Multi-Target, Multi-Camera Tracking* (IDF1). ECCV 2016.
 
-→ 上一篇:[MOTRv2](motrv2.md) · 返回:[概念总览](index.md)
+→ 上一篇:[FastTrackTr](fasttracktr.md) · 返回:[概念总览](index.md)
