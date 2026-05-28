@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/traditional-methods/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../math-foundations/">
       
       
         <link rel="next" href="../bytetrack/">
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -688,6 +690,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../math-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    数学基石 (卡尔曼/匈牙利)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -935,10 +965,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_3" id="__nav_3_5_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_4" id="__nav_3_5_4_label" tabindex="0">
             
   
   
@@ -956,8 +986,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1061,10 +1091,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_4" id="__nav_3_5_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_5" id="__nav_3_5_5_label" tabindex="0">
             
   
   
@@ -1082,8 +1112,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_4">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1243,10 +1273,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_6" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_5" id="__nav_3_5_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_6" id="__nav_3_5_6_label" tabindex="0">
             
   
   
@@ -1264,8 +1294,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_5">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1433,10 +1463,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5_6" id="__nav_3_5_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5_7" id="__nav_3_5_7_label" tabindex="0">
             
   
   
@@ -1454,8 +1484,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5_6">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2304,7 +2334,7 @@
 <h1 id="iou-tracker-sort-deepsort">传统方法总结:IoU-Tracker / SORT / DeepSORT<a class="headerlink" href="#iou-tracker-sort-deepsort" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>本篇把 <strong>2016–2017 年奠基性的三个 tracking-by-detection 方法</strong>放在一起讲。它们确立了"卡尔曼预测 + 匈牙利匹配 + 生命周期管理"的经典骨架,是后续 ByteTrack、OC-SORT、BoT-SORT 等全部方法的共同祖先。读懂这一篇,后面每篇"近几年方法"都只是在这个骨架的某一处做改进。</p>
-<p>概念前置(卡尔曼/匈牙利/指标)见 <a href="../">概念总览</a>。</p>
+<p>概念前置(卡尔曼/匈牙利/指标)见 <a href="../">概念总览</a>;深入数学推导见 <a href="../math-foundations/">数学基石深入</a>。</p>
 </blockquote>
 <h2 id="_1">一张图看清血统<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <div class="mermaid">graph TD

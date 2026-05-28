@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/motrv2/">
+        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/math-foundations/">
       
       
-        <link rel="prev" href="../motr/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../matr/">
+        <link rel="next" href="../traditional-methods/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>MOTRv2 [2023] - onnxtools</title>
+        <title>数学基石 (卡尔曼/匈牙利) - onnxtools</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#motrv2" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              MOTRv2 [2023]
+              数学基石 (卡尔曼/匈牙利)
             
           </span>
         </div>
@@ -696,10 +696,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../math-foundations/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    数学基石 (卡尔曼/匈牙利)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -715,6 +742,192 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 卡尔曼滤波:预测目标下一帧在哪
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 卡尔曼滤波:预测目标下一帧在哪">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 直觉:为什么需要预测
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 状态空间模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-predict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 预测步 (Predict)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 更新步 (Update)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 本仓库实现对照
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 匈牙利算法:最优二分匹配
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 匈牙利算法:最优二分匹配">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 关联问题的形式化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 代价度量大全
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 匈牙利算法原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 本仓库实现对照
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-vs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 级联匹配 vs 单级匹配
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 两个基石如何协作
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考文献
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1238,10 +1451,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1270,11 +1481,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_7" >
         
           
           <label class="md-nav__link" for="__nav_3_5_7" id="__nav_3_5_7_label" tabindex="0">
@@ -1295,7 +1506,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_5_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1394,37 +1605,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MOTRv2 [2023]
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../motrv2/" class="md-nav__link">
         
   
   
@@ -1440,170 +1624,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 一句话核心
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-motr-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 问题回顾:MOTR 的检测-关联冲突
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-yolox-anchor-query-motr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-proposal-query" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 Proposal Query 生成
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-track-query-motr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 Track Query:延续 MOTR 的自回归机制
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. 训练策略
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 关键配置
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-dancetrack-challenge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. 性能:DanceTrack Challenge 冠军
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. 性能:DanceTrack Challenge 冠军">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        基准结果
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        三代方法对比
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. 范式反思:"半端到端"与钟摆效应
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        参考文献
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2173,41 +2193,19 @@
   <a href="#1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 一句话核心
+        1. 卡尔曼滤波:预测目标下一帧在哪
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-motr-" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 问题回顾:MOTR 的检测-关联冲突
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-yolox-anchor-query-motr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器">
+    <nav class="md-nav" aria-label="1. 卡尔曼滤波:预测目标下一帧在哪">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-proposal-query" class="md-nav__link">
+  <a href="#11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 Proposal Query 生成
+        1.1 直觉:为什么需要预测
       
     </span>
   </a>
@@ -2215,10 +2213,43 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-track-query-motr" class="md-nav__link">
+  <a href="#12" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Track Query:延续 MOTR 的自回归机制
+        1.2 状态空间模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-predict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 预测步 (Predict)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 更新步 (Update)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 本仓库实现对照
       
     </span>
   </a>
@@ -2231,44 +2262,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
+  <a href="#2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 训练策略
+        2. 匈牙利算法:最优二分匹配
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 关键配置
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-dancetrack-challenge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. 性能:DanceTrack Challenge 冠军
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. 性能:DanceTrack Challenge 冠军">
+    <nav class="md-nav" aria-label="2. 匈牙利算法:最优二分匹配">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#21" class="md-nav__link">
     <span class="md-ellipsis">
       
-        基准结果
+        2.1 关联问题的形式化
       
     </span>
   </a>
@@ -2276,34 +2285,67 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 代价度量大全
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 匈牙利算法原理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 本仓库实现对照
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-vs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 级联匹配 vs 单级匹配
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 两个基石如何协作
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        三代方法对比
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. 范式反思:"半端到端"与钟摆效应
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         参考文献
@@ -2333,278 +2375,384 @@
   
 
 
-<h1 id="motrv2">MOTRv2:让预训练检测器为端到端跟踪"喂球"<a class="headerlink" href="#motrv2" title="Permanent link">&para;</a></h1>
+<h1 id="_1">关联的两大数学基石:卡尔曼滤波与匈牙利算法<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p>Zhang et al. <em>MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2211.09791">2211.09791</a> · 代码 <a href="https://github.com/megvii-research/MOTRv2">megvii-research/MOTRv2</a></p>
-<p>📚 本方法仓库未实现,属知识体系补全。代码参见官方仓库。</p>
+<p>本篇深入讲解 tracking-by-detection 范式下<strong>所有方法共享的两个数学基元</strong>:用卡尔曼滤波预测目标下一帧在哪,用匈牙利算法在预测与新检测之间做最优配对。无论是 SORT、ByteTrack 还是 OC-SORT,底层都在反复调用这两个操作——理解它们,等于理解了整个家族的地基。</p>
+<p>本仓库实现:  <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>kalman.py</code></a> / <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/matching.py"><code>matching.py</code></a></p>
 </blockquote>
-<h2 id="1">1. 一句话核心<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
-<p><strong>MOTR 的检测和关联联合学习互相冲突,导致检测偏弱。MOTRv2 用预训练 YOLOX 的高质量检测提案替代 detect query,把检测质量问题甩给专业检测器,让 MOTR 专注于关联——一个简单改动,DanceTrack HOTA 从 54.2 飙升至 73.4。</strong></p>
+<hr />
+<h2 id="1">1. 卡尔曼滤波:预测目标下一帧在哪<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<h3 id="11">1.1 直觉:为什么需要预测<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<p>检测器每帧独立出框——它只知道"这帧有个框在这里",不知道"这个框是上一帧的谁"。要做关联,我们需要一个<strong>运动模型</strong>:根据上一帧轨迹的位置和速度,<strong>预测它在当前帧最可能出现的位置</strong>,然后用预测框去和新检测框做匹配。</p>
+<p>卡尔曼滤波正是这样一个递归估计器:它维护目标的<strong>状态估计</strong>(位置+速度)和<strong>不确定度</strong>(协方差矩阵),每帧交替执行两步——<strong>预测</strong>和<strong>更新</strong>:</p>
 <div class="mermaid">graph LR
-    subgraph "MOTR 的困境"
-        DET_A["检测 ↔ 关联&lt;br/&gt;联合学习冲突"]
-    end
-    subgraph "MOTRv2 的解法"
-        DET_B["YOLOX 负责检测"] --&gt; MOTR_B["MOTR 专注关联"]
-    end
-    DET_A -.解耦.-&gt; DET_B
-    style DET_A fill:#ef5350,color:#fff
-    style DET_B fill:#66bb6a,color:#fff
-    style MOTR_B fill:#29b6f6</div>
-<h2 id="2-motr-">2. 问题回顾:MOTR 的检测-关联冲突<a class="headerlink" href="#2-motr-" title="Permanent link">&para;</a></h2>
-<p>MOTR 将检测和关联统一在一个网络中,但实验表明:</p>
+    P["预测 Predict&lt;br/&gt;状态外推 + 不确定度增长"] --&gt; A["关联 Associate&lt;br/&gt;预测框 vs 新检测框"]
+    A --&gt; U["更新 Update&lt;br/&gt;用观测校正 + 不确定度收缩"]
+    U -.下一帧.-&gt; P
+    style P fill:#29b6f6,color:#fff
+    style A fill:#fb8c00,color:#fff
+    style U fill:#66bb6a,color:#fff</div>
+<h3 id="12">1.2 状态空间模型<a class="headerlink" href="#12" title="Permanent link">&para;</a></h3>
+<p>卡尔曼滤波建立在<strong>线性高斯状态空间模型</strong>上。定义:</p>
 <ul>
-<li>MOTR 的 MOT17 检测 MOTA(73.4)远低于 ByteTrack(80.3),差距来自<strong>检测精度</strong></li>
-<li>联合训练时,关联梯度会"污染"检测学习,反之亦然</li>
-<li>直觉:detect query 既要学"在哪"(检测),又要学"是谁"(为后续关联做准备),两个目标打架</li>
+<li><strong>状态向量</strong> <span class="arithmatex">\(x_k\)</span>:我们想估计但无法直接观测的完整状态(位置+速度)</li>
+<li><strong>观测向量</strong> <span class="arithmatex">\(z_k\)</span>:检测器给出的观测(只有位置,没有速度)</li>
+<li><strong>状态转移矩阵</strong> <span class="arithmatex">\(F\)</span>:描述状态如何从上一帧演化到当前帧</li>
+<li><strong>观测矩阵</strong> <span class="arithmatex">\(H\)</span>:描述状态如何映射到观测空间</li>
 </ul>
-<p>MOTRv2 的核心思路:既然检测器已经有成熟的预训练方案(YOLOX-X 在 COCO 上 AP 51.1),<strong>为什么不直接拿来用?</strong></p>
-<h2 id="3-yolox-anchor-query-motr">3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器<a class="headerlink" href="#3-yolox-anchor-query-motr" title="Permanent link">&para;</a></h2>
-<div class="mermaid">flowchart TD
-    IMG["帧 t 图像"] --&gt; YOLOX["预训练 YOLOX-X&lt;br/&gt;(冻结或微调)"]
-    IMG --&gt; ENC["Deformable DETR 编码器"]
-    YOLOX --&gt; PROP["检测提案&lt;br/&gt;(box, score)"]
-    PROP --&gt; PQ["proposal query 生成&lt;br/&gt;位置编码 + 内容嵌入"]
-    TQ["track query&lt;br/&gt;(来自 t-1, 携带 ID)"] --&gt; DEC["Deformable DETR 解码器"]
-    PQ --&gt; DEC
-    ENC --&gt; DEC
-    DEC --&gt; OUT_P["新目标:框 + 类别"]
-    DEC --&gt; OUT_T["已跟踪目标:框 + ID"]
-    OUT_T -.自回归.-&gt; TQ2["下一帧 track query"]
-    OUT_P -.新生轨迹.-&gt; TQ2
-    style YOLOX fill:#fb8c00,color:#fff
-    style PQ fill:#66bb6a,color:#fff</div>
-<h3 id="31-proposal-query">3.1 Proposal Query 生成<a class="headerlink" href="#31-proposal-query" title="Permanent link">&para;</a></h3>
-<p>YOLOX 输出的每个检测框 <span class="arithmatex">\((x, y, w, h, s)\)</span> 被转换为 <strong>proposal query</strong>,替代 MOTR 原有的 detect query:</p>
-<p><strong>位置编码(positional embedding)</strong>:</p>
-<div class="arithmatex">\[\text{PE}_{\text{pos}} = \text{SinCos}(x, y, w, h)\]</div>
-<p>采用 4D 正弦余弦位置编码,从框坐标直接生成,为解码器提供精确的空间先验。</p>
-<p><strong>内容嵌入(content embedding)</strong>:</p>
-<div class="arithmatex">\[\text{PE}_{\text{content}} = \text{Encode}(s) + \mathbf{e}_{\text{shared}}\]</div>
-<p>其中 <span class="arithmatex">\(\text{Encode}(s)\)</span> 是对置信度分数 <span class="arithmatex">\(s\)</span> 的编码(线性投影),<span class="arithmatex">\(\mathbf{e}_{\text{shared}}\)</span> 是所有 proposal query 共享的可学习嵌入。</p>
+<p>完整的线性高斯模型:</p>
+<div class="arithmatex">\[x_k = F \cdot x_{k-1} + w, \quad w \sim \mathcal{N}(0, Q)\]</div>
+<div class="arithmatex">\[z_k = H \cdot x_k + v, \quad v \sim \mathcal{N}(0, R)\]</div>
+<p>其中 <span class="arithmatex">\(Q\)</span> 是<strong>过程噪声</strong>协方差(建模运动的不确定性),<span class="arithmatex">\(R\)</span> 是<strong>观测噪声</strong>协方差(建模检测器出框的不确定性)。</p>
 <div class="admonition note">
-<p class="admonition-title">anchor 框 vs 中心点</p>
-<p>论文消融实验表明,使用 4D anchor 框(x, y, w, h)比仅用 2D 中心点(x, y)效果好得多——框的宽高信息为解码器提供了尺度先验,这对关联至关重要。</p>
+<p class="admonition-title">为什么是"线性"和"高斯"</p>
+<p>"线性"指状态转移和观测都用矩阵乘法描述(恒速假设下天然成立)。"高斯"指噪声服从正态分布。两个条件同时满足时,卡尔曼滤波是<strong>理论最优</strong>的递归估计器——这也是它在跟踪中经久不衰的根本原因。</p>
 </div>
-<h3 id="32-track-query-motr">3.2 Track Query:延续 MOTR 的自回归机制<a class="headerlink" href="#32-track-query-motr" title="Permanent link">&para;</a></h3>
-<p>track query 的工作方式与 MOTR 完全一致:</p>
-<ol>
-<li>上一帧解码器输出的 embedding 作为 track query 注入当前帧</li>
-<li>通过 TALA 保持 GT 一致性分配</li>
-<li>得分低于阈值时退场</li>
-</ol>
-<p><strong>关键区别</strong>:新目标的"发现"不再依赖 detect query 的学习能力,而是由 YOLOX 的强检测保证——track query 只需专注于<strong>保持已有轨迹的身份连续性</strong>。</p>
-<h2 id="4">4. 训练策略<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<p><strong>本仓库两种参数化的完整矩阵</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>XYAH (ByteTrack / DeepSORT)</th>
+<th>XYSR (SORT / OC-SORT)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>状态 <span class="arithmatex">\(x\)</span></strong></td>
+<td><span class="arithmatex">\([c_x, c_y, a, h, \dot c_x, \dot c_y, \dot a, \dot h]^\top\)</span> (8D)</td>
+<td><span class="arithmatex">\([c_x, c_y, s, r, \dot c_x, \dot c_y, \dot s]^\top\)</span> (7D)</td>
+</tr>
+<tr>
+<td><strong>观测 <span class="arithmatex">\(z\)</span></strong></td>
+<td><span class="arithmatex">\([c_x, c_y, a, h]^\top\)</span> (4D)</td>
+<td><span class="arithmatex">\([c_x, c_y, s, r]^\top\)</span> (4D)</td>
+</tr>
+<tr>
+<td><strong>含义</strong></td>
+<td><span class="arithmatex">\(a\)</span>=纵横比, <span class="arithmatex">\(h\)</span>=高度</td>
+<td><span class="arithmatex">\(s\)</span>=面积, <span class="arithmatex">\(r\)</span>=纵横比(恒定,无速度)</td>
+</tr>
+<tr>
+<td><strong><span class="arithmatex">\(F\)</span> 矩阵</strong></td>
+<td><span class="arithmatex">\(8\times8\)</span> 单位阵 + 上三角速度项</td>
+<td><span class="arithmatex">\(7\times7\)</span> 仅 <span class="arithmatex">\(x,y,s\)</span> 有速度,<span class="arithmatex">\(r\)</span> 无</td>
+</tr>
+<tr>
+<td><strong><span class="arithmatex">\(H\)</span> 矩阵</strong></td>
+<td><span class="arithmatex">\(4\times8\)</span> 取前 4 维</td>
+<td><span class="arithmatex">\(4\times7\)</span> 取前 4 维</td>
+</tr>
+<tr>
+<td><strong>仓库类</strong></td>
+<td><a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYAH</code></a></td>
+<td><a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYSR</code></a></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">XYSR 为什么 <span class="arithmatex">\(r\)</span> 没有速度?</p>
+<p>SORT 原文假设目标的纵横比在短时间内基本不变(行人走路时身体比例不怎么变),所以状态只有 7 维而非 8 维。这降低了模型复杂度,对行人场景效果很好。</p>
+</div>
+<h3 id="13-predict">1.3 预测步 (Predict)<a class="headerlink" href="#13-predict" title="Permanent link">&para;</a></h3>
+<p>预测步做两件事:用运动模型外推状态,同时让不确定度增长(因为预测总比观测更不确定):</p>
+<div class="arithmatex">\[\hat{x}^- = F \cdot \hat{x}\]</div>
+<div class="arithmatex">\[P^- = F \cdot P \cdot F^\top + Q\]</div>
+<p><strong>直觉</strong>:<span class="arithmatex">\(\hat{x}^-\)</span> 就是"根据上一帧的速度,位置往前推一帧"(恒速假设)。<span class="arithmatex">\(P^-\)</span> 表示"我对这个预测有多不确信"——每做一次预测,不确定度都会因为 <span class="arithmatex">\(Q\)</span> 而膨胀。如果一个轨迹连续多帧没有被观测到(lost 状态),反复预测会让 <span class="arithmatex">\(P\)</span> 越来越大,意味着"我越来越不确定它在哪了"。</p>
 <div class="mermaid">flowchart LR
-    S1["阶段一:训练 YOLOX&lt;br/&gt;(COCO + CrowdHuman)"] --&gt; S2["阶段二:训练 MOTR 解码器&lt;br/&gt;(YOLOX 冻结/微调)"]
-    S2 --&gt; S3["可选:联合微调&lt;br/&gt;(端到端 fine-tune)"]
-    style S1 fill:#29b6f6
-    style S2 fill:#fb8c00,color:#fff</div>
-<ol>
-<li><strong>阶段一</strong>:在 COCO/CrowdHuman 上训练 YOLOX-X,获得强检测器</li>
-<li><strong>阶段二</strong>:冻结(或轻微微调)YOLOX,训练 MOTR 的编码器-解码器部分</li>
-<li>YOLOX 提案作为 proposal query 输入</li>
-<li>全序列训练(继承 MOTR 的 TALA + 集体平均损失)</li>
-<li><strong>可选阶段三</strong>:小学习率联合微调</li>
-</ol>
-<p>这种解耦训练策略极大缓解了检测-关联冲突:YOLOX 已经"学会"了检测,MOTR 只需学习如何利用提案做关联。</p>
-<h2 id="5">5. 关键配置<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>典型值</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>外部检测器</td>
-<td>YOLOX-X</td>
-<td>COCO AP 51.1,冻结或微调</td>
-</tr>
-<tr>
-<td>提案得分阈值</td>
-<td>保留全部(最大化召回)</td>
-<td>不做过滤,让解码器学习筛选</td>
-</tr>
-<tr>
-<td>骨干</td>
-<td>ResNet-50 + Deformable DETR</td>
-<td>多尺度编码器</td>
-</tr>
-<tr>
-<td>编码器/解码器层数</td>
-<td>各 6 层</td>
-<td>标准配置</td>
-</tr>
-<tr>
-<td>track query 得分阈值</td>
-<td>0.5</td>
-<td>低于此分终止轨迹</td>
-</tr>
-<tr>
-<td>位置编码</td>
-<td>4D SinCos (anchor box)</td>
-<td>从 YOLOX 框坐标生成</td>
-</tr>
-<tr>
-<td>内容嵌入</td>
-<td>线性投影(score) + 共享 query</td>
-<td>编码置信度信息</td>
-</tr>
-<tr>
-<td>训练序列长度</td>
-<td>5 帧 (clip)</td>
-<td>继承 MOTR 的全序列训练</td>
-</tr>
-<tr>
-<td>优化器</td>
-<td>AdamW, lr <span class="arithmatex">\(2\times10^{-4}\)</span></td>
-<td>标准设置</td>
-</tr>
-</tbody>
-</table>
-<h2 id="6-dancetrack-challenge">6. 性能:DanceTrack Challenge 冠军<a class="headerlink" href="#6-dancetrack-challenge" title="Permanent link">&para;</a></h2>
-<h3 id="_1">基准结果<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>数据集</th>
-<th>HOTA</th>
-<th>DetA</th>
-<th>AssA</th>
-<th>MOTA</th>
-<th>IDF1</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>DanceTrack test (单模型)</td>
-<td>69.9</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>单模型已大幅领先</td>
-</tr>
-<tr>
-<td>DanceTrack test (集成)</td>
-<td><strong>73.4</strong></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>4 模型集成,挑战赛冠军</td>
-</tr>
-<tr>
-<td>BDD100K val</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>43.6 mMOTA</td>
-<td>—</td>
-<td>超越 Unicorn 2.4%</td>
-</tr>
-<tr>
-<td>MOT17 test</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>78.6</td>
-<td>75.0</td>
-<td>接近 TbD 方法</td>
-</tr>
-</tbody>
-</table>
-<h3 id="_2">三代方法对比<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>维度</th>
-<th>TrackFormer</th>
-<th>MOTR</th>
-<th>MOTRv2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>基础架构</td>
-<td>DETR / Deformable</td>
-<td>Deformable DETR</td>
-<td>Deformable DETR + YOLOX</td>
-</tr>
-<tr>
-<td>训练方式</td>
-<td>帧对</td>
-<td>全序列</td>
-<td>全序列</td>
-</tr>
-<tr>
-<td>检测来源</td>
-<td>detect query 学习</td>
-<td>detect query 学习</td>
-<td><strong>YOLOX 预训练提案</strong></td>
-</tr>
-<tr>
-<td>关联方式</td>
-<td>track query 注意力</td>
-<td>track query + TALA</td>
-<td>track query + TALA</td>
-</tr>
-<tr>
-<td>MOT17 MOTA</td>
-<td>65.0</td>
-<td>73.4</td>
-<td>78.6</td>
-</tr>
-<tr>
-<td>DanceTrack HOTA</td>
-<td>—</td>
-<td>54.2</td>
-<td><strong>73.4</strong></td>
-</tr>
-<tr>
-<td>端到端程度</td>
-<td>完全</td>
-<td>完全</td>
-<td><strong>半端到端</strong></td>
-</tr>
-<tr>
-<td>关键贡献</td>
-<td>tracking-by-attention</td>
-<td>TALA + 全序列训练</td>
-<td>解耦检测与关联</td>
-</tr>
-</tbody>
-</table>
-<h2 id="7">7. 范式反思:"半端到端"与钟摆效应<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
-<p>MOTRv2 的成功揭示了一个有趣的范式演化:</p>
-<div class="mermaid">graph LR
-    TBD["Tracking-by-Detection&lt;br/&gt;(完全解耦)"] --&gt; E2E["端到端&lt;br/&gt;(TrackFormer/MOTR)"]
-    E2E --&gt; SEMI["半端到端&lt;br/&gt;(MOTRv2)"]
-    SEMI -.钟摆回摆?.-&gt; TBD2["新一代 TbD?&lt;br/&gt;(强检测器 + 学习关联)"]
-    style TBD fill:#29b6f6
-    style E2E fill:#fb8c00,color:#fff
-    style SEMI fill:#66bb6a,color:#fff</div>
+    subgraph "预测前 (t-1)"
+        S1["状态 x̂, 协方差 P&lt;br/&gt;(窄椭圆 = 高确信)"]
+    end
+    subgraph "预测后 (t)"
+        S2["x̂⁻ = F·x̂&lt;br/&gt;(位置外推)"]
+        S3["P⁻ = F·P·Fᵀ + Q&lt;br/&gt;(椭圆变大 = 更不确信)"]
+    end
+    S1 --&gt; S2
+    S1 --&gt; S3
+    style S2 fill:#29b6f6,color:#fff
+    style S3 fill:#29b6f6,color:#fff</div>
+<h3 id="14-update">1.4 更新步 (Update)<a class="headerlink" href="#14-update" title="Permanent link">&para;</a></h3>
+<p>当关联成功,轨迹 <span class="arithmatex">\(i\)</span> 配对到检测 <span class="arithmatex">\(j\)</span> 时,用检测的观测值 <span class="arithmatex">\(z\)</span> 来校正预测。核心是计算<strong>卡尔曼增益</strong> <span class="arithmatex">\(K\)</span>:</p>
+<div class="arithmatex">\[S = H \cdot P^- \cdot H^\top + R \quad \text{(新息协方差)}\]</div>
+<div class="arithmatex">\[K = P^- \cdot H^\top \cdot S^{-1} \quad \text{(卡尔曼增益)}\]</div>
+<div class="arithmatex">\[\hat{x} = \hat{x}^- + K \cdot (z - H\hat{x}^-) \quad \text{(状态校正)}\]</div>
+<div class="arithmatex">\[P = (I - K \cdot H) \cdot P^- \quad \text{(协方差收缩)}\]</div>
+<p><strong><span class="arithmatex">\(K\)</span> 的直觉:平衡"信预测"还是"信观测"</strong>:</p>
 <ul>
-<li><strong>TrackFormer/MOTR</strong> 追求"纯端到端",把检测和关联全部塞进 Transformer,但检测质量受限</li>
-<li><strong>MOTRv2</strong> 承认检测器需要独立优化,回到"检测-关联解耦"的思路——只是关联部分仍用 Transformer 自回归,而非手工匹配</li>
-<li>这与本仓库的 <strong>tracking-by-detection</strong> 路线(ByteTrack/OC-SORT)殊途同归:都认为<strong>好的检测是好的跟踪的前提</strong></li>
+<li>当 <span class="arithmatex">\(R\)</span> 大(观测噪声大,检测器不靠谱) <span class="arithmatex">\(\Rightarrow\)</span> <span class="arithmatex">\(S\)</span> 大 <span class="arithmatex">\(\Rightarrow\)</span> <span class="arithmatex">\(K\)</span> 小 <span class="arithmatex">\(\Rightarrow\)</span> <strong>更信预测</strong>,观测只做微调</li>
+<li>当 <span class="arithmatex">\(P^-\)</span> 大(预测不确定,已经 lost 好几帧) <span class="arithmatex">\(\Rightarrow\)</span> <span class="arithmatex">\(K\)</span> 大 <span class="arithmatex">\(\Rightarrow\)</span> <strong>更信观测</strong>,大幅校正预测</li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">对本仓库用户的启示</p>
-<p>MOTRv2 验证了一个朴素直觉:<strong>强检测器 + 好关联 = 好跟踪</strong>。本仓库的 ByteTrack/OC-SORT 正是这一思路的工程化实践——用 YOLO/RT-DETR/RF-DETR 做强检测,用卡尔曼 + 匈牙利做高效关联。两条路线在理念上并不矛盾,只是 MOTRv2 用 Transformer 替代了手工关联,换取了更强的长时序建模能力,但也付出了速度和部署复杂度的代价。</p>
+<div class="admonition warning">
+<p class="admonition-title">数值稳定性</p>
+<p>计算 <span class="arithmatex">\(K\)</span> 需要对 <span class="arithmatex">\(S\)</span> 求逆。本仓库优先用 <strong>Cholesky 分解</strong> (<code>np.linalg.cholesky</code> + <code>np.linalg.solve</code>) 而非直接求逆,数值更稳定。当 <span class="arithmatex">\(S\)</span> 接近奇异时,加一个微小的 Tikhonov 阻尼项 <span class="arithmatex">\(S + 10^{-6}I\)</span> 回落到 <code>np.linalg.solve</code>,避免崩溃。详见 <code>KalmanFilterXYAH.update</code> 的 <code>try/except</code> 分支。</p>
 </div>
-<h2 id="_3">参考文献<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h3 id="15">1.5 本仓库实现对照<a class="headerlink" href="#15" title="Permanent link">&para;</a></h3>
+<p>两个卡尔曼类都提供相同的四个核心方法:</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+<th>关键实现细节</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>initiate(measurement)</code></td>
+<td>首次观测 → 初始化状态和协方差</td>
+<td>XYAH 的初始协方差随目标高度缩放;XYSR 的初始速度协方差设为 <span class="arithmatex">\(10000\times\)</span>(高不确定)</td>
+</tr>
+<tr>
+<td><code>predict(mean, cov)</code></td>
+<td>单条轨迹预测</td>
+<td>XYSR 额外检查面积 <span class="arithmatex">\(s\)</span> 是否预测为负,若是则归零速度</td>
+</tr>
+<tr>
+<td><code>update(mean, cov, measurement)</code></td>
+<td>用观测校正</td>
+<td>Cholesky 求解 + Tikhonov 阻尼回落</td>
+</tr>
+<tr>
+<td><code>multi_predict(means, covs)</code></td>
+<td><strong>N 条轨迹批量预测(热点)</strong></td>
+<td>见下文</td>
+</tr>
+</tbody>
+</table>
+<p><strong>工程优化:<code>multi_predict</code> 用 <code>np.einsum</code> 批量化</strong></p>
+<p>每帧需要对池中所有活跃轨迹执行预测。逐条 Python <code>for</code> 循环在 200 条轨迹时就会成为瓶颈。本仓库用一条 <code>np.einsum</code> 一次性算完 N 个 <span class="arithmatex">\(F P F^\top\)</span>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># kalman.py — KalmanFilterXYAH.multi_predict (核心行)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">new_means</span> <span class="o">=</span> <span class="n">means</span> <span class="o">@</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span>                                        <span class="c1"># [N,8]·[8,8] → [N,8]</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">new_covs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,njk,lk-&gt;nil&quot;</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">covariances</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>     <span class="c1"># 批量 F·P·Fᵀ</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>          <span class="o">+</span> <span class="n">motion_cov</span>                                          <span class="c1"># + Q (每条轨迹各自的噪声)</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">噪声随高度缩放 (XYAH)</p>
+<p><code>KalmanFilterXYAH</code> 的过程噪声和观测噪声都乘以目标的当前高度 <span class="arithmatex">\(h\)</span>:框越大的目标,允许的位置波动越大。这是 SORT/DeepSORT 原文的经典做法。<code>KalmanFilterXYSR</code> 则使用固定噪声矩阵(更简洁)。</p>
+</div>
+<p><strong>马氏距离门控:<code>gating_distance</code> 方法</strong></p>
+<p>DeepSORT 和 BoT-SORT 用马氏距离做运动门控——只有在卡尔曼预测的置信椭圆内的检测才被允许参与关联。本仓库 <code>gating_distance</code> 方法同时支持欧氏和马氏两种度量:</p>
+<div class="arithmatex">\[d_{\text{Maha}}^2 = (z - \hat{z})^\top S^{-1} (z - \hat{z})\]</div>
+<p>门控阈值取自 <span class="arithmatex">\(\chi^2\)</span> 分布的 95% 分位数(4 自由度时为 <span class="arithmatex">\(9.4877\)</span>),存储在模块顶部的 <code>chi2inv95</code> 字典中。</p>
+<hr />
+<h2 id="2">2. 匈牙利算法:最优二分匹配<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<h3 id="21">2.1 关联问题的形式化<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<p>有了 N 条轨迹的预测框和 M 个新检测框,关联问题可以表述为:</p>
+<blockquote>
+<p>在一个 <span class="arithmatex">\(N \times M\)</span> 的<strong>代价矩阵</strong> <span class="arithmatex">\(C\)</span> 上,找到一组<strong>一对一</strong>配对 <span class="arithmatex">\((i, j)\)</span>,使得总代价 <span class="arithmatex">\(\sum C[i,j]\)</span> 最小。</p>
+</blockquote>
+<p>其中 <span class="arithmatex">\(C[i,j]\)</span> 表示"轨迹 <span class="arithmatex">\(i\)</span> 和检测 <span class="arithmatex">\(j\)</span> 有多不像"(代价越低越可能是同一目标)。这就是经典的<strong>线性指派问题 (Linear Assignment Problem, LAP)</strong>。</p>
+<div class="mermaid">graph LR
+    subgraph 轨迹预测
+        T1["轨迹 1 预测框"]
+        T2["轨迹 2 预测框"]
+        T3["轨迹 3 预测框"]
+    end
+    subgraph 新检测
+        D1["检测 a"]
+        D2["检测 b"]
+        D3["检测 c"]
+        D4["检测 d (新目标)"]
+    end
+    T1 ---|"cost=0.1"| D2
+    T2 ---|"cost=0.2"| D1
+    T3 ---|"cost=0.3"| D3
+    D4 -.- NEW["→ 新建轨迹"]
+    style D4 fill:#fb8c00,color:#fff
+    style NEW fill:#66bb6a,color:#fff</div>
+<h3 id="22">2.2 代价度量大全<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<p>代价矩阵的"不相似度"用什么度量,是各方法的核心分水岭:</p>
+<p><strong>IoU 距离</strong>(最常用):</p>
+<div class="arithmatex">\[\text{IoU}(a, b) = \frac{|a \cap b|}{|a \cup b|}, \quad \text{cost} = 1 - \text{IoU}\]</div>
+<p>本仓库 <code>box_iou_batch(a, b)</code> 用纯 numpy 广播实现 <code>[N,4] × [M,4] → [N,M]</code>,零循环。</p>
+<p><strong>马氏距离</strong>(DeepSORT 运动门控):</p>
+<div class="arithmatex">\[d^2 = (z - \hat{z})^\top S^{-1} (z - \hat{z}), \quad \text{门控:} d^2 \leq \chi^2_{0.95}(\text{dim})\]</div>
+<p>用卡尔曼预测的协方差 <span class="arithmatex">\(S\)</span> 做归一化,能自适应地反映"在当前不确定度下,这个检测离预测有多远"。</p>
+<p><strong>余弦外观距离</strong>(DeepSORT / BoT-SORT / StrongSORT):</p>
+<div class="arithmatex">\[d_{\cos} = 1 - \frac{f_{\text{track}} \cdot f_{\text{det}}}{|f_{\text{track}}| \cdot |f_{\text{det}}}|\]</div>
+<p>用 ReID 网络提取的外观特征向量做余弦相似度。遮挡后仅靠运动模型难以恢复时,外观是关键线索。</p>
+<p><strong>分数融合 fuse_score</strong>(ByteTrack 一阶段):</p>
+<div class="arithmatex">\[\text{fused\_cost}[i,j] = 1 - (1 - \text{cost}[i,j]) \cdot \text{score}_j\]</div>
+<p>高置信检测的 IoU 重叠被"放大",让高分检测更容易匹配上。</p>
+<p><strong>运动方向余弦 OCM</strong>(OC-SORT):</p>
+<div class="arithmatex">\[d_{\text{OCM}} = -\text{inertia} \cdot \cos(\vec{v}_{\text{track}}, \vec{v}_{\text{det}})\]</div>
+<p>如果轨迹速度方向和"上次观测→当前检测"的方向一致,则代价更低。</p>
+<table>
+<thead>
+<tr>
+<th>代价类型</th>
+<th>公式</th>
+<th>适用方法</th>
+<th>优势</th>
+<th>劣势</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IoU 距离</td>
+<td><span class="arithmatex">\(1-\text{IoU}\)</span></td>
+<td>SORT / ByteTrack / OC-SORT</td>
+<td>简单高效,无需额外模型</td>
+<td>框不重叠即失效</td>
+</tr>
+<tr>
+<td>马氏距离</td>
+<td><span class="arithmatex">\(d^2_{\text{Maha}}\)</span></td>
+<td>DeepSORT 运动门控</td>
+<td>自适应不确定度</td>
+<td>依赖卡尔曼准确性</td>
+</tr>
+<tr>
+<td>余弦外观</td>
+<td><span class="arithmatex">\(1-\cos\)</span></td>
+<td>DeepSORT / BoT-SORT</td>
+<td>遮挡恢复强</td>
+<td>需 ReID 模型,外观相似时失效</td>
+</tr>
+<tr>
+<td>fuse_score</td>
+<td><span class="arithmatex">\((1-\text{IoU})\cdot\text{score}\)</span></td>
+<td>ByteTrack</td>
+<td>利用检测置信度</td>
+<td>仅 IoU 可达时有效</td>
+</tr>
+<tr>
+<td>OCM 方向</td>
+<td><span class="arithmatex">\(-\cos(\vec v)\)</span></td>
+<td>OC-SORT</td>
+<td>运动方向一致性</td>
+<td>静止目标无效</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23">2.3 匈牙利算法原理<a class="headerlink" href="#23" title="Permanent link">&para;</a></h3>
+<p>匈牙利算法(Kuhn-Munkres, 1955/1957)在 <span class="arithmatex">\(O(n^3)\)</span> 时间内求解线性指派问题的全局最优解。其核心思路:</p>
+<ol>
+<li><strong>行规约</strong>:每行减去该行最小值 → 每行至少有一个零</li>
+<li><strong>列规约</strong>:每列减去该列最小值 → 每列至少有一个零</li>
+<li><strong>零覆盖</strong>:用最少的行/列线覆盖所有零。若线数 = <span class="arithmatex">\(n\)</span>,则当前零位置给出最优指派</li>
+<li><strong>调整</strong>:若线数 &lt; <span class="arithmatex">\(n\)</span>,找未覆盖元素的最小值,从未覆盖行减去、给覆盖列加上,回到步 3</li>
+</ol>
+<div class="mermaid">flowchart TD
+    S["代价矩阵 C (N×M)"] --&gt; R["行规约: 每行减最小值"]
+    R --&gt; COL["列规约: 每列减最小值"]
+    COL --&gt; COVER["用最少行列线覆盖所有零"]
+    COVER --&gt; CHECK{"覆盖线数 = n?"}
+    CHECK --&gt;|是| OPT["零位置 = 最优指派"]
+    CHECK --&gt;|否| ADJ["取未覆盖最小值&lt;br/&gt;未覆盖行减、覆盖列加"]
+    ADJ --&gt; COVER
+    style OPT fill:#66bb6a,color:#fff
+    style ADJ fill:#ef5350,color:#fff</div>
+<div class="admonition note">
+<p class="admonition-title">阈值门控:禁止不合理的匹配</p>
+<p>跟踪中不是所有配对都该被允许——代价超过阈值 <code>thresh</code> 的配对应被禁止。本仓库在 <code>linear_assignment(cost, thresh)</code> 中实现:对 <code>lap.lapjv</code> 使用 <code>cost_limit</code> 参数直接稀疏化;对 <code>scipy</code> 回落路径则将超阈值位置设为大值,求解后再过滤。</p>
+</div>
+<h3 id="24">2.4 本仓库实现对照<a class="headerlink" href="#24" title="Permanent link">&para;</a></h3>
+<p><code>matching.py</code> 的 <code>linear_assignment</code> 是一个<strong>双后端分发器</strong>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># matching.py — 优先 lap,回落 scipy</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span> <span class="n">_HAS_LAP</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">_</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">lapjv</span><span class="p">(</span><span class="n">_cost</span><span class="p">,</span> <span class="n">extend_cost</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cost_limit</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">thresh</span><span class="p">))</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="c1"># x[i] = 匹配到第 i 行的列号,未匹配为 -1</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">else</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="c1"># scipy 不支持 cost_limit,手动将超阈值设为大值再过滤</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">cost_padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cost</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">big</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">row_ind</span><span class="p">,</span> <span class="n">col_ind</span> <span class="o">=</span> <span class="n">linear_sum_assignment</span><span class="p">(</span><span class="n">cost_padded</span><span class="p">)</span>
+</span></code></pre></div>
+<p>返回统一的三元组 <code>(matches, unmatched_a, unmatched_b)</code>,下游 tracker 无需关心用了哪个后端。</p>
+<p><strong>性能对比:lap vs scipy</strong></p>
+<table>
+<thead>
+<tr>
+<th>矩阵规模</th>
+<th><code>lap.lapjv</code></th>
+<th><code>scipy.linear_sum_assignment</code></th>
+<th>加速比</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>50×50</td>
+<td>~0.05 ms</td>
+<td>~0.15 ms</td>
+<td>~3×</td>
+</tr>
+<tr>
+<td>200×200</td>
+<td>~0.8 ms</td>
+<td>~3.5 ms</td>
+<td>~4×</td>
+</tr>
+<tr>
+<td>500×500</td>
+<td>~5 ms</td>
+<td>~25 ms</td>
+<td>~5×</td>
+</tr>
+</tbody>
+</table>
+<p><code>lap.lapjv</code> 是 Jonker-Volgenant 算法的 C++ 实现,原生支持 <code>cost_limit</code> 稀疏化——在矩阵稀疏时跳过大量无效配对,实际加速比可远超上表。<code>scipy</code> 从 1.4 版起底层也换成了 C++,但缺乏稀疏化支持。边缘设备(Jetson)上建议安装 <code>lap</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[tracking-fast]&quot;</span><span class="w">   </span><span class="c1"># 安装 lap 可选依赖</span>
+</span></code></pre></div>
+<h3 id="25-vs">2.5 级联匹配 vs 单级匹配<a class="headerlink" href="#25-vs" title="Permanent link">&para;</a></h3>
+<p>不同方法在"怎么构造代价矩阵"和"怎么分阶段匹配"上各有策略:</p>
+<div class="mermaid">flowchart TD
+    subgraph "DeepSORT: 级联匹配"
+        DS1["按 lost 帧数分优先级&lt;br/&gt;(刚丢的优先匹配)"] --&gt; DS2["外观 + 马氏距离&lt;br/&gt;逐级匹配"]
+        DS2 --&gt; DS3["剩余 → IoU 兜底"]
+    end
+    subgraph "ByteTrack: 高低分两级"
+        BT1["高分检测 × 全部轨迹&lt;br/&gt;(fuse_score IoU)"] --&gt; BT2["低分检测 × 未匹配轨迹&lt;br/&gt;(纯 IoU)"]
+        BT2 --&gt; BT3["未匹配高分 × unconfirmed&lt;br/&gt;(IoU 确认新轨迹)"]
+    end
+    subgraph "OC-SORT: OCR 恢复"
+        OC1["IoU + OCM 方向代价&lt;br/&gt;一阶段匹配"] --&gt; OC2["未匹配轨迹用 last_observation&lt;br/&gt;(非 KF 预测)再做一次 IoU"]
+    end
+    style DS1 fill:#29b6f6,color:#fff
+    style BT1 fill:#66bb6a,color:#fff
+    style OC1 fill:#fb8c00,color:#fff</div>
 <ul>
-<li>Zhang et al. <em>MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2211.09791">2211.09791</a> · <a href="https://github.com/megvii-research/MOTRv2">代码</a></li>
-<li>Zeng et al. <em>MOTR: End-to-End Multiple-Object Tracking with Transformer</em>. ECCV 2022. arXiv:<a href="https://arxiv.org/abs/2105.03247">2105.03247</a> · <a href="https://github.com/megvii-research/MOTR">代码</a></li>
-<li>Ge et al. <em>YOLOX: Exceeding YOLO Series in 2021</em>. arXiv:<a href="https://arxiv.org/abs/2107.08430">2107.08430</a></li>
-<li>Meinhardt et al. <em>TrackFormer</em>. CVPR 2022. arXiv:<a href="https://arxiv.org/abs/2101.02702">2101.02702</a></li>
+<li><strong>DeepSORT 级联匹配</strong>:按轨迹丢失帧数分层,刚丢的轨迹优先匹配,长期丢失的后匹配。每层用外观+马氏距离联合代价。最后剩余的用纯 IoU 兜底。</li>
+<li><strong>ByteTrack 三阶段</strong>:先用高分检测配全部轨迹(fuse_score 加权 IoU),再用低分检测配剩余 tracked 轨迹(纯 IoU),最后用未匹配的高分检测去确认新建的 unconfirmed 轨迹。</li>
+<li><strong>OC-SORT OCR 恢复</strong>:一阶段用 IoU+OCM 方向余弦。失败的轨迹不用卡尔曼预测框,而是用<strong>最后一次真实观测框</strong> <code>last_observation</code> 再做一次 IoU 关联——这在目标被遮挡后卡尔曼预测偏移严重时特别有效。</li>
 </ul>
-<p>→ 上一篇:<a href="../motr/">MOTR</a> · 下一篇:<a href="../matr/">MATR</a></p>
+<hr />
+<h2 id="3">3. 两个基石如何协作<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<p>每帧到来时,卡尔曼滤波和匈牙利算法按以下流程协作:</p>
+<div class="mermaid">flowchart TD
+    START([新帧到来]) --&gt; MP["1. kalman.multi_predict&lt;br/&gt;所有轨迹批量预测到当前帧"]
+    MP --&gt; COST["2. matching.iou_distance / fuse_score&lt;br/&gt;构造 N×M 代价矩阵"]
+    COST --&gt; SOLVE["3. matching.linear_assignment&lt;br/&gt;匈牙利求解最优匹配"]
+    SOLVE --&gt; MATCHED["匹配成功的 (轨迹, 检测) 对"]
+    SOLVE --&gt; UNTRK["未匹配轨迹 → Lost"]
+    SOLVE --&gt; UNDET["未匹配检测 → 新建"]
+    MATCHED --&gt; UPD["4. kalman.update&lt;br/&gt;逐条用观测校正状态"]
+    UPD --&gt; EMIT["5. 输出带 tracker_id 的检测"]
+    style MP fill:#29b6f6,color:#fff
+    style COST fill:#fb8c00,color:#fff
+    style SOLVE fill:#ef5350,color:#fff
+    style UPD fill:#66bb6a,color:#fff</div>
+<p>对应本仓库的调用链(以 <code>ByteTrackNative</code> 为例):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ByteTrackNative.update(detections)
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    ├── kf.multi_predict(means, covs)        # 步骤 1: 批量卡尔曼预测
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    ├── matching.iou_distance(pred, dets)     # 步骤 2: 构造 IoU 代价矩阵
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    ├── matching.fuse_score(cost, scores)     # 步骤 2: ByteTrack 分数融合
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    ├── matching.linear_assignment(cost, th)  # 步骤 3: 匈牙利求解
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    └── kf.update(mean, cov, z)              # 步骤 4: 逐条卡尔曼更新
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">这就是为什么这两个基石如此重要</p>
+<p>后续所有方法——ByteTrack 的高低分两级、OC-SORT 的方向代价、DeepSORT 的外观融合、BoT-SORT 的相机补偿——都只是在<strong>步骤 2 构造什么样的代价矩阵</strong>和<strong>步骤 3 怎么分阶段匹配</strong>上做文章。卡尔曼预测(步骤 1)和卡尔曼更新(步骤 4)几乎从未改变。掌握了本篇的数学原理,再读任何一篇方法论文都会非常自然。</p>
+</div>
+<hr />
+<h2 id="_2">参考文献<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Bewley et al. <em>Simple Online and Realtime Tracking</em>. ICIP 2016. arXiv:<a href="https://arxiv.org/abs/1602.00763">1602.00763</a> — SORT 原文,确立了卡尔曼+匈牙利的跟踪骨架</li>
+<li>Kuhn, H. W. <em>The Hungarian Method for the Assignment Problem</em>. Naval Research Logistics, 1955 — 匈牙利算法原文</li>
+<li>Munkres, J. <em>Algorithms for the Assignment and Transportation Problems</em>. JSMAM, 1957 — 证明匈牙利算法是强多项式的</li>
+<li>Welch &amp; Bishop. <em>An Introduction to the Kalman Filter</em>. UNC-Chapel Hill TR 95-041 — 卡尔曼滤波经典教程</li>
+<li>Jonker &amp; Volgenant. <em>A shortest augmenting path algorithm for dense and sparse linear assignment problems</em>. Computing 38, 1987 — <code>lap.lapjv</code> 的算法基础</li>
+</ul>
+<p>→ 上一篇:<a href="../">概念总览</a> · 下一篇:<a href="../traditional-methods/">传统方法</a></p>
 
 
 
