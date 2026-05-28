@@ -30,6 +30,8 @@ graph TD
 
 ## 2. JDE:首个一阶段联合检测+嵌入
 
+> 📖 详细解析见 [JDE 详解](jde.md)
+
 > Wang et al. *Towards Real-Time Multi-Object Tracking*. ECCV 2020. arXiv:[1909.12605](https://arxiv.org/abs/1909.12605) · 代码 [Zhongdao/Towards-Realtime-MOT](https://github.com/Zhongdao/Towards-Realtime-MOT)
 
 在单阶段检测器(YOLOv3 + FPN)上加一个 **triplet-loss 嵌入头**,每个 anchor 同时输出框和外观向量;关联仍用卡尔曼 + 匈牙利。把"检测+嵌入"做到几乎只花"检测"的时间(MOT16 约 64 MOTA,~18-22 FPS)。
@@ -46,6 +48,8 @@ graph LR
 **局限**:anchor-based 头导致 ReID 特征与目标**对不齐**(一个 anchor 可能覆盖多个目标);检测与 ReID 两任务在共享网络里**互相竞争**;遮挡下 ID 切换仍多——这正是 FairMOT 要解决的。
 
 ## 3. FairMOT:公平对待检测与 ReID
+
+> 📖 详细解析见 [FairMOT 详解](fairmot.md)
 
 > Zhang et al. *FairMOT: On the Fairness of Detection and Re-Identification in MOT*. IJCV 2021. arXiv:[2004.01888](https://arxiv.org/abs/2004.01888) · 代码 [ifzhang/FairMOT](https://github.com/ifzhang/FairMOT)
 
@@ -68,6 +72,8 @@ graph TD
 - **局限**:重度依赖大规模 ReID 预训练数据;同款外观/拥挤(DanceTrack)仍弱;关联后端仍是启发式。
 
 ## 4. CenterTrack:把目标当成点来跟
+
+> 📖 详细解析见 [CenterTrack 详解](centertrack.md)
 
 > Zhou et al. *Tracking Objects as Points*. ECCV 2020. arXiv:[2004.01177](https://arxiv.org/abs/2004.01177) · 代码 [xingyizhou/CenterTrack](https://github.com/xingyizhou/CenterTrack)
 
@@ -112,4 +118,4 @@ graph LR
 - Zhang et al. *FairMOT*. IJCV 2021. arXiv:[2004.01888](https://arxiv.org/abs/2004.01888) · [代码](https://github.com/ifzhang/FairMOT)
 - Zhou et al. *Tracking Objects as Points* (CenterTrack). ECCV 2020. arXiv:[2004.01177](https://arxiv.org/abs/2004.01177) · [代码](https://github.com/xingyizhou/CenterTrack)
 
-→ 上一篇:[Hybrid-SORT](hybrid-sort.md) · 下一篇:[端到端 Transformer(query 派)](transformer-mot.md)
+→ 上一篇:[Hybrid-SORT](hybrid-sort.md) · 下一篇:[JDE 详解](jde.md)

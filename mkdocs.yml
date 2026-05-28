@@ -110,9 +110,16 @@ nav:
               - BoT-SORT: guides/tracking/botsort.md
               - Deep OC-SORT: guides/tracking/deep-ocsort.md
               - Hybrid-SORT: guides/tracking/hybrid-sort.md
-          - 其他范式:
-              - JDE / FairMOT / CenterTrack: guides/tracking/jde-family.md
-              - Transformer MOT: guides/tracking/transformer-mot.md
+          - JDE · 联合检测嵌入:
+              - 概览: guides/tracking/jde-family.md
+              - JDE: guides/tracking/jde.md
+              - FairMOT: guides/tracking/fairmot.md
+              - CenterTrack: guides/tracking/centertrack.md
+          - Transformer · 端到端:
+              - 概览: guides/tracking/transformer-mot.md
+              - TrackFormer: guides/tracking/trackformer.md
+              - MOTR: guides/tracking/motr.md
+              - MOTRv2: guides/tracking/motrv2.md
           - 评测指标: guides/tracking/metrics.md
   - API 参考:
       - 总览: api/index.md

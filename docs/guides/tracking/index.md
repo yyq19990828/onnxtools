@@ -16,8 +16,10 @@
 | [StrongSORT](strongsort.md) | DeepSORT 现代化 + AFLink/GSI | 进阶方向 |
 | [Deep OC-SORT](deep-ocsort.md) | 自适应外观增强的 OC-SORT | 进阶方向 |
 | [Hybrid-SORT](hybrid-sort.md) | 弱线索(置信度/高度)关联 | 进阶方向 |
-| [联合检测与嵌入(JDE 派)](jde-family.md) | JDE / FairMOT / CenterTrack | 单网络一阶段范式 |
-| [端到端 Transformer(query 派)](transformer-mot.md) | TrackFormer / MOTR / MOTRv2 + 前沿 | 端到端范式 |
+| [联合检测与嵌入(JDE 派)](jde-family.md) | JDE / FairMOT / CenterTrack 概览 | 单网络一阶段范式 |
+| ↳ [JDE](jde.md) · [FairMOT](fairmot.md) · [CenterTrack](centertrack.md) | 各方法详解 | 📚 知识补全 |
+| [端到端 Transformer(query 派)](transformer-mot.md) | TrackFormer / MOTR / MOTRv2 概览 + 前沿 | 端到端范式 |
+| ↳ [TrackFormer](trackformer.md) · [MOTR](motr.md) · [MOTRv2](motrv2.md) | 各方法详解 | 📚 知识补全 |
 | [评测指标详解](metrics.md) | MOTA / MOTP / IDF1 / HOTA / MT-ML-Frag | 怎么评判跟踪器好坏 |
 
 ---
@@ -166,14 +168,14 @@ graph LR
 
 ```mermaid
 flowchart TD
-    subgraph 代价矩阵 N×M
+    subgraph SG["代价矩阵 N&times;M"]
         direction LR
-        C["cost[i,j] = 轨迹i 与 检测j 的不相似度"]
+        C["cost&#91;i,j&#93; = 轨迹i 与 检测j 的不相似度"]
     end
-    C --> SOLVE["linear_assignment(cost, thresh)"]
-    SOLVE --> M1["matches 匹配对 (i,j)"]
+    C --> SOLVE["linear_assignment&#40;cost, thresh&#41;"]
+    SOLVE --> M1["matches 匹配对 &#40;i,j&#41;"]
     SOLVE --> M2["unmatched_tracks 未匹配轨迹"]
-    SOLVE --> M3["unmatched_dets 未匹配检测 → 可能新建"]
+    SOLVE --> M3["unmatched_dets 未匹配检测 &rarr; 可能新建"]
 ```
 
 代价矩阵的"不相似度"用什么度量,正是各方法的分水岭:

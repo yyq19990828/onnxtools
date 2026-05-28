@@ -31,7 +31,7 @@ graph LR
 
 这被称为 **"tracking-by-attention"**(注意力即关联),彻底告别手写运动模型与匈牙利匹配。
 
-## 2. TrackFormer:tracking-by-attention 的开创者
+## 2. TrackFormer:tracking-by-attention 的开创者 → [详细解读](trackformer.md)
 
 > Meinhardt et al. *TrackFormer: Multi-Object Tracking with Transformers*. CVPR 2022. arXiv:[2101.02702](https://arxiv.org/abs/2101.02702) · 代码 [timmeinhardt/trackformer](https://github.com/timmeinhardt/trackformer)
 
@@ -51,7 +51,7 @@ flowchart LR
 
 ## 3. MOTR 与 MOTRv2
 
-### 3.1 MOTR:全端到端时序建模
+### 3.1 MOTR:全端到端时序建模 → [详细解读](motr.md)
 
 > Zeng et al. *MOTR: End-to-End Multiple-Object Tracking with Transformer*. ECCV 2022. arXiv:[2105.03247](https://arxiv.org/abs/2105.03247) · 代码 [megvii-research/MOTR](https://github.com/megvii-research/MOTR)
 
@@ -71,7 +71,7 @@ graph TD
 
 **局限**:检测与关联在一个网络里**严重互相牵制**,导致检测偏弱,原始 MOTA 落后于"强检测器 + tracker"方案。
 
-### 3.2 MOTRv2:用预训练检测器"喂"提案
+### 3.2 MOTRv2:用预训练检测器"喂"提案 → [详细解读](motrv2.md)
 
 > Zhang et al. *MOTRv2: Bootstrapping End-to-End MOT by Pretrained Object Detectors*. CVPR 2023. arXiv:[2211.09791](https://arxiv.org/abs/2211.09791) · 代码 [megvii-research/MOTRv2](https://github.com/megvii-research/MOTRv2)
 
@@ -128,4 +128,4 @@ graph LR
 - Zhang et al. *MOTRv2*. CVPR 2023. arXiv:[2211.09791](https://arxiv.org/abs/2211.09791) · [代码](https://github.com/megvii-research/MOTRv2)
 - MATR arXiv:[2509.21715](https://arxiv.org/abs/2509.21715) · MeMoSORT arXiv:[2508.09796](https://arxiv.org/abs/2508.09796) · PuTR arXiv:[2405.14119](https://arxiv.org/abs/2405.14119) · FastTrackTr arXiv:[2411.15811](https://arxiv.org/abs/2411.15811)
 
-→ 上一篇:[联合检测与嵌入(JDE 派)](jde-family.md) · 下一篇:[评测指标详解](metrics.md)
+→ 上一篇:[CenterTrack](centertrack.md) · 下一篇:[TrackFormer 详解](trackformer.md)
