@@ -89,6 +89,10 @@
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>
+         <loc>https://example.com/onnxtools/guides/tracking/fasttracktr/</loc>
+         <lastmod>2026-05-28</lastmod>
+    </url>
+    <url>
          <loc>https://example.com/onnxtools/guides/tracking/hybrid-sort/</loc>
          <lastmod>2026-05-28</lastmod>
     </url>
@@ -98,6 +102,14 @@
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/jde/</loc>
+         <lastmod>2026-05-28</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/onnxtools/guides/tracking/matr/</loc>
+         <lastmod>2026-05-28</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/onnxtools/guides/tracking/memosort/</loc>
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>
@@ -114,6 +126,10 @@
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/ocsort/</loc>
+         <lastmod>2026-05-28</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/onnxtools/guides/tracking/putr/</loc>
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>

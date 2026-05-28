@@ -1223,6 +1223,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1508,6 +1516,118 @@
     
   
     MOTRv2 [2023]
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MATR [2025]
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memosort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeMoSORT [2025]
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../putr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PuTR [2024]
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fasttracktr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastTrackTr [2024]
   
 
     
@@ -2167,28 +2287,28 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>MATR</strong>(Motion-Aware Transformer)</td>
+<td><strong><a href="../matr/">MATR</a></strong>(Motion-Aware Transformer)</td>
 <td>2025</td>
 <td>显式预测运动以预更新 track query,减少 query 冲突</td>
-<td>DanceTrack HOTA 71.3 / SportsMOT 72.2</td>
+<td>DanceTrack HOTA 71.3 / SportsMOT 72.7</td>
 </tr>
 <tr>
-<td><strong>MeMoSORT</strong></td>
+<td><strong><a href="../memosort/">MeMoSORT</a></strong></td>
 <td>2025</td>
 <td>记忆辅助滤波 + 运动自适应关联(tracking-by-detection 前沿)</td>
 <td>DanceTrack 67.9 / SportsMOT 82.1 HOTA</td>
 </tr>
 <tr>
-<td><strong>PuTR</strong>(Pure Transformer)</td>
+<td><strong><a href="../putr/">PuTR</a></strong>(Pure Transformer)</td>
 <td>2024</td>
 <td>解耦的在线 Transformer 关联,设计简洁</td>
-<td>DanceTrack/SportsMOT 领先 IDF1/HOTA</td>
+<td>SportsMOT HOTA 76.8 / DanceTrack 60.6</td>
 </tr>
 <tr>
-<td><strong>FastTrackTr</strong></td>
+<td><strong><a href="../fasttracktr/">FastTrackTr</a></strong></td>
 <td>2024</td>
 <td>面向实时部署的 Transformer 跟踪器</td>
-<td>效率前沿</td>
+<td>DanceTrack HOTA 62.4 / TRT 166 FPS</td>
 </tr>
 </tbody>
 </table>
@@ -2198,7 +2318,7 @@
 <div class="mermaid">graph LR
     TF["TrackFormer 2022"] --&gt; MOTR["MOTR 2022"]
     MOTR --&gt; MOTR2["MOTRv2 2023&lt;br/&gt;(借力预训练检测器)"]
-    MOTR2 --&gt; FRONT["2024-25 前沿&lt;br/&gt;MATR / PuTR(端到端)&lt;br/&gt;MeMoSORT(检测后关联)"]
+    MOTR2 --&gt; FRONT["2024-25 前沿&lt;br/&gt;MATR / PuTR / FastTrackTr(端到端)&lt;br/&gt;MeMoSORT(检测后关联)"]
     style FRONT fill:#29b6f6</div>
 <h2 id="5-vs">5. 范式三 vs 范式一:何时用哪个<a class="headerlink" href="#5-vs" title="Permanent link">&para;</a></h2>
 <table>
