@@ -9,6 +9,7 @@
 | 文档 | 内容 | 与本仓库的关系 |
 |------|------|----------------|
 | **本篇 · 概念总览** | MOT 问题定义、范式分类、卡尔曼滤波、匈牙利匹配、评测指标、数据集 | 共享基元 [`kalman.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py) / [`matching.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/matching.py) |
+| [**数学基石深入**](math-foundations.md) | 卡尔曼滤波完整推导 + 匈牙利算法原理 + 代价度量大全 + 本仓库实现对照 | 共享基元深度解读 |
 | [传统方法总结](traditional-methods.md) | IoU-Tracker、SORT、DeepSORT | 设计血统来源 |
 | [ByteTrack](bytetrack.md) | 关联每一个检测框(高/低分双关联) | ✅ [`bytetrack.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/bytetrack.py) 原生实现 |
 | [OC-SORT](ocsort.md) | 观测中心化(OCM/OCR/ORU) | ✅ [`ocsort.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/ocsort.py) 原生实现 |
@@ -126,6 +127,8 @@ graph LR
 ---
 
 ## 3. 关联的两大数学基石
+
+> 本节是概要。完整的状态空间推导、卡尔曼增益直觉、匈牙利算法步骤、代价度量对比、以及本仓库实现逐行对照,请阅读 **[数学基石深入](math-foundations.md)**。
 
 无论哪种 tracking-by-detection 方法,关联都建立在两个基石上:**用卡尔曼滤波预测目标下一帧在哪**,再**用匈牙利算法在"预测"和"新检测"之间做最优配对**。这两个基元在本仓库被向量化实现于 [`kalman.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py) 与 [`matching.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/matching.py)。
 

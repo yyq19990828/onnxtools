@@ -101,6 +101,7 @@ nav:
       - MCP 集成: guides/mcp.md
       - 多目标跟踪:
           - 概念总览: guides/tracking/index.md
+          - 数学基石 (卡尔曼/匈牙利): guides/tracking/math-foundations.md
           - 传统方法 (IoU/SORT/DeepSORT): guides/tracking/traditional-methods.md
           - TbD · 运动主导:
               - ByteTrack [2022]: guides/tracking/bytetrack.md
