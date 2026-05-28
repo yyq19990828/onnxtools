@@ -2,7 +2,7 @@ import ast
 import json
 import logging
 import threading
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import onnxruntime
@@ -32,7 +32,7 @@ def preload_onnx_libraries():
             available_providers = onnxruntime.get_available_providers()
             logging.debug(f"Available ONNX Runtime providers: {available_providers}")
 
-            if 'CUDAExecutionProvider' in available_providers:
+            if "CUDAExecutionProvider" in available_providers:
                 logging.info("Attempting to preload ONNX Runtime CUDA provider libraries...")
                 onnxruntime.preload_dlls()
                 logging.info("Successfully preloaded ONNX Runtime CUDA provider libraries.")
@@ -60,25 +60,25 @@ def get_best_available_providers(model_path: str) -> list[str]:
         list[str]: A list of the best available providers.
     """
     available_providers = onnxruntime.get_available_providers()
-    if 'CUDAExecutionProvider' not in available_providers:
+    if "CUDAExecutionProvider" not in available_providers:
         logging.info("CUDAExecutionProvider not available in this build of ONNX Runtime. Using CPU.")
-        return ['CPUExecutionProvider']
+        return ["CPUExecutionProvider"]
 
     # Attempt to create a session with CUDA to confirm it's functional
     try:
-        onnxruntime.InferenceSession(model_path, providers=['CUDAExecutionProvider'])
+        onnxruntime.InferenceSession(model_path, providers=["CUDAExecutionProvider"])
         logging.info("CUDAExecutionProvider is functional. Using CUDA and CPU providers.")
-        return ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
     except Exception as e:
         logging.warning(
             f"CUDAExecutionProvider is available but failed to initialize with model '{model_path}'. "
             f"This may be due to a driver mismatch or unsupported hardware. "
             f"Falling back to CPUExecutionProvider. Error: {e}"
         )
-        return ['CPUExecutionProvider']
+        return ["CPUExecutionProvider"]
 
 
-def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
+def get_onnx_metadata(model_path: str) -> dict[str, Any] | None:
     """
     从ONNX模型中读取metadata信息
 
@@ -89,34 +89,34 @@ def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: metadata字典，如果没有则返回None
     """
     try:
-        session = onnxruntime.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+        session = onnxruntime.InferenceSession(model_path, providers=["CPUExecutionProvider"])
         metadata = session.get_modelmeta()
 
         # 获取自定义metadata
         custom_metadata = {}
-        if hasattr(metadata, 'custom_metadata_map'):
+        if hasattr(metadata, "custom_metadata_map"):
             custom_metadata = metadata.custom_metadata_map
 
         # 尝试解析names字段
         names_data = None
-        if 'names' in custom_metadata:
+        if "names" in custom_metadata:
             try:
                 # 首先尝试JSON解析
-                names_data = json.loads(custom_metadata['names'])
+                names_data = json.loads(custom_metadata["names"])
             except (json.JSONDecodeError, TypeError):
                 try:
                     # 如果JSON解析失败，尝试Python字典的literal_eval解析（Ultralytics格式）
-                    names_data = ast.literal_eval(custom_metadata['names'])
+                    names_data = ast.literal_eval(custom_metadata["names"])
                 except Exception:
                     # 如果都失败了，直接返回字符串
-                    names_data = custom_metadata['names']
+                    names_data = custom_metadata["names"]
 
         result = {
-            'producer_name': getattr(metadata, 'producer_name', ''),
-            'version': getattr(metadata, 'version', ''),
-            'description': getattr(metadata, 'description', ''),
-            'custom_metadata': custom_metadata,
-            'names': names_data
+            "producer_name": getattr(metadata, "producer_name", ""),
+            "version": getattr(metadata, "version", ""),
+            "description": getattr(metadata, "description", ""),
+            "custom_metadata": custom_metadata,
+            "names": names_data,
         }
 
         return result
@@ -125,7 +125,7 @@ def get_onnx_metadata(model_path: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def get_class_names_from_onnx(model_path: str) -> Optional[Dict[int, str]]:
+def get_class_names_from_onnx(model_path: str) -> dict[int, str] | None:
     """
     从ONNX模型metadata中获取类别名称
 
@@ -136,10 +136,10 @@ def get_class_names_from_onnx(model_path: str) -> Optional[Dict[int, str]]:
         Optional[Dict[int, str]]: 类别名称字典，key为类别ID，value为类别名称
     """
     metadata = get_onnx_metadata(model_path)
-    if not metadata or not metadata.get('names'):
+    if not metadata or not metadata.get("names"):
         return None
 
-    names = metadata['names']
+    names = metadata["names"]
 
     # 处理不同的names格式
     if isinstance(names, dict):
@@ -188,9 +188,13 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
 
         # 获取输入形状
         model_input_shape = session.get_inputs()[0].shape
-        if (len(model_input_shape) >= 4 and
-            isinstance(model_input_shape[2], int) and model_input_shape[2] > 0 and
-            isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
+        if (
+            len(model_input_shape) >= 4
+            and isinstance(model_input_shape[2], int)
+            and model_input_shape[2] > 0
+            and isinstance(model_input_shape[3], int)
+            and model_input_shape[3] > 0
+        ):
             input_shape = (model_input_shape[2], model_input_shape[3])
             logging.info(f"从ONNX模型读取到固定输入形状: {input_shape}")
         else:
@@ -202,8 +206,8 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
 
         # 获取类别名称
         class_names = None
-        if metadata and metadata.get('names'):
-            names = metadata['names']
+        if metadata and metadata.get("names"):
+            names = metadata["names"]
             # 处理不同的names格式
             if isinstance(names, dict):
                 try:
@@ -216,7 +220,9 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
         # 验证模型输出
         # 检查模型期望的batch维度
         model_input_shape = session.get_inputs()[0].shape
-        expected_batch_size = model_input_shape[0] if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0 else 1
+        expected_batch_size = (
+            model_input_shape[0] if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0 else 1
+        )
 
         dummy_input = np.random.randn(expected_batch_size, 3, input_shape[0], input_shape[1]).astype(np.float32)
         outputs = session.run(None, {input_name: dummy_input})
@@ -225,13 +231,13 @@ def get_model_info(model_path: str, default_input_shape: tuple = (640, 640)) -> 
         logging.info(f"使用batch大小: {expected_batch_size}")
 
         return {
-            'session': session,
-            'input_name': input_name,
-            'output_names': output_names,
-            'input_shape': input_shape,
-            'class_names': class_names,
-            'metadata': metadata,
-            'output_shape': output_shape
+            "session": session,
+            "input_name": input_name,
+            "output_names": output_names,
+            "input_shape": input_shape,
+            "class_names": class_names,
+            "metadata": metadata,
+            "output_shape": output_shape,
         }
 
     except Exception as e:
@@ -261,7 +267,7 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     return y
 
 
-def clip_boxes(boxes: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
+def clip_boxes(boxes: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
     """
     Clip bounding boxes to image boundaries.
 
@@ -280,9 +286,13 @@ def clip_boxes(boxes: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
     return boxes
 
 
-def scale_boxes(img1_shape: Tuple[int, int], boxes: np.ndarray, img0_shape: Tuple[int, int],
-                ratio_pad: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
-                padding: bool = True) -> np.ndarray:
+def scale_boxes(
+    img1_shape: tuple[int, int],
+    boxes: np.ndarray,
+    img0_shape: tuple[int, int],
+    ratio_pad: tuple[tuple[float, float], tuple[float, float]] | None = None,
+    padding: bool = True,
+) -> np.ndarray:
     """
     Rescale bounding boxes from one image shape to another.
 

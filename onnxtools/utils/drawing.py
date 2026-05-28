@@ -22,7 +22,7 @@ TODO: Future refactoring
     - Color palette management needs custom implementation
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import supervision as sv
@@ -32,13 +32,13 @@ try:
     from .supervision_labels import create_ocr_labels
 except ImportError as e:
     raise ImportError(
-        "Required utilities are not available. "
-        "Ensure supervision library is installed: pip install supervision>=0.16.0"
+        "Required utilities are not available. Ensure supervision library is installed: pip install supervision>=0.16.0"
     ) from e
 
 
-def convert_to_supervision_detections(detections_array: List[List[List[float]]],
-                                    class_names: Union[Dict[int, str], List[str]]) -> sv.Detections:
+def convert_to_supervision_detections(
+    detections_array: list[list[list[float]]], class_names: dict[int, str] | list[str]
+) -> sv.Detections:
     """
     Convert current detection format to supervision.Detections format.
 
@@ -60,8 +60,9 @@ def convert_to_supervision_detections(detections_array: List[List[List[float]]],
         return sv.Detections.empty()
 
     # Extract coordinates, confidence, and class_id
-    xyxy = np.array([[float(det[0]), float(det[1]), float(det[2]), float(det[3])]
-                     for det in all_detections], dtype=np.float32)
+    xyxy = np.array(
+        [[float(det[0]), float(det[1]), float(det[2]), float(det[3])] for det in all_detections], dtype=np.float32
+    )
     confidence = np.array([float(det[4]) for det in all_detections], dtype=np.float32)
     class_id = np.array([int(det[5]) for det in all_detections], dtype=np.int32)
 
@@ -82,16 +83,10 @@ def convert_to_supervision_detections(detections_array: List[List[List[float]]],
             else:
                 class_names_list.append(f"unknown_{cls_id}")
 
-    return sv.Detections(
-        xyxy=xyxy,
-        confidence=confidence,
-        class_id=class_id,
-        data={'class_name': class_names_list}
-    )
+    return sv.Detections(xyxy=xyxy, confidence=confidence, class_id=class_id, data={"class_name": class_names_list})
 
 
-def create_box_annotator(thickness: int = 1,
-                        color_palette: Optional[sv.ColorPalette] = None) -> sv.BoxAnnotator:
+def create_box_annotator(thickness: int = 1, color_palette: sv.ColorPalette | None = None) -> sv.BoxAnnotator:
     """
     Create BoxAnnotator with optimized settings for vehicle detection.
 
@@ -103,16 +98,16 @@ def create_box_annotator(thickness: int = 1,
         Configured BoxAnnotator instance
     """
     return sv.BoxAnnotator(
-        color=color_palette or sv.ColorPalette.DEFAULT,
-        thickness=thickness,
-        color_lookup=sv.ColorLookup.CLASS
+        color=color_palette or sv.ColorPalette.DEFAULT, thickness=thickness, color_lookup=sv.ColorLookup.CLASS
     )
 
 
-def create_rich_label_annotator(font_path: Optional[str] = None,
-                               font_size: int = 16,
-                               text_padding: int = 10,
-                               color_palette: Optional[sv.ColorPalette] = None) -> sv.RichLabelAnnotator:
+def create_rich_label_annotator(
+    font_path: str | None = None,
+    font_size: int = 16,
+    text_padding: int = 10,
+    color_palette: sv.ColorPalette | None = None,
+) -> sv.RichLabelAnnotator:
     """
     Create RichLabelAnnotator with Chinese font support and optimized settings.
 
@@ -137,15 +132,18 @@ def create_rich_label_annotator(font_path: Optional[str] = None,
         text_position=sv.Position.TOP_LEFT,
         color_lookup=sv.ColorLookup.CLASS,
         border_radius=3,
-        smart_position=True  # Intelligent positioning to avoid overlaps
+        smart_position=True,  # Intelligent positioning to avoid overlaps
     )
 
-def draw_detections(image: np.ndarray,
-                   detections: List[List[List[float]]],
-                   class_names: Union[Dict[int, str], List[str]],
-                   colors: List[tuple],
-                   plate_results: Optional[List[Optional[Dict[str, Any]]]] = None,
-                   font_path: str = "data/fonts/SourceHanSans-VF.ttf") -> np.ndarray:
+
+def draw_detections(
+    image: np.ndarray,
+    detections: list[list[list[float]]],
+    class_names: dict[int, str] | list[str],
+    colors: list[tuple],
+    plate_results: list[dict[str, Any] | None] | None = None,
+    font_path: str = "data/fonts/SourceHanSans-VF.ttf",
+) -> np.ndarray:
     """
     Draw detection boxes using supervision library for enhanced performance and visuals.
 
@@ -176,26 +174,19 @@ def draw_detections(image: np.ndarray,
     annotated_image = image.copy()
 
     # Draw bounding boxes
-    annotated_image = box_annotator.annotate(
-        scene=annotated_image,
-        detections=sv_detections
-    )
+    annotated_image = box_annotator.annotate(scene=annotated_image, detections=sv_detections)
 
     # Create labels with OCR information
     if len(detections) > 0 and len(detections[0]) > 0:
         # Extract separate arrays from detection format for create_ocr_labels
         det_array = np.array(detections[0])  # [N, 6] format
-        boxes = det_array[:, :4]              # [N, 4] xyxy
-        scores = det_array[:, 4]              # [N] confidence
+        boxes = det_array[:, :4]  # [N, 4] xyxy
+        scores = det_array[:, 4]  # [N] confidence
         class_ids = det_array[:, 5].astype(int)  # [N] class_id
 
         labels = create_ocr_labels(boxes, scores, class_ids, plate_results or [], class_names)
 
         # Draw labels
-        annotated_image = label_annotator.annotate(
-            scene=annotated_image,
-            detections=sv_detections,
-            labels=labels
-        )
+        annotated_image = label_annotator.annotate(scene=annotated_image, detections=sv_detections, labels=labels)
 
     return annotated_image

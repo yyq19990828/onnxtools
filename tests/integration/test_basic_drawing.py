@@ -3,12 +3,12 @@
 import os
 import sys
 
-import cv2
 import numpy as np
 import pytest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 
 @pytest.mark.integration
 class TestBasicDrawingIntegration:
@@ -51,10 +51,10 @@ class TestBasicDrawingIntegration:
         # Create diverse detection set
         diverse_detections = [
             [
-                [50.0, 50.0, 150.0, 100.0, 0.95, 0],   # vehicle - high confidence
-                [200.0, 60.0, 240.0, 80.0, 0.88, 1],   # plate - medium confidence
-                [100.0, 200.0, 200.0, 280.0, 0.75, 0], # vehicle - lower confidence
-                [300.0, 300.0, 350.0, 320.0, 0.92, 1]  # plate - high confidence
+                [50.0, 50.0, 150.0, 100.0, 0.95, 0],  # vehicle - high confidence
+                [200.0, 60.0, 240.0, 80.0, 0.88, 1],  # plate - medium confidence
+                [100.0, 200.0, 200.0, 280.0, 0.75, 0],  # vehicle - lower confidence
+                [300.0, 300.0, 350.0, 320.0, 0.92, 1],  # plate - high confidence
             ]
         ]
 
@@ -70,10 +70,10 @@ class TestBasicDrawingIntegration:
         """Integration: Handle edge case bounding box coordinates."""
         edge_detections = [
             [
-                [0.0, 0.0, 50.0, 50.0, 0.9, 0],                    # Top-left corner
-                [590.0, 430.0, 640.0, 480.0, 0.85, 1],             # Bottom-right corner
-                [300.0, 0.0, 350.0, 30.0, 0.8, 0],                 # Top edge
-                [0.0, 240.0, 40.0, 280.0, 0.75, 1]                 # Left edge
+                [0.0, 0.0, 50.0, 50.0, 0.9, 0],  # Top-left corner
+                [590.0, 430.0, 640.0, 480.0, 0.85, 1],  # Bottom-right corner
+                [300.0, 0.0, 350.0, 30.0, 0.8, 0],  # Top edge
+                [0.0, 240.0, 40.0, 280.0, 0.75, 1],  # Left edge
             ]
         ]
 
@@ -90,7 +90,7 @@ class TestBasicDrawingIntegration:
             [
                 [100.0, 100.0, 200.0, 200.0, 0.95, 0],  # Base box
                 [150.0, 150.0, 250.0, 250.0, 0.90, 1],  # Overlapping box
-                [120.0, 120.0, 180.0, 180.0, 0.85, 0]   # Nested box
+                [120.0, 120.0, 180.0, 180.0, 0.85, 0],  # Nested box
             ]
         ]
 
@@ -107,7 +107,7 @@ class TestBasicDrawingIntegration:
             [
                 [100.0, 100.0, 200.0, 150.0, 0.99, 0],  # Very high confidence
                 [250.0, 200.0, 350.0, 250.0, 0.50, 1],  # Medium confidence
-                [400.0, 300.0, 500.0, 350.0, 0.15, 0]   # Low confidence
+                [400.0, 300.0, 500.0, 350.0, 0.15, 0],  # Low confidence
             ]
         ]
 
@@ -164,10 +164,10 @@ class TestBasicDrawingIntegration:
     def test_different_image_sizes(self, sample_class_names, sample_colors):
         """Integration: Drawing should work with different image dimensions."""
         test_sizes = [
-            (240, 320, 3),   # Small
-            (480, 640, 3),   # Medium (sample size)
+            (240, 320, 3),  # Small
+            (480, 640, 3),  # Medium (sample size)
             (720, 1280, 3),  # Large
-            (1080, 1920, 3)  # Full HD
+            (1080, 1920, 3),  # Full HD
         ]
 
         sample_detections = [[[100.0, 100.0, 200.0, 150.0, 0.9, 0]]]
@@ -183,7 +183,9 @@ class TestBasicDrawingIntegration:
             assert isinstance(result, np.ndarray)
             assert result.shape == size
 
-    def test_supervision_format_conversion_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
+    def test_supervision_format_conversion_integration(
+        self, sample_image, sample_detections, sample_class_names, sample_colors
+    ):
         """Integration: Format conversion should work seamlessly in drawing pipeline."""
         # This test ensures the full pipeline works
         try:
@@ -192,7 +194,7 @@ class TestBasicDrawingIntegration:
             from onnxtools.utils.drawing import convert_to_supervision_detections, draw_detections
 
             # Convert detections
-            sv_detections = convert_to_supervision_detections(sample_detections, sample_class_names)
+            convert_to_supervision_detections(sample_detections, sample_class_names)
 
             # Use in supervision drawing
             result = draw_detections(sample_image, sample_detections, sample_class_names, sample_colors)
@@ -206,7 +208,6 @@ class TestBasicDrawingIntegration:
     def test_thread_safety_integration(self, sample_image, sample_detections, sample_class_names, sample_colors):
         """Integration: Drawing should be thread-safe for concurrent usage."""
         import threading
-        import time
 
         results = []
         errors = []
@@ -214,6 +215,7 @@ class TestBasicDrawingIntegration:
         def draw_worker():
             try:
                 from onnxtools.utils.drawing import draw_detections
+
                 result = draw_detections(sample_image.copy(), sample_detections, sample_class_names, sample_colors)
                 results.append(result)
             except Exception as e:

@@ -36,7 +36,6 @@ class TestPipelineIntegration:
         ]
 
         pipeline_class_names = {0: "vehicle", 1: "plate"}
-        pipeline_colors = [(255, 0, 0), (0, 255, 0)]
 
         # Test conversion compatibility
         try:
@@ -126,7 +125,7 @@ class TestPipelineIntegration:
         """Integration: Video processing pipeline should work correctly."""
         # Simulate video frame processing
         video_frames = []
-        for i in range(10):  # 10 frames
+        for _i in range(10):  # 10 frames
             frame = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
             video_frames.append(frame)
 
@@ -246,7 +245,7 @@ class TestPipelineIntegration:
         from onnxtools.utils.drawing import draw_detections
 
         # Process multiple frames to check for memory leaks
-        for i in range(20):
+        for _i in range(20):
             image = np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8)
             detections = [[[100.0, 100.0, 200.0, 150.0, 0.9, 0]]]
 

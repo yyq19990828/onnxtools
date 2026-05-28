@@ -8,7 +8,7 @@ onnxtools inference capabilities to LLMs through the MCP protocol.
 import logging
 import sys
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -41,7 +41,7 @@ async def app_lifespan(server: FastMCP):
     logger.info(f"Starting {SERVER_NAME} MCP server...")
 
     # State that persists across requests
-    state: Dict[str, Any] = {
+    state: dict[str, Any] = {
         "initialized": True,
     }
 

@@ -19,9 +19,7 @@ def _dets(xyxy, scores=None, classes=None) -> sv.Detections:
     n = len(xyxy)
     return sv.Detections(
         xyxy=xyxy,
-        confidence=np.asarray(
-            scores if scores is not None else [0.9] * n, dtype=np.float32
-        ),
+        confidence=np.asarray(scores if scores is not None else [0.9] * n, dtype=np.float32),
         class_id=np.asarray(classes if classes is not None else [0] * n, dtype=int),
     )
 

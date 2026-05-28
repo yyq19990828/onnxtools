@@ -25,13 +25,13 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import cv2
 
 from onnxtools.infer_onnx.onnx_cls import BaseClsORT
 
-__all__ = ['ClsDatasetEvaluator', 'ClsSampleEvaluation', 'BranchConfig']
+__all__ = ["ClsDatasetEvaluator", "ClsSampleEvaluation", "BranchConfig"]
 
 
 @dataclass
@@ -55,9 +55,10 @@ class BranchConfig:
         ...     branch_name='helmet'
         ... )
     """
+
     branch_index: int
     column_name: str
-    label_map: Dict[Any, str]
+    label_map: dict[Any, str]
     branch_name: str = ""
 
     def __post_init__(self):
@@ -77,6 +78,7 @@ class ClsSampleEvaluation:
         confidence: Prediction confidence score
         is_correct: Whether prediction matches ground truth
     """
+
     image_path: str
     branch_name: str
     ground_truth: str
@@ -118,9 +120,9 @@ class ClsDatasetEvaluator:
     def load_csv_dataset(
         csv_path: str,
         image_dir: str,
-        branches: List[BranchConfig],
+        branches: list[BranchConfig],
         image_column: str = "img_name",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Load dataset from CSV file with branch configurations.
 
         Each row produces one dataset sample with ground truth labels
@@ -154,7 +156,7 @@ class ClsDatasetEvaluator:
         image_base = Path(image_dir)
         dataset = []
 
-        with open(csv_path, 'r', encoding='utf-8') as f:
+        with open(csv_path, encoding="utf-8") as f:
             reader = csv.DictReader(f)
 
             # Validate columns
@@ -168,10 +170,7 @@ class ClsDatasetEvaluator:
                 if branch.column_name not in reader.fieldnames:
                     missing_cols.append(branch.column_name)
             if missing_cols:
-                raise KeyError(
-                    f"Missing columns in CSV: {missing_cols}. "
-                    f"Available: {reader.fieldnames}"
-                )
+                raise KeyError(f"Missing columns in CSV: {missing_cols}. Available: {reader.fieldnames}")
 
             for line_num, row in enumerate(reader, 2):
                 img_name = row[image_column].strip()
@@ -204,8 +203,7 @@ class ClsDatasetEvaluator:
 
                     if mapped_label is None:
                         logging.warning(
-                            f"Line {line_num}: unmapped value '{raw_value}' "
-                            f"for branch '{branch.branch_name}', skipping"
+                            f"Line {line_num}: unmapped value '{raw_value}' for branch '{branch.branch_name}', skipping"
                         )
                         skip = True
                         break
@@ -215,10 +213,12 @@ class ClsDatasetEvaluator:
                 if skip:
                     continue
 
-                dataset.append({
-                    'image_path': str(image_path),
-                    'branches': branch_labels,
-                })
+                dataset.append(
+                    {
+                        "image_path": str(image_path),
+                        "branches": branch_labels,
+                    }
+                )
 
         logging.info(f"Loaded {len(dataset)} valid samples from {csv_path}")
         return dataset
@@ -227,7 +227,7 @@ class ClsDatasetEvaluator:
     def load_imagefolder_dataset(
         dataset_dir: str,
         branch_name: str = "class",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Load dataset from ImageFolder structure.
 
         Expected structure: dataset_dir/class_name/image.jpg
@@ -250,7 +250,7 @@ class ClsDatasetEvaluator:
         if not base.exists():
             raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
 
-        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
+        image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
         dataset = []
 
         for class_dir in sorted(base.iterdir()):
@@ -263,31 +263,31 @@ class ClsDatasetEvaluator:
                 if img_path.suffix.lower() not in image_extensions:
                     continue
 
-                dataset.append({
-                    'image_path': str(img_path),
-                    'branches': {branch_name: class_name},
-                })
+                dataset.append(
+                    {
+                        "image_path": str(img_path),
+                        "branches": {branch_name: class_name},
+                    }
+                )
 
-        logging.info(
-            f"Loaded {len(dataset)} samples from ImageFolder: {dataset_dir}"
-        )
+        logging.info(f"Loaded {len(dataset)} samples from ImageFolder: {dataset_dir}")
         return dataset
 
     def evaluate_dataset(
         self,
-        dataset: Optional[List[Dict]] = None,
+        dataset: list[dict] | None = None,
         # CSV shortcut parameters
-        csv_path: Optional[str] = None,
-        image_dir: Optional[str] = None,
-        branches: Optional[List[BranchConfig]] = None,
+        csv_path: str | None = None,
+        image_dir: str | None = None,
+        branches: list[BranchConfig] | None = None,
         image_column: str = "img_name",
         # ImageFolder shortcut parameters
-        dataset_dir: Optional[str] = None,
+        dataset_dir: str | None = None,
         # Common parameters
         conf_threshold: float = 0.5,
-        max_images: Optional[int] = None,
-        output_format: str = 'table',
-    ) -> Dict[str, Any]:
+        max_images: int | None = None,
+        output_format: str = "table",
+    ) -> dict[str, Any]:
         """Evaluate classification model on dataset.
 
         Supports three ways to provide data:
@@ -320,40 +320,29 @@ class ClsDatasetEvaluator:
         Raises:
             ValueError: If no dataset source is provided or output_format invalid
         """
-        if output_format not in ('table', 'json'):
-            raise ValueError(
-                f"Invalid output_format: {output_format}. Must be 'table' or 'json'"
-            )
+        if output_format not in ("table", "json"):
+            raise ValueError(f"Invalid output_format: {output_format}. Must be 'table' or 'json'")
 
         # Load dataset
         if dataset is None:
             if csv_path is not None:
                 if image_dir is None or branches is None:
-                    raise ValueError(
-                        "csv_path requires image_dir and branches parameters"
-                    )
-                dataset = self.load_csv_dataset(
-                    csv_path, image_dir, branches, image_column
-                )
+                    raise ValueError("csv_path requires image_dir and branches parameters")
+                dataset = self.load_csv_dataset(csv_path, image_dir, branches, image_column)
             elif dataset_dir is not None:
                 dataset = self.load_imagefolder_dataset(dataset_dir)
             else:
-                raise ValueError(
-                    "Must provide one of: dataset, csv_path+image_dir+branches, "
-                    "or dataset_dir"
-                )
+                raise ValueError("Must provide one of: dataset, csv_path+image_dir+branches, or dataset_dir")
 
         if max_images is not None:
             dataset = dataset[:max_images]
 
-        logging.info(
-            f"Starting classification evaluation, total {len(dataset)} images"
-        )
+        logging.info(f"Starting classification evaluation, total {len(dataset)} images")
 
         # Collect per-branch predictions
         # branch_name -> (y_true, y_pred, confidences)
-        branch_collections: Dict[str, Dict[str, list]] = {}
-        sample_evaluations: List[ClsSampleEvaluation] = []
+        branch_collections: dict[str, dict[str, list]] = {}
+        sample_evaluations: list[ClsSampleEvaluation] = []
         skipped_count = 0
         start_time = time.time()
 
@@ -362,8 +351,8 @@ class ClsDatasetEvaluator:
                 pct = (i / len(dataset)) * 100
                 logging.info(f"Progress: {i}/{len(dataset)} ({pct:.1f}%)")
 
-            image_path = sample['image_path']
-            gt_branches = sample['branches']
+            image_path = sample["image_path"]
+            gt_branches = sample["branches"]
 
             # Load image
             image = cv2.imread(image_path)
@@ -406,26 +395,26 @@ class ClsDatasetEvaluator:
                     skipped_count += 1
                     continue
 
-                is_correct = (pred_label == gt_label)
+                is_correct = pred_label == gt_label
 
                 # Initialize branch collection
                 if branch_name not in branch_collections:
-                    branch_collections[branch_name] = {
-                        'y_true': [], 'y_pred': [], 'confidences': []
-                    }
+                    branch_collections[branch_name] = {"y_true": [], "y_pred": [], "confidences": []}
 
-                branch_collections[branch_name]['y_true'].append(gt_label)
-                branch_collections[branch_name]['y_pred'].append(pred_label)
-                branch_collections[branch_name]['confidences'].append(pred_conf)
+                branch_collections[branch_name]["y_true"].append(gt_label)
+                branch_collections[branch_name]["y_pred"].append(pred_label)
+                branch_collections[branch_name]["confidences"].append(pred_conf)
 
-                sample_evaluations.append(ClsSampleEvaluation(
-                    image_path=image_path,
-                    branch_name=branch_name,
-                    ground_truth=gt_label,
-                    predicted=pred_label,
-                    confidence=pred_conf,
-                    is_correct=is_correct,
-                ))
+                sample_evaluations.append(
+                    ClsSampleEvaluation(
+                        image_path=image_path,
+                        branch_name=branch_name,
+                        ground_truth=gt_label,
+                        predicted=pred_label,
+                        confidence=pred_conf,
+                        is_correct=is_correct,
+                    )
+                )
 
         evaluation_time = time.time() - start_time
         evaluated_count = len(dataset) - skipped_count
@@ -433,14 +422,14 @@ class ClsDatasetEvaluator:
         if evaluated_count == 0:
             logging.warning("No valid evaluation samples")
             return {
-                'overall_accuracy': 0.0,
-                'total_samples': len(dataset),
-                'evaluated_samples': 0,
-                'skipped_samples': skipped_count,
-                'evaluation_time': evaluation_time,
-                'avg_inference_time_ms': 0.0,
-                'branches': {},
-                'per_sample_results': [],
+                "overall_accuracy": 0.0,
+                "total_samples": len(dataset),
+                "evaluated_samples": 0,
+                "skipped_samples": skipped_count,
+                "evaluation_time": evaluation_time,
+                "avg_inference_time_ms": 0.0,
+                "branches": {},
+                "per_sample_results": [],
             }
 
         # Compute per-branch metrics
@@ -453,48 +442,40 @@ class ClsDatasetEvaluator:
         branch_results = {}
         for branch_name, collections in branch_collections.items():
             metrics = compute_classification_metrics(
-                y_true=collections['y_true'],
-                y_pred=collections['y_pred'],
-                confidences=collections['confidences'],
+                y_true=collections["y_true"],
+                y_pred=collections["y_pred"],
+                confidences=collections["confidences"],
             )
             branch_results[branch_name] = metrics
 
         # Overall accuracy (average across branches)
-        branch_accuracies = [
-            br['accuracy'] for br in branch_results.values()
-        ]
-        overall_accuracy = (
-            sum(branch_accuracies) / len(branch_accuracies)
-            if branch_accuracies else 0.0
-        )
+        branch_accuracies = [br["accuracy"] for br in branch_results.values()]
+        overall_accuracy = sum(branch_accuracies) / len(branch_accuracies) if branch_accuracies else 0.0
 
         # Build results
         results = {
-            'overall_accuracy': overall_accuracy,
-            'total_samples': len(dataset),
-            'evaluated_samples': evaluated_count,
-            'skipped_samples': skipped_count,
-            'evaluation_time': evaluation_time,
-            'avg_inference_time_ms': (
-                (evaluation_time / evaluated_count * 1000)
-                if evaluated_count > 0 else 0.0
-            ),
-            'branches': branch_results,
-            'per_sample_results': [
+            "overall_accuracy": overall_accuracy,
+            "total_samples": len(dataset),
+            "evaluated_samples": evaluated_count,
+            "skipped_samples": skipped_count,
+            "evaluation_time": evaluation_time,
+            "avg_inference_time_ms": ((evaluation_time / evaluated_count * 1000) if evaluated_count > 0 else 0.0),
+            "branches": branch_results,
+            "per_sample_results": [
                 {
-                    'image_path': e.image_path,
-                    'branch_name': e.branch_name,
-                    'ground_truth': e.ground_truth,
-                    'predicted': e.predicted,
-                    'confidence': e.confidence,
-                    'is_correct': e.is_correct,
+                    "image_path": e.image_path,
+                    "branch_name": e.branch_name,
+                    "ground_truth": e.ground_truth,
+                    "predicted": e.predicted,
+                    "confidence": e.confidence,
+                    "is_correct": e.is_correct,
                 }
                 for e in sample_evaluations
             ],
         }
 
         # Output
-        if output_format == 'json':
+        if output_format == "json":
             print(format_cls_results_json(results))
         else:
             for branch_name, metrics in branch_results.items():

@@ -248,10 +248,10 @@ class TestEditDistanceMetricsContract:
             assert isinstance(sample["image_path"], str)
             assert isinstance(sample["ground_truth"], str)
             assert isinstance(sample["predicted_text"], str)
-            assert isinstance(sample["confidence"], (int, float))
+            assert isinstance(sample["confidence"], int | float)
             assert isinstance(sample["is_correct"], bool)
             assert isinstance(sample["edit_distance"], int)
-            assert isinstance(sample["normalized_edit_distance"], (int, float))
+            assert isinstance(sample["normalized_edit_distance"], int | float)
 
             # Verify value ranges
             assert 0 <= sample["confidence"] <= 1
@@ -345,7 +345,7 @@ class TestJSONExportContract:
         label_file, dataset_base = temp_label_file
         evaluator = OCRDatasetEvaluator(mock_ocr_model_perfect)
 
-        results = evaluator.evaluate_dataset(
+        evaluator.evaluate_dataset(
             label_file=str(label_file), dataset_base_path=str(dataset_base), output_format="json"
         )
 

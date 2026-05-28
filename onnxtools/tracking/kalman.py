@@ -105,9 +105,7 @@ class KalmanFilterXYAH:
         covariance = self._motion_mat @ covariance @ self._motion_mat.T + motion_cov
         return mean.astype(np.float32), covariance.astype(np.float32)
 
-    def multi_predict(
-        self, means: np.ndarray, covariances: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def multi_predict(self, means: np.ndarray, covariances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Vectorised batch predict over N tracks.
 
         Args:
@@ -145,9 +143,7 @@ class KalmanFilterXYAH:
         new_covs = np.einsum("ij,njk,lk->nil", F, covariances, F) + motion_cov
         return new_means.astype(np.float32), new_covs.astype(np.float32)
 
-    def project(
-        self, mean: np.ndarray, covariance: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def project(self, mean: np.ndarray, covariance: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         h = mean[3]
         std = np.array(
             [
@@ -274,9 +270,7 @@ class KalmanFilterXYSR:
             new_mean[6] = 0.0
         return new_mean.astype(np.float32), new_cov.astype(np.float32)
 
-    def multi_predict(
-        self, means: np.ndarray, covariances: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def multi_predict(self, means: np.ndarray, covariances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         if means.shape[0] == 0:
             return means, covariances
         F = self._motion_mat

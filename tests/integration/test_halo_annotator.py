@@ -1,6 +1,5 @@
 """Integration test for HaloAnnotator."""
 
-
 from onnxtools.utils.supervision_annotator import AnnotatorFactory, AnnotatorType
 
 

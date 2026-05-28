@@ -3,7 +3,6 @@ Pydantic models for MCP tools input/output validation.
 """
 
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -84,7 +83,7 @@ class DetectObjectsInput(BaseModel):
         le=1.0,
         description="Confidence threshold for filtering detections (0.0-1.0)",
     )
-    classes: Optional[List[str]] = Field(
+    classes: list[str] | None = Field(
         default=None,
         description="Filter specific classes by name (e.g., ['vehicle', 'plate']). None for all classes.",
     )
@@ -199,7 +198,7 @@ class CropDetectionsInput(BaseModel):
         default=ModelType.RTDETR,
         description="Detection model type",
     )
-    classes: Optional[List[str]] = Field(
+    classes: list[str] | None = Field(
         default=None,
         description="Classes to crop (e.g., ['plate']). None for all classes.",
     )
@@ -209,7 +208,7 @@ class CropDetectionsInput(BaseModel):
         le=1.0,
         description="Confidence threshold for detection",
     )
-    output_dir: Optional[str] = Field(
+    output_dir: str | None = Field(
         default=None,
         description="Directory to save cropped images. If None, crops are not saved.",
     )
@@ -267,7 +266,7 @@ class AnnotateImageInput(BaseModel):
         default=AnnotatorPreset.STANDARD,
         description="Visualization preset: 'standard', 'debug', 'lightweight', 'privacy', 'high_contrast'",
     )
-    output_path: Optional[str] = Field(
+    output_path: str | None = Field(
         default=None,
         description="Path to save annotated image. If None, image is not saved.",
     )
@@ -334,11 +333,11 @@ class ZoomToObjectInput(BaseModel):
 class InterpolationMethod(str, Enum):
     """OpenCV interpolation method for image scaling."""
 
-    NEAREST = "nearest"      # Fastest, lowest quality
-    LINEAR = "linear"        # Bilinear interpolation
-    CUBIC = "cubic"          # Bicubic interpolation (good quality)
-    LANCZOS4 = "lanczos4"    # Lanczos interpolation (best quality)
-    AREA = "area"            # Best for downscaling
+    NEAREST = "nearest"  # Fastest, lowest quality
+    LINEAR = "linear"  # Bilinear interpolation
+    CUBIC = "cubic"  # Bicubic interpolation (good quality)
+    LANCZOS4 = "lanczos4"  # Lanczos interpolation (best quality)
+    AREA = "area"  # Best for downscaling
 
 
 class ViewImageInput(BaseModel):
@@ -419,7 +418,7 @@ class FullPipelineInput(BaseModel):
         default=AnnotatorPreset.DEBUG,
         description="Visualization preset for annotated output",
     )
-    output_path: Optional[str] = Field(
+    output_path: str | None = Field(
         default=None,
         description="Path to save annotated image",
     )
@@ -437,7 +436,7 @@ class FullPipelineInput(BaseModel):
 class DetectionResult(BaseModel):
     """Single detection result."""
 
-    box: List[float] = Field(..., description="Bounding box [x1, y1, x2, y2]")
+    box: list[float] = Field(..., description="Bounding box [x1, y1, x2, y2]")
     score: float = Field(..., description="Confidence score")
     class_id: int = Field(..., description="Class ID")
     class_name: str = Field(..., description="Class name")
@@ -447,8 +446,8 @@ class DetectionOutput(BaseModel):
     """Detection tool output schema."""
 
     total_detections: int = Field(..., description="Total number of detections")
-    detections: List[DetectionResult] = Field(..., description="List of detections")
-    image_shape: List[int] = Field(..., description="Original image shape [H, W, C]")
+    detections: list[DetectionResult] = Field(..., description="List of detections")
+    image_shape: list[int] = Field(..., description="Original image shape [H, W, C]")
     model_path: str = Field(..., description="Path to model used")
 
 
@@ -457,15 +456,15 @@ class OCROutput(BaseModel):
 
     text: str = Field(..., description="Recognized plate text")
     confidence: float = Field(..., description="Average confidence score")
-    char_confidences: List[float] = Field(..., description="Per-character confidences")
+    char_confidences: list[float] = Field(..., description="Per-character confidences")
     is_double_layer: bool = Field(..., description="Whether plate is double-layer")
 
 
 class ClassificationOutput(BaseModel):
     """Classification tool output schema."""
 
-    labels: List[str] = Field(..., description="Classification labels")
-    confidences: List[float] = Field(..., description="Confidence for each label")
+    labels: list[str] = Field(..., description="Classification labels")
+    confidences: list[float] = Field(..., description="Confidence for each label")
     avg_confidence: float = Field(..., description="Average confidence")
 
 
@@ -473,14 +472,14 @@ class CropOutput(BaseModel):
     """Crop tool output schema."""
 
     total_crops: int = Field(..., description="Number of crops")
-    crops: List[dict] = Field(..., description="Crop information")
-    saved_paths: Optional[List[str]] = Field(None, description="Saved file paths")
+    crops: list[dict] = Field(..., description="Crop information")
+    saved_paths: list[str] | None = Field(None, description="Saved file paths")
 
 
 class PipelineOutput(BaseModel):
     """Full pipeline output schema."""
 
     total_detections: int = Field(..., description="Total detections")
-    vehicles: List[dict] = Field(..., description="Vehicle detections")
-    plates: List[dict] = Field(..., description="Plate detections with OCR")
-    output_path: Optional[str] = Field(None, description="Saved annotated image path")
+    vehicles: list[dict] = Field(..., description="Vehicle detections")
+    plates: list[dict] = Field(..., description="Plate detections with OCR")
+    output_path: str | None = Field(None, description="Saved annotated image path")

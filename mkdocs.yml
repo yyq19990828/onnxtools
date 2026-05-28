@@ -1,7 +1,7 @@
 site_name: onnxtools
 site_description: ONNX-based vehicle and license plate recognition toolkit
 site_url: https://example.com/onnxtools/
-repo_url: https://github.com/your-org/onnxtools
+repo_url: https://github.com/yyq19990828/onnxtools
 edit_uri: edit/main/docs/
 
 docs_dir: docs

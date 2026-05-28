@@ -21,6 +21,7 @@
 都针对特定的用例构建。然后，它创建 3 个独立的执行上下文
 和相应的 `TrtRunner` 用于推理。
 """
+
 import numpy as np
 from polygraphy.backend.trt import (
     CreateConfig,
@@ -50,9 +51,7 @@ def main():
         # 动态批处理情况。我们使用 `4` 作为 opt 批处理大小，因为这是我们最常见的情况。
         Profile().add("X", min=(1, 3, 28, 28), opt=(4, 3, 28, 28), max=(32, 3, 28, 28)),
         # 离线情况。为获得最佳性能，min == opt == max。
-        Profile().add(
-            "X", min=(128, 3, 28, 28), opt=(128, 3, 28, 28), max=(128, 3, 28, 28)
-        ),
+        Profile().add("X", min=(128, 3, 28, 28), opt=(128, 3, 28, 28), max=(128, 3, 28, 28)),
     ]
 
     # 有关立即评估的功能加载器（如 `engine_from_network`）的详细信息，请参阅 examples/api/06_immediate_eval_api。
@@ -137,13 +136,9 @@ def main():
         #
         # 或者，我们可以使用 `optimization_profile` 参数（见上文）。
         #
-        offline.set_profile(
-            2
-        )  # 使用第三个配置文件，该配置文件用于离线情况。
+        offline.set_profile(2)  # 使用第三个配置文件，该配置文件用于离线情况。
 
-        large_offline_batch = np.repeat(
-            input_img, 128, axis=0
-        )  # 形状：(128, 3, 28, 28)
+        large_offline_batch = np.repeat(input_img, 128, axis=0)  # 形状：(128, 3, 28, 28)
         outputs = offline.infer({"X": large_offline_batch})
         assert np.array_equal(outputs["Y"], large_offline_batch)
 

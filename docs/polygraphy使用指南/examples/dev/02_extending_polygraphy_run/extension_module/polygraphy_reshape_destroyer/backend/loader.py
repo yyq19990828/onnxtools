@@ -21,7 +21,7 @@
 该加载器实现了标准的 `BaseLoader` 接口。
 """
 
-from typing import Callable, Union
+from collections.abc import Callable
 
 from polygraphy import mod, util
 from polygraphy.backend.base import BaseLoader
@@ -60,9 +60,7 @@ class ReplaceReshapes(BaseLoader):
     函数对象，在 ONNX-GraphSurgeon 图中用 Identity 替换无操作的 Reshape 节点。
     """
 
-    def __init__(
-        self, graph: Union[gs.Graph, Callable[[], gs.Graph]], rename_nodes: bool = None
-    ):
+    def __init__(self, graph: gs.Graph | Callable[[], gs.Graph], rename_nodes: bool = None):
         """
         在 ONNX-GraphSurgeon 图中用 Identity 替换无操作的 Reshape 节点。
 

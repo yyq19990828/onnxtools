@@ -21,7 +21,7 @@ def check_model_exists(model_path: str) -> bool:
     return Path(model_path).exists()
 
 
-#TODO maybe replace with pretrained models, not custom models
+# TODO maybe replace with pretrained models, not custom models
 class TestResultBaseORTIntegration:
     """Test Result class integration with BaseORT subclasses (T022)."""
 
@@ -32,24 +32,24 @@ class TestResultBaseORTIntegration:
 
     def test_yolo_returns_result_object(self, sample_test_image):
         """Test that YoloORT.__call__() returns Result object."""
-        model_path = 'models/yolo11n.onnx'
+        model_path = "models/yolo11n.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
 
         from onnxtools import create_detector
 
-        detector = create_detector('yolo', model_path, conf_thres=0.5, iou_thres=0.5)
+        detector = create_detector("yolo", model_path, conf_thres=0.5, iou_thres=0.5)
         result = detector(sample_test_image)
 
         # Verify return type
         assert isinstance(result, Result), f"Expected Result object, got {type(result)}"
 
         # Verify Result attributes
-        assert hasattr(result, 'boxes')
-        assert hasattr(result, 'scores')
-        assert hasattr(result, 'class_ids')
-        assert hasattr(result, 'orig_shape')
+        assert hasattr(result, "boxes")
+        assert hasattr(result, "scores")
+        assert hasattr(result, "class_ids")
+        assert hasattr(result, "orig_shape")
 
         # Verify orig_shape matches input
         assert result.orig_shape == sample_test_image.shape[:2]
@@ -59,24 +59,24 @@ class TestResultBaseORTIntegration:
 
     def test_rtdetr_returns_result_object(self, sample_test_image):
         """Test that RtdetrORT.__call__() returns Result object."""
-        model_path = 'models/rtdetr-2024080100.onnx'
+        model_path = "models/rtdetr-2024080100.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
 
         from onnxtools import create_detector
 
-        detector = create_detector('rtdetr', model_path, conf_thres=0.5)
+        detector = create_detector("rtdetr", model_path, conf_thres=0.5)
         result = detector(sample_test_image)
 
         # Verify return type
         assert isinstance(result, Result), f"Expected Result object, got {type(result)}"
 
         # Verify Result attributes
-        assert hasattr(result, 'boxes')
-        assert hasattr(result, 'scores')
-        assert hasattr(result, 'class_ids')
-        assert hasattr(result, 'orig_shape')
+        assert hasattr(result, "boxes")
+        assert hasattr(result, "scores")
+        assert hasattr(result, "class_ids")
+        assert hasattr(result, "orig_shape")
 
         # Verify orig_shape matches input
         assert result.orig_shape == sample_test_image.shape[:2]
@@ -86,24 +86,24 @@ class TestResultBaseORTIntegration:
 
     def test_rfdetr_returns_result_object(self, sample_test_image):
         """Test that RfdetrORT.__call__() returns Result object."""
-        model_path = 'models/rfdetr-20250919_medium.onnx'
+        model_path = "models/rfdetr-20250919_medium.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
 
         from onnxtools import create_detector
 
-        detector = create_detector('rfdetr', model_path, conf_thres=0.5)
+        detector = create_detector("rfdetr", model_path, conf_thres=0.5)
         result = detector(sample_test_image)
 
         # Verify return type
         assert isinstance(result, Result), f"Expected Result object, got {type(result)}"
 
         # Verify Result attributes
-        assert hasattr(result, 'boxes')
-        assert hasattr(result, 'scores')
-        assert hasattr(result, 'class_ids')
-        assert hasattr(result, 'orig_shape')
+        assert hasattr(result, "boxes")
+        assert hasattr(result, "scores")
+        assert hasattr(result, "class_ids")
+        assert hasattr(result, "orig_shape")
 
         # Verify orig_shape matches input
         assert result.orig_shape == sample_test_image.shape[:2]
@@ -113,14 +113,14 @@ class TestResultBaseORTIntegration:
 
     def test_result_indexing_with_real_detections(self, sample_test_image):
         """Test Result indexing works with real detection outputs."""
-        model_path = 'models/yolo11n.onnx'
+        model_path = "models/yolo11n.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
 
         from onnxtools import create_detector
 
-        detector = create_detector('yolo', model_path, conf_thres=0.5, iou_thres=0.5)
+        detector = create_detector("yolo", model_path, conf_thres=0.5, iou_thres=0.5)
         result = detector(sample_test_image)
 
         if len(result) > 0:
@@ -137,14 +137,14 @@ class TestResultBaseORTIntegration:
 
     def test_result_properties_with_real_detections(self, sample_test_image):
         """Test Result properties work correctly with real detections."""
-        model_path = 'models/yolo11n.onnx'
+        model_path = "models/yolo11n.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
 
         from onnxtools import create_detector
 
-        detector = create_detector('yolo', model_path, conf_thres=0.5, iou_thres=0.5)
+        detector = create_detector("yolo", model_path, conf_thres=0.5, iou_thres=0.5)
         result = detector(sample_test_image)
 
         # Test all properties are accessible
@@ -167,7 +167,7 @@ class TestResultBaseORTIntegration:
 
     def test_empty_result_from_baseort(self):
         """Test that BaseORT returns valid Result even with no detections."""
-        model_path = 'models/yolo11n.onnx'
+        model_path = "models/yolo11n.onnx"
 
         if not check_model_exists(model_path):
             pytest.skip(f"Model not found: {model_path}")
@@ -175,7 +175,7 @@ class TestResultBaseORTIntegration:
         from onnxtools import create_detector
 
         # Use very high confidence threshold to force no detections
-        detector = create_detector('yolo', model_path, conf_thres=0.99, iou_thres=0.5)
+        detector = create_detector("yolo", model_path, conf_thres=0.99, iou_thres=0.5)
 
         # Create a blank image (likely no detections)
         blank_image = np.zeros((640, 640, 3), dtype=np.uint8)

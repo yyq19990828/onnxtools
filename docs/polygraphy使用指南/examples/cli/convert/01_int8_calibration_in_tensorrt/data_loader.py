@@ -21,6 +21,7 @@
 feed_dicts，以便此脚本可以用作
 --data-loader-script 命令行参数的参数。
 """
+
 import numpy as np
 
 INPUT_SHAPE = (1, 1, 2, 2)
@@ -28,6 +29,4 @@ INPUT_SHAPE = (1, 1, 2, 2)
 
 def load_data():
     for _ in range(5):
-        yield {
-            "x": np.ones(shape=INPUT_SHAPE, dtype=np.float32)
-        }  # 仍然是完全真实的数据
+        yield {"x": np.ones(shape=INPUT_SHAPE, dtype=np.float32)}  # 仍然是完全真实的数据

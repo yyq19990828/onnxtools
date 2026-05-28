@@ -61,20 +61,17 @@ def parse_branch_spec(spec: str) -> BranchConfig:
     Returns:
         BranchConfig instance
     """
-    parts = spec.split(':')
+    parts = spec.split(":")
     if len(parts) != 3:
-        raise ValueError(
-            f"Invalid branch spec '{spec}'. "
-            f"Expected format: name:index:key1=val1,key2=val2"
-        )
+        raise ValueError(f"Invalid branch spec '{spec}'. Expected format: name:index:key1=val1,key2=val2")
 
     branch_name = parts[0]
     branch_index = int(parts[1])
 
     # Parse label map
     label_map = {}
-    for pair in parts[2].split(','):
-        kv = pair.split('=')
+    for pair in parts[2].split(","):
+        kv = pair.split("=")
         if len(kv) != 2:
             raise ValueError(f"Invalid label mapping '{pair}' in branch spec")
         try:
@@ -103,26 +100,26 @@ def create_model(model_type: str, model_path: str):
     """
     model_type = model_type.lower()
 
-    if model_type == 'helmet':
+    if model_type == "helmet":
         from onnxtools import HelmetORT
+
         return HelmetORT(model_path)
-    elif model_type in ('color_layer', 'colorlayer'):
+    elif model_type in ("color_layer", "colorlayer"):
         from onnxtools import ColorLayerORT
+
         return ColorLayerORT(model_path)
-    elif model_type in ('vehicle_attribute', 'vehicleattribute'):
+    elif model_type in ("vehicle_attribute", "vehicleattribute"):
         from onnxtools import VehicleAttributeORT
+
         return VehicleAttributeORT(model_path)
     else:
-        raise ValueError(
-            f"Unsupported model type: {model_type}. "
-            f"Supported: helmet, color_layer, vehicle_attribute"
-        )
+        raise ValueError(f"Unsupported model type: {model_type}. Supported: helmet, color_layer, vehicle_attribute")
 
 
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description='Evaluate classification model performance on labeled datasets',
+        description="Evaluate classification model performance on labeled datasets",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -134,61 +131,50 @@ Examples:
   # ImageFolder evaluation
   %(prog)s --model-type helmet --model-path models/helmet.onnx \\
       --dataset-dir data/helmet_val/
-        """
+        """,
     )
 
     parser.add_argument(
-        '--model-type', required=True, type=str,
-        choices=['helmet', 'color_layer', 'vehicle_attribute'],
-        help='Classification model type'
+        "--model-type",
+        required=True,
+        type=str,
+        choices=["helmet", "color_layer", "vehicle_attribute"],
+        help="Classification model type",
     )
-    parser.add_argument(
-        '--model-path', required=True, type=str,
-        help='Path to ONNX model file'
-    )
+    parser.add_argument("--model-path", required=True, type=str, help="Path to ONNX model file")
 
     # CSV dataset arguments
-    csv_group = parser.add_argument_group('CSV dataset')
+    csv_group = parser.add_argument_group("CSV dataset")
+    csv_group.add_argument("--csv-path", type=str, default=None, help="Path to CSV label file")
+    csv_group.add_argument("--image-dir", type=str, default=None, help="Directory containing images")
     csv_group.add_argument(
-        '--csv-path', type=str, default=None,
-        help='Path to CSV label file'
+        "--image-column", type=str, default="img_name", help="CSV column name for image filename (default: img_name)"
     )
     csv_group.add_argument(
-        '--image-dir', type=str, default=None,
-        help='Directory containing images'
-    )
-    csv_group.add_argument(
-        '--image-column', type=str, default='img_name',
-        help='CSV column name for image filename (default: img_name)'
-    )
-    csv_group.add_argument(
-        '--branches', nargs='+', type=str, default=None,
-        help='Branch specs: name:index:key1=val1,key2=val2 (multiple allowed)'
+        "--branches",
+        nargs="+",
+        type=str,
+        default=None,
+        help="Branch specs: name:index:key1=val1,key2=val2 (multiple allowed)",
     )
 
     # ImageFolder arguments
-    folder_group = parser.add_argument_group('ImageFolder dataset')
+    folder_group = parser.add_argument_group("ImageFolder dataset")
     folder_group.add_argument(
-        '--dataset-dir', type=str, default=None,
-        help='ImageFolder root directory (dataset_dir/class_name/image.jpg)'
+        "--dataset-dir", type=str, default=None, help="ImageFolder root directory (dataset_dir/class_name/image.jpg)"
     )
 
     # Common arguments
+    parser.add_argument("--conf-threshold", type=float, default=0.5, help="Confidence threshold (default: 0.5)")
+    parser.add_argument("--max-images", type=int, default=None, help="Maximum images to evaluate (default: all)")
     parser.add_argument(
-        '--conf-threshold', type=float, default=0.5,
-        help='Confidence threshold (default: 0.5)'
+        "--output-format", choices=["table", "json"], default="table", help="Output format (default: table)"
     )
     parser.add_argument(
-        '--max-images', type=int, default=None,
-        help='Maximum images to evaluate (default: all)'
-    )
-    parser.add_argument(
-        '--output-format', choices=['table', 'json'], default='table',
-        help='Output format (default: table)'
-    )
-    parser.add_argument(
-        '--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        default='INFO', help='Logging level (default: INFO)'
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Logging level (default: INFO)",
     )
 
     return parser.parse_args()
@@ -257,7 +243,7 @@ def main():
             logging.error("Must provide either --csv-path or --dataset-dir")
             sys.exit(1)
 
-        if not results or results.get('evaluated_samples', 0) == 0:
+        if not results or results.get("evaluated_samples", 0) == 0:
             logging.warning("No evaluation results generated")
             sys.exit(0)
 
@@ -279,5 +265,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

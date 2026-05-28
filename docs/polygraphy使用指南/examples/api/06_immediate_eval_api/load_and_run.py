@@ -20,6 +20,7 @@
 这个脚本使用 Polygraphy 的立即评估功能性 API
 来加载由 `build_and_run.py` 构建的 TensorRT 引擎并运行推理。
 """
+
 import numpy as np
 from polygraphy.backend.common import bytes_from_path
 from polygraphy.backend.trt import TrtRunner, engine_from_bytes

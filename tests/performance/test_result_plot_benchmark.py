@@ -20,6 +20,7 @@ from onnxtools import Result
 # Check if pytest-benchmark is available
 try:
     import pytest_benchmark
+
     BENCHMARK_AVAILABLE = True
 except ImportError:
     BENCHMARK_AVAILABLE = False
@@ -52,15 +53,10 @@ def result_with_20_detections(test_image):
 
     scores = np.random.rand(20).astype(np.float32)
     class_ids = np.random.randint(0, 2, 20, dtype=np.int32)
-    names = {0: 'vehicle', 1: 'plate'}
+    names = {0: "vehicle", 1: "plate"}
 
     return Result(
-        boxes=boxes,
-        scores=scores,
-        class_ids=class_ids,
-        orig_img=test_image,
-        orig_shape=(640, 640),
-        names=names
+        boxes=boxes, scores=scores, class_ids=class_ids, orig_img=test_image, orig_shape=(640, 640), names=names
     )
 
 
@@ -71,30 +67,23 @@ def result_with_5_detections(test_image):
     Returns:
         Result: Result object with 5 detections
     """
-    boxes = np.array([
-        [50, 50, 200, 200],
-        [250, 100, 400, 300],
-        [100, 350, 250, 500],
-        [300, 400, 450, 600],
-        [500, 50, 620, 150]
-    ], dtype=np.float32)
+    boxes = np.array(
+        [[50, 50, 200, 200], [250, 100, 400, 300], [100, 350, 250, 500], [300, 400, 450, 600], [500, 50, 620, 150]],
+        dtype=np.float32,
+    )
 
     scores = np.array([0.95, 0.87, 0.92, 0.78, 0.89], dtype=np.float32)
     class_ids = np.array([0, 1, 0, 1, 0], dtype=np.int32)
-    names = {0: 'vehicle', 1: 'plate'}
+    names = {0: "vehicle", 1: "plate"}
 
     return Result(
-        boxes=boxes,
-        scores=scores,
-        class_ids=class_ids,
-        orig_img=test_image,
-        orig_shape=(640, 640),
-        names=names
+        boxes=boxes, scores=scores, class_ids=class_ids, orig_img=test_image, orig_shape=(640, 640), names=names
     )
 
 
 # Simplified performance tests without pytest-benchmark
 # These tests measure time directly and verify performance constraints
+
 
 def test_plot_performance_standard_preset_20objects(result_with_20_detections):
     """Test plot() performance with standard preset and 20 objects (T035).
@@ -102,13 +91,13 @@ def test_plot_performance_standard_preset_20objects(result_with_20_detections):
     Performance target: < 50ms for 20 objects on 640x640 image
     """
     # Warmup
-    _ = result_with_20_detections.plot(annotator_preset='standard')
+    _ = result_with_20_detections.plot(annotator_preset="standard")
 
     # Measure time for 10 iterations
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        annotated = result_with_20_detections.plot(annotator_preset='standard')
+        annotated = result_with_20_detections.plot(annotator_preset="standard")
         elapsed = (time.perf_counter() - start) * 1000  # Convert to ms
         times.append(elapsed)
 
@@ -125,13 +114,13 @@ def test_plot_performance_standard_preset_20objects(result_with_20_detections):
 def test_plot_performance_debug_preset_20objects(result_with_20_detections):
     """Test plot() performance with debug preset and 20 objects (T035)."""
     # Warmup
-    _ = result_with_20_detections.plot(annotator_preset='debug')
+    _ = result_with_20_detections.plot(annotator_preset="debug")
 
     # Measure time
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        annotated = result_with_20_detections.plot(annotator_preset='debug')
+        annotated = result_with_20_detections.plot(annotator_preset="debug")
         elapsed = (time.perf_counter() - start) * 1000
         times.append(elapsed)
 
@@ -146,13 +135,13 @@ def test_plot_performance_debug_preset_20objects(result_with_20_detections):
 def test_plot_performance_lightweight_preset(result_with_20_detections):
     """Test plot() performance with lightweight preset (T035)."""
     # Warmup
-    _ = result_with_20_detections.plot(annotator_preset='lightweight')
+    _ = result_with_20_detections.plot(annotator_preset="lightweight")
 
     # Measure time
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        annotated = result_with_20_detections.plot(annotator_preset='lightweight')
+        result_with_20_detections.plot(annotator_preset="lightweight")
         elapsed = (time.perf_counter() - start) * 1000
         times.append(elapsed)
 
@@ -165,13 +154,13 @@ def test_plot_performance_lightweight_preset(result_with_20_detections):
 def test_plot_performance_5objects(result_with_5_detections):
     """Test plot() performance with 5 objects (T035)."""
     # Warmup
-    _ = result_with_5_detections.plot(annotator_preset='standard')
+    _ = result_with_5_detections.plot(annotator_preset="standard")
 
     # Measure time
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        annotated = result_with_5_detections.plot(annotator_preset='standard')
+        result_with_5_detections.plot(annotator_preset="standard")
         elapsed = (time.perf_counter() - start) * 1000
         times.append(elapsed)
 
@@ -186,13 +175,13 @@ def test_plot_performance_empty_result(test_image):
     result = Result(boxes=None, orig_img=test_image, orig_shape=(640, 640))
 
     # Warmup
-    _ = result.plot(annotator_preset='standard')
+    _ = result.plot(annotator_preset="standard")
 
     # Measure time
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        annotated = result.plot(annotator_preset='standard')
+        annotated = result.plot(annotator_preset="standard")
         elapsed = (time.perf_counter() - start) * 1000
         times.append(elapsed)
 
@@ -227,17 +216,17 @@ def test_plot_scalability(test_image):
             class_ids=class_ids,
             orig_img=test_image,
             orig_shape=(640, 640),
-            names={0: 'vehicle', 1: 'plate'}
+            names={0: "vehicle", 1: "plate"},
         )
 
         # Warmup
-        _ = result.plot(annotator_preset='standard')
+        _ = result.plot(annotator_preset="standard")
 
         # Measure time
         times = []
         for _ in range(5):
             start = time.perf_counter()
-            annotated = result.plot(annotator_preset='standard')
+            result.plot(annotator_preset="standard")
             elapsed = (time.perf_counter() - start) * 1000
             times.append(elapsed)
 

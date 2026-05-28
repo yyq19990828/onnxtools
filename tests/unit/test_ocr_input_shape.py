@@ -30,9 +30,10 @@ class TestOcrInputShapeDetection:
         expected_height = 48
         expected_width = 320
 
-        assert ocr_model.input_shape == (expected_height, expected_width), \
-            f"Expected input_shape to be ({expected_height}, {expected_width}), " \
-            f"but got {ocr_model.input_shape}"
+        assert ocr_model.input_shape == (
+            expected_height,
+            expected_width,
+        ), f"Expected input_shape to be ({expected_height}, {expected_width}), but got {ocr_model.input_shape}"
 
     def test_handles_small_plate_images(self, ocr_model):
         """Test that OCR can process small plate images without dimension errors."""
@@ -66,5 +67,4 @@ class TestOcrInputShapeDetection:
         ocr_model = OcrORT(model_path, input_shape=custom_shape)
 
         # Should use model's actual shape (320), not custom (168)
-        assert ocr_model.input_shape[1] == 320, \
-            "OcrORT should override custom input_shape with model's actual shape"
+        assert ocr_model.input_shape[1] == 320, "OcrORT should override custom input_shape with model's actual shape"

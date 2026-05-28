@@ -5,11 +5,11 @@ Supports JSON and Markdown output formats.
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 def format_detection_response(
-    detections: List[Dict[str, Any]],
+    detections: list[dict[str, Any]],
     image_shape: tuple,
     model_path: str,
     format_type: str = "json",
@@ -63,7 +63,7 @@ def format_detection_response(
 def format_ocr_response(
     text: str,
     confidence: float,
-    char_confidences: List[float],
+    char_confidences: list[float],
     is_double_layer: bool,
     format_type: str = "json",
 ) -> str:
@@ -110,8 +110,8 @@ def format_ocr_response(
 
 
 def format_classification_response(
-    labels: List[str],
-    confidences: List[float],
+    labels: list[str],
+    confidences: list[float],
     avg_confidence: float,
     format_type: str = "json",
 ) -> str:
@@ -141,7 +141,7 @@ def format_classification_response(
         lines = ["# Classification Result", ""]
 
         # Create label-specific formatting
-        label_names = ["Color", "Layer"] if len(labels) >= 2 else [f"Label {i+1}" for i in range(len(labels))]
+        label_names = ["Color", "Layer"] if len(labels) >= 2 else [f"Label {i + 1}" for i in range(len(labels))]
 
         for name, label, conf in zip(label_names, labels, confidences):
             lines.append(f"- **{name}**: {label} ({conf:.4f})")
@@ -153,8 +153,8 @@ def format_classification_response(
 
 
 def format_crop_response(
-    crops: List[Dict[str, Any]],
-    saved_paths: Optional[List[str]] = None,
+    crops: list[dict[str, Any]],
+    saved_paths: list[str] | None = None,
     format_type: str = "json",
 ) -> str:
     """Format crop results.
@@ -204,9 +204,9 @@ def format_crop_response(
 
 def format_pipeline_response(
     total_detections: int,
-    vehicles: List[Dict[str, Any]],
-    plates: List[Dict[str, Any]],
-    output_path: Optional[str] = None,
+    vehicles: list[dict[str, Any]],
+    plates: list[dict[str, Any]],
+    output_path: str | None = None,
     format_type: str = "json",
 ) -> str:
     """Format full pipeline results.

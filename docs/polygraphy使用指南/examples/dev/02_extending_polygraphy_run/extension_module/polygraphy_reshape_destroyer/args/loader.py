@@ -22,7 +22,6 @@
 该参数组实现了标准的 `BaseArgs` 接口。
 """
 
-
 from polygraphy import mod
 from polygraphy.tools.args import OnnxLoadArgs
 from polygraphy.tools.args import util as args_util
@@ -96,20 +95,14 @@ class ReplaceReshapeArgs(BaseArgs):
         # 首先，从 Polygraphy 导入加载器：
         script.add_import(imports=["GsFromOnnx"], frm="polygraphy.backend.onnx")
         # 接下来，使用参数（在这种情况下是 ONNX 模型加载器名称）调用加载器，并将其添加到脚本中。
-        loader_name = script.add_loader(
-            make_invocable("GsFromOnnx", loader_name), loader_id="gs_from_onnx"
-        )
+        loader_name = script.add_loader(make_invocable("GsFromOnnx", loader_name), loader_id="gs_from_onnx")
 
         # 最后，添加 ReplaceReshapeArgs 加载器。
         # 与 Polygraphy 加载器不同，我们需要从扩展模块导入我们的加载器。
-        script.add_import(
-            imports=["ReplaceReshapes"], frm="polygraphy_reshape_destroyer.backend"
-        )
+        script.add_import(imports=["ReplaceReshapes"], frm="polygraphy_reshape_destroyer.backend")
         # 添加加载器并返回 ID，以便后续的加载器或运行器可以使用它。
         # 注意：我们可以向 `make_invocable` 提供额外的位置参数和关键字参数，以将它们传递给加载器。
         return script.add_loader(
-            make_invocable(
-                "ReplaceReshapes", loader_name, rename_nodes=self.rename_nodes
-            ),
+            make_invocable("ReplaceReshapes", loader_name, rename_nodes=self.rename_nodes),
             loader_id="replace_reshapes",
         )

@@ -26,6 +26,7 @@
 选项 2：将输入数据写入一个 JSON 文件，该文件可用作
     --load-inputs 命令行参数的参数。
 """
+
 import numpy as np
 from polygraphy.json import save_json
 
@@ -35,9 +36,7 @@ INPUT_SHAPE = (1, 2, 28, 28)
 # 选项 1：定义一个将产生 feed_dicts (即 Dict[str, np.ndarray]) 的函数
 def load_data():
     for _ in range(5):
-        yield {
-            "x": np.ones(shape=INPUT_SHAPE, dtype=np.float32)
-        }  # 仍然是完全真实的数据
+        yield {"x": np.ones(shape=INPUT_SHAPE, dtype=np.float32)}  # 仍然是完全真实的数据
 
 
 # 选项 2：使用 `save_json()` 帮助程序创建一个包含输入数据的 JSON 文件。

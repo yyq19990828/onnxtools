@@ -4,10 +4,12 @@ Image loading utilities for MCP tools.
 Supports loading images from file paths, URLs, and base64 strings.
 """
 
+from __future__ import annotations
+
 import base64
 import logging
 from pathlib import Path
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import cv2
 import httpx
@@ -15,13 +17,13 @@ import numpy as np
 
 from ..config import HTTP_TIMEOUT_SECONDS, SUPPORTED_IMAGE_FORMATS
 
+if TYPE_CHECKING:
+    from mcp.types import ImageContent as MCPImage
+
 logger = logging.getLogger(__name__)
 
 
-async def load_image(
-    source: str,
-    source_type: str = "file"
-) -> Tuple[np.ndarray, str]:
+async def load_image(source: str, source_type: str = "file") -> tuple[np.ndarray, str]:
     """Load image from various sources.
 
     Args:
@@ -45,7 +47,7 @@ async def load_image(
         raise ValueError(f"Unknown source type: {source_type}. Use 'file', 'url', or 'base64'.")
 
 
-def _load_from_file(path: str) -> Tuple[np.ndarray, str]:
+def _load_from_file(path: str) -> tuple[np.ndarray, str]:
     """Load image from local file path.
 
     Args:
@@ -62,10 +64,7 @@ def _load_from_file(path: str) -> Tuple[np.ndarray, str]:
     # Check file extension
     suffix = file_path.suffix.lower()
     if suffix not in SUPPORTED_IMAGE_FORMATS:
-        raise ValueError(
-            f"Unsupported image format: {suffix}. "
-            f"Supported formats: {SUPPORTED_IMAGE_FORMATS}"
-        )
+        raise ValueError(f"Unsupported image format: {suffix}. Supported formats: {SUPPORTED_IMAGE_FORMATS}")
 
     image = cv2.imread(str(file_path))
     if image is None:
@@ -75,7 +74,7 @@ def _load_from_file(path: str) -> Tuple[np.ndarray, str]:
     return image, str(file_path.absolute())
 
 
-async def _load_from_url(url: str) -> Tuple[np.ndarray, str]:
+async def _load_from_url(url: str) -> tuple[np.ndarray, str]:
     """Load image from URL.
 
     Args:
@@ -91,12 +90,12 @@ async def _load_from_url(url: str) -> Tuple[np.ndarray, str]:
         try:
             response = await client.get(url, timeout=HTTP_TIMEOUT_SECONDS, follow_redirects=True)
             response.raise_for_status()
-        except httpx.TimeoutException:
-            raise ValueError(f"Timeout loading image from URL: {url}")
+        except httpx.TimeoutException as err:
+            raise ValueError(f"Timeout loading image from URL: {url}") from err
         except httpx.HTTPStatusError as e:
-            raise ValueError(f"HTTP error {e.response.status_code} loading image from URL: {url}")
+            raise ValueError(f"HTTP error {e.response.status_code} loading image from URL: {url}") from e
         except httpx.RequestError as e:
-            raise ValueError(f"Request error loading image from URL: {url} - {e}")
+            raise ValueError(f"Request error loading image from URL: {url} - {e}") from e
 
         image_bytes = response.content
         image_array = np.frombuffer(image_bytes, dtype=np.uint8)
@@ -109,7 +108,7 @@ async def _load_from_url(url: str) -> Tuple[np.ndarray, str]:
         return image, url
 
 
-def _load_from_base64(data: str) -> Tuple[np.ndarray, str]:
+def _load_from_base64(data: str) -> tuple[np.ndarray, str]:
     """Load image from base64 string.
 
     Args:
@@ -139,9 +138,9 @@ def _load_from_base64(data: str) -> Tuple[np.ndarray, str]:
         return image, "base64_input"
 
     except base64.binascii.Error as e:
-        raise ValueError(f"Invalid base64 encoding: {e}")
+        raise ValueError(f"Invalid base64 encoding: {e}") from e
     except Exception as e:
-        raise ValueError(f"Error decoding base64 image: {e}")
+        raise ValueError(f"Error decoding base64 image: {e}") from e
 
 
 def image_to_base64(image: np.ndarray, format: str = "jpeg") -> str:
@@ -163,7 +162,7 @@ def image_to_base64(image: np.ndarray, format: str = "jpeg") -> str:
     return f"data:image/{format};base64,{base64_str}"
 
 
-def to_mcp_image(image: np.ndarray, format: str = "jpeg") -> "MCPImage":
+def to_mcp_image(image: np.ndarray, format: str = "jpeg") -> MCPImage:
     """Convert OpenCV image (numpy array) to MCP Image object.
 
     This allows tools to return images directly to the LLM for viewing.

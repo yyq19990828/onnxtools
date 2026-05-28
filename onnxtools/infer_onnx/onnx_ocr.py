@@ -18,7 +18,7 @@ See onnxtools/infer_onnx/CLAUDE.md for architecture design rationale.
 """
 
 import logging
-from typing import List, Optional, Tuple, TypeAlias
+from typing import TypeAlias
 
 import cv2
 import numpy as np
@@ -26,14 +26,14 @@ import onnxruntime
 from numpy.typing import NDArray
 
 # Type Aliases for OCR
-OCRResult: TypeAlias = Tuple[str, float, List[float]]  # (text, avg_confidence, char_confidences)
-PreprocessResult: TypeAlias = Tuple[
-    NDArray[np.float32],           # input_tensor
-    float,                          # scale
-    Tuple[int, int],               # original_shape (H, W)
-    Optional[Tuple[Tuple[float, float], Tuple[float, float]]]  # ratio_pad
+OCRResult: TypeAlias = tuple[str, float, list[float]]  # (text, avg_confidence, char_confidences)
+PreprocessResult: TypeAlias = tuple[
+    NDArray[np.float32],  # input_tensor
+    float,  # scale
+    tuple[int, int],  # original_shape (H, W)
+    tuple[tuple[float, float], tuple[float, float]] | None,  # ratio_pad
 ]
-OCROutput: TypeAlias = Tuple[NDArray[np.int_], Optional[NDArray[np.float32]]]
+OCROutput: TypeAlias = tuple[NDArray[np.int_], NDArray[np.float32] | None]
 
 
 class OcrORT:
@@ -60,11 +60,11 @@ class OcrORT:
     def __init__(
         self,
         onnx_path: str,
-        character: Optional[List[str]] = None,
-        input_shape: Tuple[int, int] = (48, 168),
+        character: list[str] | None = None,
+        input_shape: tuple[int, int] = (48, 168),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None,
-        plate_config_path: Optional[str] = None
+        providers: list[str] | None = None,
+        plate_config_path: str | None = None,
     ):
         """
         Initialize OCR inference engine.
@@ -89,21 +89,19 @@ class OcrORT:
                 # NOTE: add_space=False确保字典长度与模型输出类别数匹配
                 if plate_config_path:
                     from onnxtools.config import get_ocr_character_list
-                    character = get_ocr_character_list(
-                        config_path=plate_config_path,
-                        add_blank=True,
-                        add_space=False
-                    )
+
+                    character = get_ocr_character_list(config_path=plate_config_path, add_blank=True, add_space=False)
                     logging.info(f"从外部配置加载OCR字符: {len(character)} characters")
                 else:
                     # 默认直接使用硬编码常量
                     # NOTE: 不添加末尾空格，确保字典长度与模型输出类别数匹配
                     # 模型输出84类：blank(1) + 字符(83) = 84
                     from onnxtools.config import OCR_CHARACTER_DICT
+
                     character = ["blank"] + OCR_CHARACTER_DICT
                     logging.info(f"使用硬编码OCR字符: {len(character)} characters")
             except Exception as e:
-                raise ValueError(f"Failed to load OCR character dictionary: {e}")
+                raise ValueError(f"Failed to load OCR character dictionary: {e}") from e
 
         # Validate inputs
         if not character:
@@ -113,7 +111,7 @@ class OcrORT:
 
         # Initialize ONNX Runtime session
         if providers is None:
-            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
         self._onnx_session = onnxruntime.InferenceSession(onnx_path, providers=providers)
         logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
@@ -144,11 +142,7 @@ class OcrORT:
 
         logging.info(f"OcrORT initialized: {len(character)} characters in dictionary")
 
-    def _preprocess(
-        self,
-        image: NDArray[np.uint8],
-        is_double_layer: bool = False
-    ) -> PreprocessResult:
+    def _preprocess(self, image: NDArray[np.uint8], is_double_layer: bool = False) -> PreprocessResult:
         """
         Preprocess plate image for OCR (instance method).
 
@@ -184,9 +178,8 @@ class OcrORT:
 
     @staticmethod
     def _preprocess_static(
-        image: NDArray[np.uint8],
-        input_shape: Tuple[int, int]
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        image: NDArray[np.uint8], input_shape: tuple[int, int]
+    ) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """
         Preprocess plate image for OCR (static method, single-layer only).
 
@@ -237,13 +230,13 @@ class OcrORT:
             Original utils/ocr_image_processing.py::detect_skew_angle()
         """
         edges = cv2.Canny(image, 50, 150, apertureSize=3)
-        lines = cv2.HoughLines(edges, 1, np.pi/180, threshold=100)
+        lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=100)
 
         if lines is None:
             return 0.0
 
         angles = []
-        for rho, theta in lines[:, 0]:
+        for _rho, theta in lines[:, 0]:
             angle = np.degrees(theta) - 90
             if abs(angle) < 45:
                 angles.append(angle)
@@ -254,10 +247,7 @@ class OcrORT:
         return float(np.median(angles))
 
     @staticmethod
-    def _correct_skew(
-        image: NDArray[np.uint8],
-        angle: float
-    ) -> NDArray[np.uint8]:
+    def _correct_skew(image: NDArray[np.uint8], angle: float) -> NDArray[np.uint8]:
         """
         Correct image skew using affine transformation.
 
@@ -278,11 +268,7 @@ class OcrORT:
         center = (w // 2, h // 2)
         rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
         corrected = cv2.warpAffine(
-            image,
-            rotation_matrix,
-            (w, h),
-            flags=cv2.INTER_LINEAR,
-            borderMode=cv2.BORDER_REPLICATE
+            image, rotation_matrix, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE
         )
 
         return corrected
@@ -320,9 +306,7 @@ class OcrORT:
             kernel_size += 1
 
         smoothed_projection = cv2.GaussianBlur(
-            horizontal_projection.astype(np.float32).reshape(-1, 1),
-            (1, kernel_size),
-            0
+            horizontal_projection.astype(np.float32).reshape(-1, 1), (1, kernel_size), 0
         ).flatten()
 
         # Search for split line
@@ -353,10 +337,7 @@ class OcrORT:
         return int(height * 0.35)
 
     @staticmethod
-    def _split_double_layer(
-        image: NDArray[np.uint8],
-        split_y: int
-    ) -> Tuple[NDArray[np.uint8], NDArray[np.uint8]]:
+    def _split_double_layer(image: NDArray[np.uint8], split_y: int) -> tuple[NDArray[np.uint8], NDArray[np.uint8]]:
         """
         Split double-layer plate into top and bottom parts.
 
@@ -372,10 +353,7 @@ class OcrORT:
         return top_part, bottom_part
 
     @staticmethod
-    def _stitch_layers(
-        top_layer: NDArray[np.uint8],
-        bottom_layer: NDArray[np.uint8]
-    ) -> NDArray[np.uint8]:
+    def _stitch_layers(top_layer: NDArray[np.uint8], bottom_layer: NDArray[np.uint8]) -> NDArray[np.uint8]:
         """
         Horizontally stitch top and bottom layers into single-layer plate.
 
@@ -400,11 +378,7 @@ class OcrORT:
         target_top_width = int(target_height * top_aspect_ratio * 0.5)
 
         # Resize top layer
-        top_resized = cv2.resize(
-            top_layer,
-            (target_top_width, target_height),
-            interpolation=cv2.INTER_LINEAR
-        )
+        top_resized = cv2.resize(top_layer, (target_top_width, target_height), interpolation=cv2.INTER_LINEAR)
 
         # Stitch horizontally
         stitched_plate = cv2.hconcat([top_resized, bottom_layer])
@@ -413,10 +387,8 @@ class OcrORT:
 
     @staticmethod
     def _process_plate_image_static(
-        img: NDArray[np.uint8],
-        is_double_layer: bool = False,
-        verbose: bool = False
-    ) -> Optional[NDArray[np.uint8]]:
+        img: NDArray[np.uint8], is_double_layer: bool = False, verbose: bool = False
+    ) -> NDArray[np.uint8] | None:
         """
         Process plate image: skew correction and double-layer handling.
 
@@ -482,10 +454,7 @@ class OcrORT:
         return stitched_plate
 
     @staticmethod
-    def _resize_norm_img_static(
-        img: NDArray[np.uint8],
-        image_shape: List[int] = [3, 48, 168]
-    ) -> NDArray[np.float32]:
+    def _resize_norm_img_static(img: NDArray[np.uint8], image_shape: list[int] = None) -> NDArray[np.float32]:
         """
         Resize and normalize plate image for OCR.
 
@@ -506,6 +475,8 @@ class OcrORT:
         Source:
             Original utils/ocr_image_processing.py::resize_norm_img()
         """
+        if image_shape is None:
+            image_shape = [3, 48, 168]
         imgC, imgH, imgW = image_shape
         h = img.shape[0]
         w = img.shape[1]
@@ -519,7 +490,7 @@ class OcrORT:
 
         # Resize image
         resized_image = cv2.resize(img, (resized_w, imgH))
-        resized_image = resized_image.astype('float32')
+        resized_image = resized_image.astype("float32")
 
         # Normalize
         if image_shape[0] == 1:
@@ -545,7 +516,7 @@ class OcrORT:
         return onnx_infer_data
 
     @staticmethod
-    def _get_ignored_tokens_static() -> List[int]:
+    def _get_ignored_tokens_static() -> list[int]:
         """
         Get list of ignored token indices for OCR decoding.
 
@@ -559,11 +530,11 @@ class OcrORT:
 
     @staticmethod
     def _decode_static(
-        character: List[str],
+        character: list[str],
         text_index: NDArray[np.int_],
-        text_prob: Optional[NDArray[np.float32]] = None,
-        is_remove_duplicate: bool = False
-    ) -> List[OCRResult]:
+        text_prob: NDArray[np.float32] | None = None,
+        is_remove_duplicate: bool = False,
+    ) -> list[OCRResult]:
         """
         Decode OCR output indices to text and confidence.
 
@@ -605,10 +576,7 @@ class OcrORT:
                 selection &= text_index[batch_idx] != ignored_token
 
             # Map indices to characters
-            char_list = [
-                character[int(text_id)].replace('\n', '')
-                for text_id in text_index[batch_idx][selection]
-            ]
+            char_list = [character[int(text_id)].replace("\n", "") for text_id in text_index[batch_idx][selection]]
 
             # Get confidences
             if text_prob is not None:
@@ -620,7 +588,7 @@ class OcrORT:
                 conf_list = [0.0]
 
             # Join text
-            text = ''.join(char_list)
+            text = "".join(char_list)
 
             # NOTE: hack
             # Post-processing: Replace '苏' with '京'
@@ -633,12 +601,7 @@ class OcrORT:
 
         return result_list
 
-    def _postprocess(
-        self,
-        prediction: NDArray[np.float32],
-        conf_thres: float,
-        **kwargs
-    ) -> List[OCRResult]:
+    def _postprocess(self, prediction: NDArray[np.float32], conf_thres: float, **kwargs) -> list[OCRResult]:
         """
         Post-process OCR model output.
 
@@ -660,28 +623,16 @@ class OcrORT:
         text_prob = np.max(prediction, axis=-1) if len(prediction.shape) > 2 else None
 
         # Decode
-        results = self._decode_static(
-            self.character,
-            text_index,
-            text_prob,
-            is_remove_duplicate=True
-        )
+        results = self._decode_static(self.character, text_index, text_prob, is_remove_duplicate=True)
 
         # Filter by confidence
-        filtered_results = [
-            (text, conf, char_confs)
-            for text, conf, char_confs in results
-            if conf >= conf_thres
-        ]
+        filtered_results = [(text, conf, char_confs) for text, conf, char_confs in results if conf >= conf_thres]
 
         return filtered_results if filtered_results else results
 
     def __call__(
-        self,
-        image: NDArray[np.uint8],
-        conf_thres: Optional[float] = None,
-        is_double_layer: bool = False
-    ) -> Optional[OCRResult]:
+        self, image: NDArray[np.uint8], conf_thres: float | None = None, is_double_layer: bool = False
+    ) -> OCRResult | None:
         """
         Execute OCR inference on plate image.
 

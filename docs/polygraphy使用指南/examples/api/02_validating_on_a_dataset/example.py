@@ -19,6 +19,7 @@
 """
 该脚本使用 Polygraphy Runner API 在简单数据集上验证恒等模型的输出。
 """
+
 import numpy as np
 from polygraphy.backend.trt import EngineFromNetwork, NetworkFromOnnxPath, TrtRunner
 

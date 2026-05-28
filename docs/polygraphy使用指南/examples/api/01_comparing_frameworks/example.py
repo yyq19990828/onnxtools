@@ -20,6 +20,7 @@
 这个脚本使用 ONNX-Runtime 和 TensorRT 运行一个 identity 模型，
 然后比较输出。
 """
+
 from polygraphy.backend.onnxrt import OnnxrtRunner, SessionFromOnnx
 from polygraphy.backend.trt import EngineFromNetwork, NetworkFromOnnxPath, TrtRunner
 from polygraphy.comparator import Comparator, CompareFunc
@@ -51,20 +52,16 @@ def main():
     # 提示：`compare_func` 参数可用于控制如何比较输出（有关详细信息，请参阅 API 参考）。
     #   默认的比较函数由 `CompareFunc.simple()` 创建，但如果我们想更改
     #   默认参数（例如容差），我们可以显式地构造它。
-    assert bool(
-        Comparator.compare_accuracy(
-            run_results, compare_func=CompareFunc.simple(atol=1e-8)
-        )
-    )
+    assert bool(Comparator.compare_accuracy(run_results, compare_func=CompareFunc.simple(atol=1e-8)))
 
     # 使用距离度量比较进行更全面的评估
     assert bool(
         Comparator.compare_accuracy(
             run_results,
             compare_func=CompareFunc.distance_metrics(
-                l2_tolerance=1e-5,                    # 允许的最大 L2 范数（欧几里得距离）
-                cosine_similarity_threshold=0.99,     # 最小余弦相似度（角度相似度）
-            )
+                l2_tolerance=1e-5,  # 允许的最大 L2 范数（欧几里得距离）
+                cosine_similarity_threshold=0.99,  # 最小余弦相似度（角度相似度）
+            ),
         )
     )
     print("所有输出都使用距离度量（L2 范数，余弦相似度）匹配")
@@ -74,9 +71,9 @@ def main():
         Comparator.compare_accuracy(
             run_results,
             compare_func=CompareFunc.quality_metrics(
-                psnr_tolerance=50.0,                  # 最小峰值信噪比（dB）
-                snr_tolerance=25.0                    # 最小信噪比（dB）
-            )
+                psnr_tolerance=50.0,  # 最小峰值信噪比（dB）
+                snr_tolerance=25.0,  # 最小信噪比（dB）
+            ),
         )
     )
     print("所有输出都使用质量度量（PSNR，SNR）匹配")

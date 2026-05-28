@@ -6,7 +6,7 @@ including model instances, test data paths, and configuration loaders.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import cv2
 import numpy as np
@@ -27,7 +27,7 @@ def project_root() -> Path:
 
 
 @pytest.fixture(scope="session")
-def plate_config(project_root: Path) -> Dict[str, Any]:
+def plate_config(project_root: Path) -> dict[str, Any]:
     """
     Load plate.yaml configuration.
 
@@ -41,37 +41,28 @@ def plate_config(project_root: Path) -> Dict[str, Any]:
     if not config_path.exists():
         pytest.skip(f"Plate config not found: {config_path}")
 
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     return config
 
 
 @pytest.fixture(scope="session")
-def ocr_character(plate_config: Dict[str, Any]) -> List[str]:
+def ocr_character(plate_config: dict[str, Any]) -> list[str]:
     """Extract OCR character dictionary from config."""
-    return plate_config.get('ocr_dict', [])
+    return plate_config.get("ocr_dict", [])
 
 
 @pytest.fixture(scope="session")
-def color_map(plate_config: Dict[str, Any]) -> Dict[int, str]:
+def color_map(plate_config: dict[str, Any]) -> dict[int, str]:
     """Extract color mapping from config."""
-    return plate_config.get('color_dict', {
-        0: 'blue',
-        1: 'yellow',
-        2: 'white',
-        3: 'black',
-        4: 'green'
-    })
+    return plate_config.get("color_dict", {0: "blue", 1: "yellow", 2: "white", 3: "black", 4: "green"})
 
 
 @pytest.fixture(scope="session")
-def layer_map(plate_config: Dict[str, Any]) -> Dict[int, str]:
+def layer_map(plate_config: dict[str, Any]) -> dict[int, str]:
     """Extract layer mapping from config."""
-    return plate_config.get('layer_dict', {
-        0: 'single',
-        1: 'double'
-    })
+    return plate_config.get("layer_dict", {0: "single", 1: "double"})
 
 
 @pytest.fixture(scope="session")
@@ -139,7 +130,7 @@ def sample_blue_plate() -> np.ndarray:
         if img is not None:
             return img
 
-    return _generate_synthetic_plate(color='blue')
+    return _generate_synthetic_plate(color="blue")
 
 
 @pytest.fixture
@@ -151,11 +142,11 @@ def sample_yellow_plate() -> np.ndarray:
         if img is not None:
             return img
 
-    return _generate_synthetic_plate(color='yellow')
+    return _generate_synthetic_plate(color="yellow")
 
 
 @pytest.fixture
-def golden_ocr_outputs() -> Dict[str, Any]:
+def golden_ocr_outputs() -> dict[str, Any]:
     """
     Load golden OCR test outputs.
 
@@ -171,15 +162,16 @@ def golden_ocr_outputs() -> Dict[str, Any]:
     """
     golden_path = GOLDEN_DIR / "golden_ocr_outputs.json"
     if not golden_path.exists():
-        return {'single_layer': [], 'double_layer': []}
+        return {"single_layer": [], "double_layer": []}
 
     import json
-    with open(golden_path, 'r', encoding='utf-8') as f:
+
+    with open(golden_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 @pytest.fixture
-def golden_color_layer_outputs() -> Dict[str, Any]:
+def golden_color_layer_outputs() -> dict[str, Any]:
     """
     Load golden color/layer classification test outputs.
 
@@ -197,13 +189,15 @@ def golden_color_layer_outputs() -> Dict[str, Any]:
         return {}
 
     import json
-    with open(golden_path, 'r', encoding='utf-8') as f:
+
+    with open(golden_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 # Helper functions
 
-def _generate_synthetic_plate(is_double: bool = False, color: str = 'blue') -> np.ndarray:
+
+def _generate_synthetic_plate(is_double: bool = False, color: str = "blue") -> np.ndarray:
     """
     Generate a synthetic plate image for testing when real images are unavailable.
 
@@ -223,11 +217,11 @@ def _generate_synthetic_plate(is_double: bool = False, color: str = 'blue') -> n
 
     # Create colored background
     color_bgr = {
-        'blue': (255, 100, 0),    # BGR
-        'yellow': (0, 255, 255),
-        'white': (255, 255, 255),
-        'black': (50, 50, 50),
-        'green': (0, 255, 0)
+        "blue": (255, 100, 0),  # BGR
+        "yellow": (0, 255, 255),
+        "white": (255, 255, 255),
+        "black": (50, 50, 50),
+        "green": (0, 255, 0),
     }
     bg_color = color_bgr.get(color, (255, 100, 0))
 
@@ -235,6 +229,7 @@ def _generate_synthetic_plate(is_double: bool = False, color: str = 'blue') -> n
 
     # Add some text-like noise
     import random
+
     random.seed(42)
     for _ in range(20):
         x = random.randint(10, width - 10)
@@ -254,7 +249,8 @@ def enable_gpu() -> bool:
     """
     try:
         import onnxruntime as ort
+
         providers = ort.get_available_providers()
-        return 'CUDAExecutionProvider' in providers
+        return "CUDAExecutionProvider" in providers
     except Exception:
         return False

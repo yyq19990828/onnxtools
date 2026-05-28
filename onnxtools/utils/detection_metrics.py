@@ -12,12 +12,9 @@
 
 import logging
 import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
-import cv2
 import numpy as np
-import yaml
 
 
 def bbox_iou(box1: np.ndarray, box2: np.ndarray, eps: float = 1e-7) -> np.ndarray:
@@ -37,8 +34,9 @@ def bbox_iou(box1: np.ndarray, box2: np.ndarray, eps: float = 1e-7) -> np.ndarra
     b2_x1, b2_y1, b2_x2, b2_y2 = box2.T
 
     # 计算交集区域
-    inter_area = (np.minimum(b1_x2[:, None], b2_x2) - np.maximum(b1_x1[:, None], b2_x1)).clip(0) * \
-                 (np.minimum(b1_y2[:, None], b2_y2) - np.maximum(b1_y1[:, None], b2_y1)).clip(0)
+    inter_area = (np.minimum(b1_x2[:, None], b2_x2) - np.maximum(b1_x1[:, None], b2_x1)).clip(0) * (
+        np.minimum(b1_y2[:, None], b2_y2) - np.maximum(b1_y1[:, None], b2_y1)
+    ).clip(0)
 
     # 计算并集区域
     box1_area = (b1_x2 - b1_x1) * (b1_y2 - b1_y1)
@@ -57,7 +55,7 @@ def smooth(y: np.ndarray, f: float = 0.05) -> np.ndarray:
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
 
-def compute_ap(recall: np.ndarray, precision: np.ndarray) -> Tuple[float, np.ndarray, np.ndarray]:
+def compute_ap(recall: np.ndarray, precision: np.ndarray) -> tuple[float, np.ndarray, np.ndarray]:
     """
     计算平均精度 (AP) - 与ultralytics完全对齐
 
@@ -83,12 +81,8 @@ def compute_ap(recall: np.ndarray, precision: np.ndarray) -> Tuple[float, np.nda
 
 
 def ap_per_class(
-    tp: np.ndarray,
-    conf: np.ndarray,
-    pred_cls: np.ndarray,
-    target_cls: np.ndarray,
-    eps: float = 1e-16
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    tp: np.ndarray, conf: np.ndarray, pred_cls: np.ndarray, target_cls: np.ndarray, eps: float = 1e-16
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     计算每个类别的AP、精度和召回率
 
@@ -148,7 +142,7 @@ def ap_per_class(
             ap[ci, j], mpre, mrec = compute_ap(recall[:, j], precision[:, j])
             if j == 0:
                 # 保存precision值用于绘图(与ultralytics对齐)
-                prec_values = np.interp(x, mrec, mpre)
+                np.interp(x, mrec, mpre)
 
         # 保存精度-召回率曲线 (用于绘图，按照Ultralytics方式)
         # 使用负值插值，因为置信度是降序排列的
@@ -224,7 +218,7 @@ def process_batch(detections: np.ndarray, labels: np.ndarray, iou_thresholds: np
 class DetectionMetrics:
     """目标检测指标计算类"""
 
-    def __init__(self, names: Dict[int, str] = None):
+    def __init__(self, names: dict[int, str] = None):
         """
         初始化检测指标计算器
 
@@ -233,11 +227,11 @@ class DetectionMetrics:
         """
         self.names = names or {}
         self.stats = {
-            'tp': [],      # 真正例
-            'conf': [],    # 置信度
-            'pred_cls': [], # 预测类别
-            'target_cls': [], # 真实类别
-            'target_img': [], # 目标图像索引（用于计算每类别在图像中的分布）
+            "tp": [],  # 真正例
+            "conf": [],  # 置信度
+            "pred_cls": [],  # 预测类别
+            "target_cls": [],  # 真实类别
+            "target_img": [],  # 目标图像索引（用于计算每类别在图像中的分布）
         }
         self.iou_thresholds = np.linspace(0.5, 0.95, 10)  # IoU阈值 0.5:0.05:0.95
 
@@ -248,20 +242,20 @@ class DetectionMetrics:
         self.seen = 0  # 已处理的图像数量
 
         # 结果缓存（类似ultralytics的DetMetrics）
-        self.ap = []           # 每个类别的AP@0.5:0.95
-        self.ap50 = []         # 每个类别的AP@0.5
+        self.ap = []  # 每个类别的AP@0.5:0.95
+        self.ap50 = []  # 每个类别的AP@0.5
         self.ap_class_index = []  # AP对应的类别索引
-        self.p = []            # 每个类别的precision
-        self.r = []            # 每个类别的recall
-        self.f1 = []           # 每个类别的f1
-        self.mp = 0.0          # 平均precision
-        self.mr = 0.0          # 平均recall
-        self.map50 = 0.0       # mAP@0.5
-        self.map = 0.0         # mAP@0.5:0.95
+        self.p = []  # 每个类别的precision
+        self.r = []  # 每个类别的recall
+        self.f1 = []  # 每个类别的f1
+        self.mp = 0.0  # 平均precision
+        self.mr = 0.0  # 平均recall
+        self.map50 = 0.0  # mAP@0.5
+        self.map = 0.0  # mAP@0.5:0.95
         self.nt_per_class = None  # 每个类别的目标总数
         self.nt_per_image = None  # 每个类别在图像中的分布
 
-    def update_stats(self, stats_dict: Dict[str, np.ndarray]):
+    def update_stats(self, stats_dict: dict[str, np.ndarray]):
         """
         更新统计信息（类似ultralytics DetMetrics.update_stats）
 
@@ -281,8 +275,8 @@ class DetectionMetrics:
         self.seen += 1
 
         # 更新图像和实例计数
-        if len(stats_dict.get('target_cls', [])) > 0:
-            target_cls = stats_dict['target_cls']
+        if len(stats_dict.get("target_cls", [])) > 0:
+            target_cls = stats_dict["target_cls"]
             self.total_instances += len(target_cls)
 
             # 统计每个类别的信息
@@ -291,18 +285,18 @@ class DetectionMetrics:
                 cls_int = int(cls)
                 if cls_int not in self.class_stats:
                     self.class_stats[cls_int] = {
-                        'images': set(),
-                        'instances': 0,
-                        'boxes_small': 0,
-                        'boxes_medium': 0,
-                        'boxes_large': 0
+                        "images": set(),
+                        "instances": 0,
+                        "boxes_small": 0,
+                        "boxes_medium": 0,
+                        "boxes_large": 0,
                     }
 
-                self.class_stats[cls_int]['images'].add(self.seen - 1)
+                self.class_stats[cls_int]["images"].add(self.seen - 1)
                 cls_mask = target_cls == cls
-                self.class_stats[cls_int]['instances'] += np.sum(cls_mask)
+                self.class_stats[cls_int]["instances"] += np.sum(cls_mask)
 
-    def process(self) -> Dict[str, Any]:
+    def process(self) -> dict[str, Any]:
         """
         处理所有统计信息并计算最终指标（类似ultralytics DetMetrics.process）
 
@@ -321,19 +315,16 @@ class DetectionMetrics:
             else:
                 stats[k] = np.array([])
 
-        if len(stats.get('tp', [])) == 0:
+        if len(stats.get("tp", [])) == 0:
             return {}
 
         # 计算每个类别的AP
         ap, p, r, f1, final_precision, final_recall = ap_per_class(
-            stats['tp'],
-            stats['conf'],
-            stats['pred_cls'],
-            stats['target_cls']
+            stats["tp"], stats["conf"], stats["pred_cls"], stats["target_cls"]
         )
 
         # 获取唯一类别
-        unique_classes = np.unique(stats['target_cls']).astype(int) if len(stats['target_cls']) > 0 else []
+        unique_classes = np.unique(stats["target_cls"]).astype(int) if len(stats["target_cls"]) > 0 else []
 
         # 存储结果（类似ultralytics）
         self.ap = ap.mean(1) if len(ap) else []  # AP@0.5:0.95
@@ -364,64 +355,63 @@ class DetectionMetrics:
         self.map = self.ap.mean() if len(self.ap) else 0.0
 
         # 计算每个类别的目标数统计（类似ultralytics）
-        if len(stats['target_cls']) > 0:
-            all_target_cls = stats['target_cls'].astype(int)
+        if len(stats["target_cls"]) > 0:
+            all_target_cls = stats["target_cls"].astype(int)
             self.nt_per_class = np.bincount(all_target_cls, minlength=len(self.names))
 
             # 计算每个类别在多少张图像中出现
-            if len(stats.get('target_img', [])) > 0:
+            if len(stats.get("target_img", [])) > 0:
                 # 为每个类别计算它们出现在多少张不同图像中
                 self.nt_per_image = np.zeros(len(self.names), dtype=int)
                 for cls_id in unique_classes:
                     if cls_id < len(self.nt_per_image):
                         # 找到该类别在哪些图像中出现
                         cls_mask = all_target_cls == cls_id
-                        unique_images = np.unique(stats['target_img'][cls_mask])
+                        unique_images = np.unique(stats["target_img"][cls_mask])
                         self.nt_per_image[cls_id] = len(unique_images)
             else:
                 # 如果没有target_img，使用类别统计信息估算
                 self.nt_per_image = np.zeros(len(self.names), dtype=int)
                 for cls_id in unique_classes:
                     if cls_id < len(self.nt_per_image) and cls_id in self.class_stats:
-                        self.nt_per_image[cls_id] = len(self.class_stats[cls_id]['images'])
+                        self.nt_per_image[cls_id] = len(self.class_stats[cls_id]["images"])
         else:
             self.nt_per_class = np.zeros(len(self.names), dtype=int)
             self.nt_per_image = np.zeros(len(self.names), dtype=int)
 
         # 构建结果字典
         results_dict = {
-            'map': self.map,           # mAP@0.5:0.95
-            'map50': self.map50,       # mAP@0.5
-            'mp': self.mp,             # 平均精度
-            'mr': self.mr,             # 平均召回率
-            'ap': self.ap,             # 每个类别的AP
-            'ap50': self.ap50,         # 每个类别的AP@0.5
-            'p': p,                    # 精度曲线
-            'r': r,                    # 召回率曲线
-            'final_p': self.final_p,   # 最终精度（用于显示）
-            'final_r': self.final_r,   # 最终召回率（用于显示）
-            'f1': f1,                  # F1分数
-            'ap_class_index': self.ap_class_index,  # 类别索引
-
+            "map": self.map,  # mAP@0.5:0.95
+            "map50": self.map50,  # mAP@0.5
+            "mp": self.mp,  # 平均精度
+            "mr": self.mr,  # 平均召回率
+            "ap": self.ap,  # 每个类别的AP
+            "ap50": self.ap50,  # 每个类别的AP@0.5
+            "p": p,  # 精度曲线
+            "r": r,  # 召回率曲线
+            "final_p": self.final_p,  # 最终精度（用于显示）
+            "final_r": self.final_r,  # 最终召回率（用于显示）
+            "f1": f1,  # F1分数
+            "ap_class_index": self.ap_class_index,  # 类别索引
             # 额外的统计信息
-            'total_images': self.seen,
-            'total_instances': self.total_instances,
+            "total_images": self.seen,
+            "total_instances": self.total_instances,
         }
 
         return results_dict
 
-    def mean_results(self) -> List[float]:
+    def mean_results(self) -> list[float]:
         """返回平均结果：precision, recall, mAP50, mAP50-95"""
         return [self.mp, self.mr, self.map50, self.map]
 
-    def class_result(self, i: int) -> Tuple[float, float, float, float]:
+    def class_result(self, i: int) -> tuple[float, float, float, float]:
         """返回第i个类别的结果：precision, recall, AP50, AP50-95"""
         if i < len(self.p):
             return self.p[i], self.r[i], self.ap50[i], self.ap[i]
         return 0.0, 0.0, 0.0, 0.0
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """返回指标键列表"""
         return ["metrics/precision(B)", "metrics/recall(B)", "metrics/mAP50(B)", "metrics/mAP50-95(B)"]
 
@@ -455,7 +445,7 @@ def load_yolo_labels(label_path: str, img_width: int, img_height: int) -> np.nda
         return np.zeros((0, 5))
 
     labels = []
-    with open(label_path, 'r') as f:
+    with open(label_path) as f:
         for line_num, line in enumerate(f.readlines(), 1):
             parts = line.strip().split()
             if len(parts) >= 5:
@@ -473,7 +463,7 @@ def load_yolo_labels(label_path: str, img_width: int, img_height: int) -> np.nda
                     y2 = y_center + height / 2
 
                     labels.append([class_id, x1, y1, x2, y2])
-                except ValueError as e:
+                except ValueError:
                     # print(f"警告: 跳过标签文件 {label_path} 第 {line_num} 行，遇到无效字符: {parts[0]} - {e}")
                     logging.warning(f"跳过标签文件 {label_path} 第 {line_num} 行，遇到无效字符: {parts[0]}")
                     continue
@@ -482,10 +472,8 @@ def load_yolo_labels(label_path: str, img_width: int, img_height: int) -> np.nda
 
 
 def evaluate_detection(
-    predictions: List[np.ndarray],
-    ground_truths: List[np.ndarray],
-    names: Dict[int, str] = None
-) -> Dict[str, Any]:
+    predictions: list[np.ndarray], ground_truths: list[np.ndarray], names: dict[int, str] = None
+) -> dict[str, Any]:
     """
     评估目标检测结果
 
@@ -511,19 +499,17 @@ def evaluate_detection(
     for i, (pred, gt) in enumerate(zip(predictions, ground_truths)):
         # 准备统计字典
         stats_dict = {
-            'target_cls': gt[:, 0] if len(gt) > 0 else np.array([]),
-            'target_img': np.full(len(gt), i) if len(gt) > 0 else np.array([])  # 图像索引
+            "target_cls": gt[:, 0] if len(gt) > 0 else np.array([]),
+            "target_img": np.full(len(gt), i) if len(gt) > 0 else np.array([]),  # 图像索引
         }
 
         if len(pred) == 0:
             # 没有预测结果
             if len(gt) > 0:
                 # 但有真实标签，记录为未检测到的目标
-                stats_dict.update({
-                    'tp': np.array([]).reshape(0, len(iou_thresholds)),
-                    'conf': np.array([]),
-                    'pred_cls': np.array([])
-                })
+                stats_dict.update(
+                    {"tp": np.array([]).reshape(0, len(iou_thresholds)), "conf": np.array([]), "pred_cls": np.array([])}
+                )
             else:
                 # 没有预测也没有标签，跳过
                 continue
@@ -531,19 +517,11 @@ def evaluate_detection(
             if len(gt) == 0:
                 # 没有真实标签，所有预测都是假正例
                 tp = np.zeros((len(pred), len(iou_thresholds)), dtype=bool)
-                stats_dict.update({
-                    'tp': tp,
-                    'conf': pred[:, 4],
-                    'pred_cls': pred[:, 5]
-                })
+                stats_dict.update({"tp": tp, "conf": pred[:, 4], "pred_cls": pred[:, 5]})
             else:
                 # 处理有预测和标签的情况
                 tp = process_batch(pred, gt, iou_thresholds)
-                stats_dict.update({
-                    'tp': tp,
-                    'conf': pred[:, 4],
-                    'pred_cls': pred[:, 5]
-                })
+                stats_dict.update({"tp": tp, "conf": pred[:, 4], "pred_cls": pred[:, 5]})
 
         # 更新统计信息
         metrics.update_stats(stats_dict)
@@ -553,16 +531,16 @@ def evaluate_detection(
 
     # 添加兼容信息
     if results:
-        results['classes'] = metrics.ap_class_index
-        results['all_gt_classes'] = all_gt_classes
+        results["classes"] = metrics.ap_class_index
+        results["all_gt_classes"] = all_gt_classes
         # 添加类别统计信息以支持print_metrics函数
-        results['nt_per_image'] = metrics.nt_per_image
-        results['nt_per_class'] = metrics.nt_per_class
+        results["nt_per_image"] = metrics.nt_per_image
+        results["nt_per_class"] = metrics.nt_per_class
 
     return results
 
 
-def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
+def print_metrics(results: dict[str, Any], names: dict[int, str] = None):
     """
     以Ultralytics风格打印指标结果（保留原有接口兼容性）
 
@@ -575,17 +553,17 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
         return
 
     # 获取统计信息
-    total_images = results.get('total_images', 0)
-    total_instances = results.get('total_instances', 0)
+    total_images = results.get("total_images", 0)
+    total_instances = results.get("total_instances", 0)
 
     # 打印表头（类似DetectionValidator.get_desc()）
     header = f"{'Class':>22} {'Images':>11} {'Instances':>11} {'Box(P':>11} {'R':>11} {'mAP50':>11} {'mAP50-95)':>11}"
     print(header)
 
     # 打印每个类别的结果
-    if 'ap50' in results and 'ap' in results:
-        computed_classes = results.get('classes', [])
-        all_gt_classes = results.get('all_gt_classes', computed_classes)
+    if "ap50" in results and "ap" in results:
+        computed_classes = results.get("classes", [])
+        all_gt_classes = results.get("all_gt_classes", computed_classes)
         class_to_idx = {cls: i for i, cls in enumerate(computed_classes)}
 
         # 按类别索引排序显示
@@ -598,34 +576,34 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
 
             if class_id in class_to_idx:
                 idx = class_to_idx[class_id]
-                ap50 = results['ap50'][idx]
-                ap = results['ap'][idx]
+                ap50 = results["ap50"][idx]
+                ap = results["ap"][idx]
 
                 # 尝试从结果中获取精度和召回率
-                if 'final_p' in results and len(results['final_p']) > idx:
-                    precision = results['final_p'][idx]
-                elif 'p' in results and len(results['p']) > idx:
-                    if hasattr(results['p'][idx], 'mean'):
-                        precision = results['p'][idx].mean()
+                if "final_p" in results and len(results["final_p"]) > idx:
+                    precision = results["final_p"][idx]
+                elif "p" in results and len(results["p"]) > idx:
+                    if hasattr(results["p"][idx], "mean"):
+                        precision = results["p"][idx].mean()
                     else:
-                        precision = results['p'][idx] if np.isscalar(results['p'][idx]) else 0
+                        precision = results["p"][idx] if np.isscalar(results["p"][idx]) else 0
                 else:
                     precision = 0
 
-                if 'final_r' in results and len(results['final_r']) > idx:
-                    recall = results['final_r'][idx]
-                elif 'r' in results and len(results['r']) > idx:
-                    if hasattr(results['r'][idx], 'mean'):
-                        recall = results['r'][idx].mean()
+                if "final_r" in results and len(results["final_r"]) > idx:
+                    recall = results["final_r"][idx]
+                elif "r" in results and len(results["r"]) > idx:
+                    if hasattr(results["r"][idx], "mean"):
+                        recall = results["r"][idx].mean()
                     else:
-                        recall = results['r'][idx] if np.isscalar(results['r'][idx]) else 0
+                        recall = results["r"][idx] if np.isscalar(results["r"][idx]) else 0
                 else:
                     recall = 0
 
                 # 获取该类别的真实图像数和实例数
-                if 'nt_per_image' in results and 'nt_per_class' in results:
-                    nt_per_image = results['nt_per_image']
-                    nt_per_class = results['nt_per_class']
+                if "nt_per_image" in results and "nt_per_class" in results:
+                    nt_per_image = results["nt_per_image"]
+                    nt_per_class = results["nt_per_class"]
                     images = nt_per_image[class_id] if class_id < len(nt_per_image) else 0
                     instances = nt_per_class[class_id] if class_id < len(nt_per_class) else 0
                 else:
@@ -634,12 +612,14 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
                     images = total_images  # 假设该类别可能在所有图像中出现
                     instances = int(total_instances / len(all_gt_classes)) if len(all_gt_classes) > 0 else 0
 
-                print(f"{class_name:>22} {images:>11d} {instances:>11d} {precision:>11.3g} {recall:>11.3g} {ap50:>11.3g} {ap:>11.3g}")
+                print(
+                    f"{class_name:>22} {images:>11d} {instances:>11d} {precision:>11.3g} {recall:>11.3g} {ap50:>11.3g} {ap:>11.3g}"
+                )
             else:
                 # 没有预测结果的类别，但可能有真实标签
-                if 'nt_per_image' in results and 'nt_per_class' in results:
-                    nt_per_image = results['nt_per_image']
-                    nt_per_class = results['nt_per_class']
+                if "nt_per_image" in results and "nt_per_class" in results:
+                    nt_per_image = results["nt_per_image"]
+                    nt_per_class = results["nt_per_class"]
                     images = nt_per_image[class_id] if class_id < len(nt_per_image) else 0
                     instances = nt_per_class[class_id] if class_id < len(nt_per_class) else 0
                 else:
@@ -648,17 +628,19 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
                 print(f"{class_name:>22} {images:>11d} {instances:>11d} {0:>11.3g} {0:>11.3g} {0:>11.3g} {0:>11.3g}")
 
     # 打印总体指标（类别平均）
-    map50 = results.get('map50', 0)
-    map50_95 = results.get('map', 0)
-    mp = results.get('mp', 0)
-    mr = results.get('mr', 0)
+    map50 = results.get("map50", 0)
+    map50_95 = results.get("map", 0)
+    mp = results.get("mp", 0)
+    mr = results.get("mr", 0)
 
-    print(f"{'all':>22} {total_images:>11d} {total_instances:>11d} {mp:>11.3g} {mr:>11.3g} {map50:>11.3g} {map50_95:>11.3g}")
+    print(
+        f"{'all':>22} {total_images:>11d} {total_instances:>11d} {mp:>11.3g} {mr:>11.3g} {map50:>11.3g} {map50_95:>11.3g}"
+    )
 
     # 计算并打印加权平均指标（按样本数加权）
-    if 'ap50' in results and 'ap' in results and 'nt_per_class' in results:
-        computed_classes = results.get('classes', [])
-        nt_per_class = results['nt_per_class']
+    if "ap50" in results and "ap" in results and "nt_per_class" in results:
+        computed_classes = results.get("classes", [])
+        nt_per_class = results["nt_per_class"]
 
         # 收集每个类别的指标和样本数
         weighted_p, weighted_r, weighted_ap50, weighted_ap = 0.0, 0.0, 0.0, 0.0
@@ -670,16 +652,16 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
                 continue
 
             # 获取该类别的指标
-            ap50_i = results['ap50'][i] if i < len(results['ap50']) else 0
-            ap_i = results['ap'][i] if i < len(results['ap']) else 0
+            ap50_i = results["ap50"][i] if i < len(results["ap50"]) else 0
+            ap_i = results["ap"][i] if i < len(results["ap"]) else 0
 
-            if 'final_p' in results and len(results['final_p']) > i:
-                p_i = results['final_p'][i]
+            if "final_p" in results and len(results["final_p"]) > i:
+                p_i = results["final_p"][i]
             else:
                 p_i = 0
 
-            if 'final_r' in results and len(results['final_r']) > i:
-                r_i = results['final_r'][i]
+            if "final_r" in results and len(results["final_r"]) > i:
+                r_i = results["final_r"][i]
             else:
                 r_i = 0
 
@@ -697,13 +679,17 @@ def print_metrics(results: Dict[str, Any], names: Dict[int, str] = None):
             weighted_ap50 /= total_weight
             weighted_ap /= total_weight
 
-            print(f"{'all(weighted)':>22} {total_images:>11d} {total_instances:>11d} {weighted_p:>11.3g} {weighted_r:>11.3g} {weighted_ap50:>11.3g} {weighted_ap:>11.3g}")
+            print(
+                f"{'all(weighted)':>22} {total_images:>11d} {total_instances:>11d} {weighted_p:>11.3g} {weighted_r:>11.3g} {weighted_ap50:>11.3g} {weighted_ap:>11.3g}"
+            )
 
     # 打印速度统计（如果可用）
-    if 'speed_preprocess' in results:
-        speed_preprocess = results.get('speed_preprocess', 0)
-        speed_inference = results.get('speed_inference', 0)
-        speed_loss = results.get('speed_loss', 0)
-        speed_postprocess = results.get('speed_postprocess', 0)
+    if "speed_preprocess" in results:
+        speed_preprocess = results.get("speed_preprocess", 0)
+        speed_inference = results.get("speed_inference", 0)
+        speed_loss = results.get("speed_loss", 0)
+        speed_postprocess = results.get("speed_postprocess", 0)
 
-        print(f"Speed: {speed_preprocess:.1f}ms preprocess, {speed_inference:.1f}ms inference, {speed_loss:.1f}ms loss, {speed_postprocess:.1f}ms postprocess per image")
+        print(
+            f"Speed: {speed_preprocess:.1f}ms preprocess, {speed_inference:.1f}ms inference, {speed_loss:.1f}ms loss, {speed_postprocess:.1f}ms postprocess per image"
+        )

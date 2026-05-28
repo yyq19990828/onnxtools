@@ -8,7 +8,6 @@ RT-DETR模型ORT推理类
 """
 
 import logging
-from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -68,27 +67,29 @@ def smart_normalize_scores(scores: np.ndarray) -> np.ndarray:
     sum_mean = np.mean(scores_sum_per_query)
     sum_std = np.std(scores_sum_per_query)
 
-    logging.debug(f"分类输出统计: min={scores_min:.4f}, max={scores_max:.4f}, "
-                  f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}")
+    logging.debug(
+        f"分类输出统计: min={scores_min:.4f}, max={scores_max:.4f}, "
+        f"mean={scores_mean:.4f}, sum_mean={sum_mean:.4f}, sum_std={sum_std:.4f}"
+    )
 
     # 判断归一化状态的启发式规则
     is_softmax_normalized = (
-        0.95 <= sum_mean <= 1.05 and  # 和接近1
-        sum_std < 0.1 and             # 标准差很小
-        scores_min >= -0.1 and        # 最小值接近0或稍微负数
-        scores_max <= 1.1              # 最大值接近1或稍微超过
+        0.95 <= sum_mean <= 1.05  # 和接近1
+        and sum_std < 0.1  # 标准差很小
+        and scores_min >= -0.1  # 最小值接近0或稍微负数
+        and scores_max <= 1.1  # 最大值接近1或稍微超过
     )
 
     is_sigmoid_normalized = (
-        scores_min >= -0.1 and        # 最小值接近0
-        scores_max <= 1.1 and         # 最大值接近1
-        not is_softmax_normalized     # 不是softmax归一化
+        scores_min >= -0.1  # 最小值接近0
+        and scores_max <= 1.1  # 最大值接近1
+        and not is_softmax_normalized  # 不是softmax归一化
     )
 
     is_raw_logits = (
-        scores_min < -1.0 or          # 有较大负值
-        scores_max > 5.0 or           # 有较大正值
-        (scores_max - scores_min) > 10.0  # 值域范围很大
+        scores_min < -1.0  # 有较大负值
+        or scores_max > 5.0  # 有较大正值
+        or (scores_max - scores_min) > 10.0  # 值域范围很大
     )
 
     if is_softmax_normalized:
@@ -129,9 +130,15 @@ class RtdetrORT(BaseORT):
         >>> result = det(image)               # Result 对象
     """
 
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
-                 conf_thres: float = 0.001, iou_thres: float = 0.5,
-                 providers: Optional[List[str]] = None, **kwargs):
+    def __init__(
+        self,
+        onnx_path: str,
+        input_shape: tuple[int, int] = (640, 640),
+        conf_thres: float = 0.001,
+        iou_thres: float = 0.5,
+        providers: list[str] | None = None,
+        **kwargs,
+    ):
         """
         初始化RT-DETR检测器
 
@@ -149,7 +156,7 @@ class RtdetrORT(BaseORT):
         # RT-DETR输出格式验证延迟到模型初始化时进行
 
     @staticmethod
-    def preprocess(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
+    def preprocess(image: np.ndarray, input_shape: tuple[int, int]) -> tuple[np.ndarray, float, tuple]:
         """
         RT-DETR预处理静态方法（复刻ultralytics风格，直接resize不保持长宽比）
 
@@ -190,7 +197,7 @@ class RtdetrORT(BaseORT):
         return tensor, scale, original_shape
 
     @staticmethod
-    def postprocess(preds: np.ndarray, input_shape: Tuple[int, int], conf_thres: float, **kwargs) -> List[np.ndarray]:
+    def postprocess(preds: np.ndarray, input_shape: tuple[int, int], conf_thres: float, **kwargs) -> list[np.ndarray]:
         """
         RT-DETR后处理（优化版本，支持自适应分类输出归一化处理）
 
@@ -209,14 +216,14 @@ class RtdetrORT(BaseORT):
                 以输入分辨率为参考系。
         """
         # 处理预测格式（复刻 ultralytics/models/rtdetr/val.py#L173-L174）
-        if not isinstance(preds, (list, tuple)):
+        if not isinstance(preds, list | tuple):
             preds = [preds, None]
 
         bs, _, _ = preds[0].shape  # batch_size, num_queries(300), num_features(19)
 
         # 分割bbox和scores（复刻 ultralytics/models/rtdetr/val.py#L177）
-        bboxes = preds[0][:, :, :4]    # [batch, 300, 4] - bbox坐标
-        scores = preds[0][:, :, 4:]    # [batch, 300, 15] - 类别分数
+        bboxes = preds[0][:, :, :4]  # [batch, 300, 4] - bbox坐标
+        scores = preds[0][:, :, 4:]  # [batch, 300, 15] - 类别分数
 
         # 智能检测和处理分类输出的归一化状态
         scores = smart_normalize_scores(scores)
@@ -224,7 +231,7 @@ class RtdetrORT(BaseORT):
         # 缩放bbox到原图尺寸（复刻 ultralytics/models/rtdetr/val.py#L178）
         # RT-DETR输出的bbox是归一化坐标[0,1]，需要转换为像素坐标
         # 如果有orig_shape参数，直接缩放到原图；否则缩放到输入尺寸
-        orig_shape = kwargs.get('orig_shape', None)
+        orig_shape = kwargs.get("orig_shape", None)
         if orig_shape is not None:
             # 直接缩放到原图尺寸
             orig_h, orig_w = orig_shape  # (H, W)

@@ -20,6 +20,7 @@
 这个脚本演示了如何将 Polygraphy 与后端提供的 API 结合使用。
 具体来说，在这种情况下，我们使用 TensorRT API 来打印网络名称并启用 FP16 模式。
 """
+
 import numpy as np
 import tensorrt as trt
 from polygraphy import func

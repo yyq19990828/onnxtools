@@ -9,7 +9,6 @@ Date: 2025-11-05
 
 import os
 import tempfile
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -29,7 +28,7 @@ class TestResultVisualizationIntegration:
         class_ids = np.array([0, 1], dtype=np.int32)
         # Create a simple test image with some patterns
         orig_img = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
-        names = {0: 'vehicle', 1: 'plate'}
+        names = {0: "vehicle", 1: "plate"}
 
         return Result(
             boxes=boxes,
@@ -38,7 +37,7 @@ class TestResultVisualizationIntegration:
             orig_img=orig_img,
             orig_shape=(480, 640),
             names=names,
-            path='test_image.jpg'
+            path="test_image.jpg",
         )
 
     def test_plot_end_to_end_standard_preset(self, sample_result_with_image):
@@ -46,7 +45,7 @@ class TestResultVisualizationIntegration:
         result = sample_result_with_image
 
         # Plot with standard preset
-        annotated = result.plot(annotator_preset='standard')
+        annotated = result.plot(annotator_preset="standard")
 
         # Verify output
         assert isinstance(annotated, np.ndarray)
@@ -64,7 +63,7 @@ class TestResultVisualizationIntegration:
         """Test plot() with all available presets (T033)."""
         result = sample_result_with_image
         # Test presets that are known to work
-        presets = ['standard', 'debug', 'lightweight', 'privacy']
+        presets = ["standard", "debug", "lightweight", "privacy"]
 
         for preset in presets:
             annotated = result.plot(annotator_preset=preset)
@@ -80,12 +79,12 @@ class TestResultVisualizationIntegration:
         result = sample_result_with_image
 
         # Create temporary file
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:
             # Save annotated image
-            result.save(tmp_path, annotator_preset='standard')
+            result.save(tmp_path, annotator_preset="standard")
 
             # Verify file exists
             assert os.path.exists(tmp_path)
@@ -107,7 +106,7 @@ class TestResultVisualizationIntegration:
 
         # Create temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:
-            output_path = os.path.join(tmp_dir, 'subdir', 'output.jpg')
+            output_path = os.path.join(tmp_dir, "subdir", "output.jpg")
 
             # Create parent directory first
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -146,7 +145,7 @@ class TestResultVisualizationIntegration:
         np.testing.assert_array_equal(annotated, orig_img)
 
         # save() should work
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:
@@ -159,7 +158,7 @@ class TestResultVisualizationIntegration:
     def test_visualization_quality_check(self, sample_result_with_image):
         """Test that annotated image quality is reasonable (T033)."""
         result = sample_result_with_image
-        annotated = result.plot(annotator_preset='standard')
+        annotated = result.plot(annotator_preset="standard")
 
         # Basic quality checks
         # 1. Image should not be all black or all white

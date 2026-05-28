@@ -2,14 +2,13 @@
 
 import os
 import sys
-from typing import Any, Dict, List
 
-import cv2
 import numpy as np
 import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 
 @pytest.fixture
 def sample_image():
@@ -17,6 +16,7 @@ def sample_image():
     image = np.zeros((480, 640, 3), dtype=np.uint8)
     image[:, :] = [100, 100, 100]  # Gray background
     return image
+
 
 @pytest.fixture
 def sample_detections():
@@ -28,28 +28,27 @@ def sample_detections():
         ]
     ]
 
+
 @pytest.fixture
 def sample_plate_results():
     """Create sample OCR results for plates."""
     return [
         None,  # vehicle (no OCR)
-        {
-            "plate_text": "京A12345",
-            "color": "蓝色",
-            "layer": "单层",
-            "should_display_ocr": True
-        }  # plate OCR
+        {"plate_text": "京A12345", "color": "蓝色", "layer": "单层", "should_display_ocr": True},  # plate OCR
     ]
+
 
 @pytest.fixture
 def sample_class_names():
     """Sample class names for detection."""
     return {0: "vehicle", 1: "plate"}
 
+
 @pytest.fixture
 def sample_colors():
     """Sample colors for drawing."""
     return [(255, 0, 0), (0, 255, 0)]  # Red for vehicle, Green for plate
+
 
 @pytest.fixture
 def font_path():
@@ -58,7 +57,7 @@ def font_path():
         "data/fonts/SourceHanSans-VF.ttf",
         "/System/Library/Fonts/PingFang.ttc",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "C:/Windows/Fonts/simhei.ttf"
+        "C:/Windows/Fonts/simhei.ttf",
     ]
 
     for path in candidates:
@@ -66,11 +65,12 @@ def font_path():
             return path
     return None
 
+
 @pytest.fixture
 def benchmark_config():
     """Configuration for performance benchmarks."""
     return {
         "target_time_ms": 30.0,  # Target: <30ms for 20 objects (more realistic for development)
         "iterations": 100,
-        "max_objects": 20
+        "max_objects": 20,
     }

@@ -20,13 +20,12 @@ if TYPE_CHECKING:
 # Core Tool Implementations
 # ============================================================================
 
+
 async def _detect_objects_impl(params: DetectObjectsInput) -> str:
     """Core implementation for detect_objects tool."""
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Get or create detector
         detector = get_detector(
@@ -50,9 +49,7 @@ async def _detect_objects_impl(params: DetectObjectsInput) -> str:
                     "box": result.boxes[i].tolist(),
                     "score": float(result.scores[i]),
                     "class_id": int(result.class_ids[i]),
-                    "class_name": result.names.get(
-                        int(result.class_ids[i]), "unknown"
-                    ),
+                    "class_name": result.names.get(int(result.class_ids[i]), "unknown"),
                 }
             )
 
@@ -71,9 +68,7 @@ async def _full_pipeline_impl(params: FullPipelineInput) -> str:
     """Core implementation for full_pipeline tool."""
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Get models
         detector = get_detector(
@@ -104,9 +99,7 @@ async def _full_pipeline_impl(params: FullPipelineInput) -> str:
 
                     # Classify color/layer
                     try:
-                        color_classifier = get_color_layer_classifier(
-                            params.color_model_path, params.conf_threshold
-                        )
+                        color_classifier = get_color_layer_classifier(params.color_model_path, params.conf_threshold)
                         cls_result = color_classifier(plate_img)
                         color = cls_result.labels[0] if cls_result.labels else "unknown"
                         layer = cls_result.labels[1] if len(cls_result.labels) > 1 else "single"
@@ -116,9 +109,7 @@ async def _full_pipeline_impl(params: FullPipelineInput) -> str:
 
                     # OCR recognition
                     try:
-                        ocr_model = get_ocr_model(
-                            params.ocr_model_path, params.conf_threshold
-                        )
+                        ocr_model = get_ocr_model(params.ocr_model_path, params.conf_threshold)
                         is_double = layer == "double"
                         ocr_result = ocr_model(plate_img, is_double_layer=is_double)
                         text = ocr_result[0] if ocr_result else ""
@@ -149,9 +140,7 @@ async def _full_pipeline_impl(params: FullPipelineInput) -> str:
         # Save annotated image if path provided
         output_info = None
         if params.output_path:
-            result.save(
-                params.output_path, annotator_preset=params.annotator_preset.value
-            )
+            result.save(params.output_path, annotator_preset=params.annotator_preset.value)
             output_info = params.output_path
 
         return format_pipeline_response(
@@ -169,6 +158,7 @@ async def _full_pipeline_impl(params: FullPipelineInput) -> str:
 # ============================================================================
 # Tool Registration Functions
 # ============================================================================
+
 
 def register_detection_tools(mcp: "FastMCP") -> None:
     """Register all detection tools with the MCP server.

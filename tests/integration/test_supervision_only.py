@@ -7,7 +7,6 @@ the supervision library, without PIL fallback.
 import os
 import sys
 
-import cv2
 import numpy as np
 import pytest
 
@@ -44,11 +43,13 @@ class TestSupervisionOnlyRendering:
         from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(640, 480)
-        detections = [[
-            [50, 50, 150, 150, 0.95, 0],  # vehicle
-            [200, 200, 350, 280, 0.88, 1],  # plate
-            [400, 100, 550, 250, 0.92, 0],  # another vehicle
-        ]]
+        detections = [
+            [
+                [50, 50, 150, 150, 0.95, 0],  # vehicle
+                [200, 200, 350, 280, 0.88, 1],  # plate
+                [400, 100, 550, 250, 0.92, 0],  # another vehicle
+            ]
+        ]
         class_names = {0: "vehicle", 1: "plate"}
         colors = [(255, 0, 0), (0, 255, 0)]
 
@@ -66,18 +67,23 @@ class TestSupervisionOnlyRendering:
         class_names = {1: "plate"}
         colors = [(0, 255, 0)]
 
-        plate_results = [{
-            "plate_text": "苏A88888",  # Chinese + alphanumeric
-            "plate_conf": 0.95,
-            "color": "blue",
-            "layer": "single",
-            "should_display_ocr": True
-        }]
+        plate_results = [
+            {
+                "plate_text": "苏A88888",  # Chinese + alphanumeric
+                "plate_conf": 0.95,
+                "color": "blue",
+                "layer": "single",
+                "should_display_ocr": True,
+            }
+        ]
 
         result = draw_detections(
-            image, detections, class_names, colors,
+            image,
+            detections,
+            class_names,
+            colors,
             plate_results=plate_results,
-            font_path="data/fonts/SourceHanSans-VF.ttf"
+            font_path="data/fonts/SourceHanSans-VF.ttf",
         )
 
         assert result.shape == image.shape
@@ -135,10 +141,7 @@ class TestSupervisionOnlyRendering:
         colors = [(255, 0, 0)]
 
         # Use non-existent font path
-        result = draw_detections(
-            image, detections, class_names, colors,
-            font_path="non_existent_font.ttf"
-        )
+        result = draw_detections(image, detections, class_names, colors, font_path="non_existent_font.ttf")
 
         # Should not crash, supervision will use fallback font
         assert result.shape == image.shape
@@ -149,10 +152,12 @@ class TestSupervisionOnlyRendering:
         from onnxtools.utils.drawing import draw_detections
 
         image = create_test_image(800, 600)
-        detections = [[
-            [100, 100, 300, 250, 0.92, 0],  # vehicle
-            [150, 180, 250, 220, 0.88, 1],  # plate inside vehicle
-        ]]
+        detections = [
+            [
+                [100, 100, 300, 250, 0.92, 0],  # vehicle
+                [150, 180, 250, 220, 0.88, 1],  # plate inside vehicle
+            ]
+        ]
         class_names = {0: "vehicle", 1: "plate"}
         colors = [(255, 0, 0), (0, 255, 0)]
 
@@ -163,14 +168,11 @@ class TestSupervisionOnlyRendering:
                 "plate_conf": 0.93,
                 "color": "蓝色",
                 "layer": "单层",
-                "should_display_ocr": True
-            }
+                "should_display_ocr": True,
+            },
         ]
 
-        result = draw_detections(
-            image, detections, class_names, colors,
-            plate_results=plate_results
-        )
+        result = draw_detections(image, detections, class_names, colors, plate_results=plate_results)
 
         assert result.shape == image.shape
         assert not np.array_equal(result, image)
@@ -179,13 +181,15 @@ class TestSupervisionOnlyRendering:
         """Test that supervision library is available (required dependency)."""
         try:
             import supervision as sv
-            assert hasattr(sv, '__version__'), "Supervision must have version attribute"
+
+            assert hasattr(sv, "__version__"), "Supervision must have version attribute"
             # Should be >= 0.16.0
-            version_parts = sv.__version__.split('.')
+            version_parts = sv.__version__.split(".")
             major = int(version_parts[0])
             minor = int(version_parts[1])
-            assert major > 0 or (major == 0 and minor >= 16), \
-                f"Supervision version {sv.__version__} too old, need >= 0.16.0"
+            assert major > 0 or (
+                major == 0 and minor >= 16
+            ), f"Supervision version {sv.__version__} too old, need >= 0.16.0"
         except ImportError:
             pytest.fail("supervision library must be installed")
 

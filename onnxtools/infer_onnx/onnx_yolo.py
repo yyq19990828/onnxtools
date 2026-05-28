@@ -7,7 +7,6 @@ YOLO模型ORT推理类
 """
 
 import logging
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -30,10 +29,17 @@ class YoloORT(BaseORT):
         >>> result.boxes                       # np.ndarray [N, 4] xyxy
     """
 
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
-                 conf_thres: float = 0.5, iou_thres: float = 0.5,
-                 multi_label: bool = True, has_objectness: bool = False,
-                 providers: Optional[List[str]] = None, **kwargs):
+    def __init__(
+        self,
+        onnx_path: str,
+        input_shape: tuple[int, int] = (640, 640),
+        conf_thres: float = 0.5,
+        iou_thres: float = 0.5,
+        multi_label: bool = True,
+        has_objectness: bool = False,
+        providers: list[str] | None = None,
+        **kwargs,
+    ):
         """
         初始化YOLO检测器
 
@@ -57,10 +63,7 @@ class YoloORT(BaseORT):
         # YoloORT类固定使用Ultralytics预处理方式
 
     @staticmethod
-    def preprocess(
-        image: np.ndarray,
-        input_shape: Tuple[int, int]
-    ) -> Tuple[np.ndarray, float, tuple, Optional[tuple]]:
+    def preprocess(image: np.ndarray, input_shape: tuple[int, int]) -> tuple[np.ndarray, float, tuple, tuple | None]:
         """
         YOLO预处理静态方法 (统一使用Ultralytics风格)
 
@@ -79,6 +82,7 @@ class YoloORT(BaseORT):
             使用Ultralytics LetterBox预处理,保持宽高比并填充
         """
         from onnxtools.utils.image_processing import UltralyticsLetterBox
+
         letterbox = UltralyticsLetterBox(new_shape=input_shape)
         input_tensor, scale, original_shape, pad = letterbox(image)
 
@@ -87,10 +91,17 @@ class YoloORT(BaseORT):
         return input_tensor, scale, original_shape, ratio_pad
 
     @staticmethod
-    def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int], conf_thres: float,
-                    iou_thres: float, multi_label: bool, has_objectness: bool,
-                    scale: float = 1.0, ratio_pad: Optional[tuple] = None,
-                    orig_shape: Optional[tuple] = None) -> List[np.ndarray]:
+    def postprocess(
+        prediction: np.ndarray,
+        input_shape: tuple[int, int],
+        conf_thres: float,
+        iou_thres: float,
+        multi_label: bool,
+        has_objectness: bool,
+        scale: float = 1.0,
+        ratio_pad: tuple | None = None,
+        orig_shape: tuple | None = None,
+    ) -> list[np.ndarray]:
         """
         YOLO模型后处理，包含NMS
 
@@ -115,9 +126,11 @@ class YoloORT(BaseORT):
         # 鲁棒的维度判断逻辑：
         # 1. 如果第二维小于第三维，且第二维在合理的特征数范围内(4-200)，则可能是[B, C, N]格式
         # 2. 特征数应该是4+类别数，一般在80-200之间比较合理
-        if (prediction.shape[1] < prediction.shape[2]
-                and 4 <= prediction.shape[1] <= 200
-                and prediction.shape[2] > prediction.shape[1]):
+        if (
+            prediction.shape[1] < prediction.shape[2]
+            and 4 <= prediction.shape[1] <= 200
+            and prediction.shape[2] > prediction.shape[1]
+        ):
             # 转换为我们期望的格式: [B, N, C]
             prediction = prediction.transpose(0, 2, 1)
             logging.info(f"YOLO输出格式自适应转换: {original_shape} -> {prediction.shape}")
@@ -146,7 +159,7 @@ class YoloORT(BaseORT):
             conf_thres=conf_thres,
             iou_thres=iou_thres,
             multi_label=multi_label,
-            has_objectness=has_objectness
+            has_objectness=has_objectness,
         )
 
         # 坐标还原到原图尺寸 (统一使用Ultralytics风格)
@@ -157,11 +170,11 @@ class YoloORT(BaseORT):
 
                 # 使用scale_boxes函数进行坐标还原
                 scaled_boxes = scale_boxes(
-                    img1_shape=input_shape,        # 输入尺寸
-                    boxes=boxes,                   # 检测框坐标
-                    img0_shape=orig_shape,         # 原图尺寸
-                    ratio_pad=ratio_pad,           # ratio和padding信息
-                    padding=True                   # 使用padding
+                    img1_shape=input_shape,  # 输入尺寸
+                    boxes=boxes,  # 检测框坐标
+                    img0_shape=orig_shape,  # 原图尺寸
+                    ratio_pad=ratio_pad,  # ratio和padding信息
+                    padding=True,  # 使用padding
                 )
 
                 # 更新检测结果中的坐标
@@ -181,8 +194,7 @@ class YoloORT(BaseORT):
 
         return detections
 
-    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None,
-                 iou_thres: Optional[float] = None):
+    def __call__(self, image: np.ndarray, conf_thres: float | None = None, iou_thres: float | None = None):
         """对图像执行 YOLO 推理。
 
         Args:

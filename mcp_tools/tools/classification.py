@@ -83,9 +83,7 @@ def register_classification_tools(mcp: "FastMCP") -> None:
             image, _ = await load_image(params.image_path, params.image_source.value)
 
             # Get or create classifier
-            classifier = get_color_layer_classifier(
-                params.model_path, params.conf_threshold
-            )
+            classifier = get_color_layer_classifier(params.model_path, params.conf_threshold)
 
             # Run classification
             result = classifier(image)

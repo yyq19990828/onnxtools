@@ -117,10 +117,14 @@ no-build-isolation-package = [
 [tool.uv.workspace]
 members = ["mcp_vehicle_detection"]
 
-# Ruff 配置 - 用于 Claude Code hook 自动格式化
+# Ruff 配置 - lint + format + isort 三合一
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+extend-exclude = [
+    "docs/polygraphy使用指南",  # 第三方 polygraphy 示例代码,按上游原样保留
+    "third_party",              # 第三方代码不参与 lint
+]
 
 [tool.ruff.lint]
 select = [
@@ -136,6 +140,19 @@ ignore = [
     "B008",   # function call in default argument
     "B905",   # zip without strict
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# tools/ 下多数脚本走 try/except ImportError 探测可用性 + sys.path 操纵后再 import
+"tools/build_engine.py" = ["E402"]
+"tools/compare_onnx_engine.py" = ["E402"]
+"tools/draw_engine.py" = ["F403", "F405"]  # trex 库官方推荐 from trex import *
+"tools/layer_statistics.py" = ["F401"]
+"tools/modify_onnx_io_names.py" = ["F401"]
+# tests/ 用 try-import-except 检测 supervision/pytest_benchmark 等可选依赖
+"tests/integration/test_basic_drawing.py" = ["F401"]
+"tests/integration/test_ocr_integration.py" = ["F401"]
+"tests/integration/test_supervision_only.py" = ["F401"]
+"tests/performance/test_result_plot_benchmark.py" = ["F401"]
 
 [tool.ruff.format]
 quote-style = "double"

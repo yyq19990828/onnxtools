@@ -35,21 +35,21 @@ RUN = "runs"
 # This makes `from onnxtools.infer_onnx import *` behave nicely, exporting only these names.
 __all__ = [
     # Detection base and implementations
-    'BaseORT',
-    'YoloORT',
-    'RtdetrORT',
-    'RfdetrORT',
-    'RfdetrUnifiedORT',
+    "BaseORT",
+    "YoloORT",
+    "RtdetrORT",
+    "RfdetrORT",
+    "RfdetrUnifiedORT",
     # Classification base and implementations
-    'BaseClsORT',
-    'ClsResult',
-    'ColorLayerORT',
-    'HelmetORT',
-    'VehicleAttributeORT',
+    "BaseClsORT",
+    "ClsResult",
+    "ColorLayerORT",
+    "HelmetORT",
+    "VehicleAttributeORT",
     # OCR
-    'OcrORT',
+    "OcrORT",
     # Result classes
-    'Result',
+    "Result",
     # Constants
-    'RUN'
+    "RUN",
 ]

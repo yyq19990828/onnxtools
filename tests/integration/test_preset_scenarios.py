@@ -116,8 +116,8 @@ class TestPresetScenarios:
             results[preset_name] = result
 
         # At least some presets should produce different results
-        standard_result = results[Presets.STANDARD]
-        lightweight_result = results[Presets.LIGHTWEIGHT]
+        results[Presets.STANDARD]
+        results[Presets.LIGHTWEIGHT]
 
         # They might be the same in some edge cases, but typically different
         # Just verify they all rendered successfully

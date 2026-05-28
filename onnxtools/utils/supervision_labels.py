@@ -1,6 +1,6 @@
 """Label generation functions for supervision annotators."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -19,8 +19,8 @@ def _format_tracker_prefix(tracker_id: Any) -> str:
 
 def create_confidence_labels(
     scores: np.ndarray,
-    tracker_ids: Optional[Any] = None,
-) -> List[str]:
+    tracker_ids: Any | None = None,
+) -> list[str]:
     """
     Create labels with confidence scores only, optionally prefixed by tracker id.
 
@@ -34,20 +34,17 @@ def create_confidence_labels(
     """
     if tracker_ids is None:
         return [f"{float(score):.2f}" for score in scores]
-    return [
-        f"{_format_tracker_prefix(tid)}{float(score):.2f}"
-        for score, tid in zip(scores, tracker_ids)
-    ]
+    return [f"{_format_tracker_prefix(tid)}{float(score):.2f}" for score, tid in zip(scores, tracker_ids)]
 
 
 def create_ocr_labels(
     boxes: np.ndarray,
     scores: np.ndarray,
     class_ids: np.ndarray,
-    plate_results: List[Optional[Dict[str, Any]]],
-    class_names: Union[Dict[int, str], List[str]],
-    tracker_ids: Optional[Any] = None,
-) -> List[str]:
+    plate_results: list[dict[str, Any] | None],
+    class_names: dict[int, str] | list[str],
+    tracker_ids: Any | None = None,
+) -> list[str]:
     """
     Create labels for detections including OCR information for plate class.
 
@@ -77,9 +74,7 @@ def create_ocr_labels(
         class_id = int(class_ids[i])
         confidence = float(scores[i])
         tracker_prefix = (
-            _format_tracker_prefix(tracker_ids[i])
-            if tracker_ids is not None and i < len(tracker_ids)
-            else ""
+            _format_tracker_prefix(tracker_ids[i]) if tracker_ids is not None and i < len(tracker_ids) else ""
         )
 
         # Get class name
@@ -96,9 +91,12 @@ def create_ocr_labels(
         base_label = f"{tracker_prefix}{class_name} {confidence:.2f}"
 
         # Add OCR information if available
-        if (i < len(plate_results) and plate_results[i] is not None
-                and class_name == 'plate' and isinstance(plate_results[i], dict)):
-
+        if (
+            i < len(plate_results)
+            and plate_results[i] is not None
+            and class_name == "plate"
+            and isinstance(plate_results[i], dict)
+        ):
             plate_result = plate_results[i]
             if plate_result.get("should_display_ocr", False):
                 ocr_text = plate_result.get("plate_text", "")

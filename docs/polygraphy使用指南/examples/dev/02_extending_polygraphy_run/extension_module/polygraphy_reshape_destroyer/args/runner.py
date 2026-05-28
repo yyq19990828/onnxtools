@@ -25,6 +25,7 @@ from polygraphy import mod
 from polygraphy.tools.args import util as args_util
 from polygraphy.tools.args.base import BaseRunnerArgs
 from polygraphy.tools.script import make_invocable
+
 from polygraphy_reshape_destroyer.args.loader import ReplaceReshapeArgs
 
 
@@ -71,14 +72,10 @@ class IdentityOnlyRunnerArgs(BaseRunnerArgs):
         loader_name = self.arg_groups[ReplaceReshapeArgs].add_to_script(script)
 
         # 接下来，我们将为我们的运行器添加一个导入。
-        script.add_import(
-            imports=["IdentityOnlyRunner"], frm="polygraphy_reshape_destroyer.backend"
-        )
+        script.add_import(imports=["IdentityOnlyRunner"], frm="polygraphy_reshape_destroyer.backend")
         # 最后，我们可以使用 `Script.add_runner()` API 添加我们的运行器。
         # 与加载器实现一样，可以直接向 `make_invocable` 提供额外的参数。
-        script.add_runner(
-            make_invocable("IdentityOnlyRunner", loader_name, speed=self.speed)
-        )
+        script.add_runner(make_invocable("IdentityOnlyRunner", loader_name, speed=self.speed))
 
         # 注意：与常规 `BaseArgs` 的 `add_to_script_impl` 方法不同，`BaseRunnerArgs` 的该方法
         #       不需要返回任何内容。

@@ -4,16 +4,21 @@ Model management utilities for MCP tools.
 Provides lazy loading and caching of ONNX models.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from ..config import DEFAULT_CONF_THRESHOLD, DEFAULT_IOU_THRESHOLD, MAX_CACHED_MODELS
+
+if TYPE_CHECKING:
+    from onnxtools import BaseORT, ColorLayerORT, OcrORT
 
 logger = logging.getLogger(__name__)
 
 # Global model cache
-_model_cache: Dict[str, Any] = {}
+_model_cache: dict[str, Any] = {}
 
 
 def get_detector(
@@ -21,7 +26,7 @@ def get_detector(
     model_type: str,
     conf_thres: float = DEFAULT_CONF_THRESHOLD,
     iou_thres: float = DEFAULT_IOU_THRESHOLD,
-) -> "BaseORT":
+) -> BaseORT:
     """Get or create detector instance with lazy loading.
 
     Args:
@@ -49,10 +54,7 @@ def get_detector(
 
         supported_types = ["yolo", "rtdetr", "rfdetr"]
         if model_type not in supported_types:
-            raise ValueError(
-                f"Unsupported model type: {model_type}. "
-                f"Supported types: {supported_types}"
-            )
+            raise ValueError(f"Unsupported model type: {model_type}. Supported types: {supported_types}")
 
         _model_cache[cache_key] = create_detector(
             model_type=model_type,
@@ -68,8 +70,8 @@ def get_detector(
 def get_ocr_model(
     model_path: str,
     conf_thres: float = DEFAULT_CONF_THRESHOLD,
-    plate_config_path: Optional[str] = None,
-) -> "OcrORT":
+    plate_config_path: str | None = None,
+) -> OcrORT:
     """Get or create OCR model instance with lazy loading.
 
     Args:
@@ -106,7 +108,7 @@ def get_ocr_model(
 def get_color_layer_classifier(
     model_path: str,
     conf_thres: float = DEFAULT_CONF_THRESHOLD,
-) -> "ColorLayerORT":
+) -> ColorLayerORT:
     """Get or create color/layer classifier instance with lazy loading.
 
     Args:
@@ -153,7 +155,7 @@ def clear_cache() -> None:
     logger.info("Model cache cleared")
 
 
-def get_cache_info() -> Dict[str, Any]:
+def get_cache_info() -> dict[str, Any]:
     """Get information about cached models.
 
     Returns:

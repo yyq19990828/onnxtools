@@ -4,8 +4,6 @@
 存放经过 ONNX 图改造后的模型对应推理类，用于快速验证和原型开发。
 """
 
-from typing import List, Optional, Tuple
-
 import cv2
 import numpy as np
 
@@ -22,13 +20,19 @@ class RfdetrUnifiedORT(BaseORT):
     - 单输出: [batch, 300, 4+num_classes] = concat(pred_boxes, pred_logits)
     """
 
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
-                 conf_thres: float = 0.001, iou_thres: float = 0.5,
-                 providers: Optional[List[str]] = None, **kwargs):
+    def __init__(
+        self,
+        onnx_path: str,
+        input_shape: tuple[int, int] = (640, 640),
+        conf_thres: float = 0.001,
+        iou_thres: float = 0.5,
+        providers: list[str] | None = None,
+        **kwargs,
+    ):
         super().__init__(onnx_path, input_shape, conf_thres, providers, **kwargs)
 
     @staticmethod
-    def preprocess(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
+    def preprocess(image: np.ndarray, input_shape: tuple[int, int]) -> tuple[np.ndarray, float, tuple]:
         """
         预处理: 直接 resize + /255 归一化 (与 RT-DETR 一致)
 
@@ -61,8 +65,7 @@ class RfdetrUnifiedORT(BaseORT):
         return tensor, scale, original_shape
 
     @staticmethod
-    def postprocess(outputs: list, input_shape: Tuple[int, int],
-                    conf_thres: float, **kwargs) -> List[np.ndarray]:
+    def postprocess(outputs: list, input_shape: tuple[int, int], conf_thres: float, **kwargs) -> list[np.ndarray]:
         """
         后处理: sigmoid 激活 + 全局 topk (保留 RF-DETR 原始逻辑)
 
@@ -83,15 +86,15 @@ class RfdetrUnifiedORT(BaseORT):
         bs = preds.shape[0]
 
         # 分离 bbox 和 logits
-        pred_boxes = preds[:, :, :4]    # [batch, 300, 4] cxcywh 归一化
-        pred_logits = preds[:, :, 4:]   # [batch, 300, num_classes] raw logits
+        pred_boxes = preds[:, :, :4]  # [batch, 300, 4] cxcywh 归一化
+        pred_logits = preds[:, :, 4:]  # [batch, 300, num_classes] raw logits
         num_classes = pred_logits.shape[2]
 
         results = []
 
         for i in range(bs):
-            out_bbox = pred_boxes[i]      # [300, 4]
-            out_logits = pred_logits[i]   # [300, num_classes]
+            out_bbox = pred_boxes[i]  # [300, 4]
+            out_logits = pred_logits[i]  # [300, num_classes]
 
             # sigmoid 激活
             prob = 1.0 / (1.0 + np.exp(-out_logits))
@@ -113,15 +116,17 @@ class RfdetrUnifiedORT(BaseORT):
             w = np.clip(w, a_min=0.0, a_max=None)
             h = np.clip(h, a_min=0.0, a_max=None)
 
-            boxes_xyxy = np.column_stack([
-                x_c - 0.5 * w,
-                y_c - 0.5 * h,
-                x_c + 0.5 * w,
-                y_c + 0.5 * h,
-            ])
+            boxes_xyxy = np.column_stack(
+                [
+                    x_c - 0.5 * w,
+                    y_c - 0.5 * h,
+                    x_c + 0.5 * w,
+                    y_c + 0.5 * h,
+                ]
+            )
 
             # 缩放到原图尺寸
-            orig_shape = kwargs.get('orig_shape', None)
+            orig_shape = kwargs.get("orig_shape", None)
             if orig_shape is not None:
                 orig_h, orig_w = orig_shape
                 scale_fct = np.array([orig_w, orig_h, orig_w, orig_h])
@@ -133,11 +138,13 @@ class RfdetrUnifiedORT(BaseORT):
             # 置信度过滤
             mask = scores > conf_thres
             if np.any(mask):
-                pred = np.column_stack([
-                    boxes_xyxy[mask],
-                    scores[mask],
-                    labels[mask],
-                ])
+                pred = np.column_stack(
+                    [
+                        boxes_xyxy[mask],
+                        scores[mask],
+                        labels[mask],
+                    ]
+                )
             else:
                 pred = np.zeros((0, 6))
 
@@ -150,15 +157,13 @@ class RfdetrUnifiedORT(BaseORT):
         input_tensor, scale, original_shape = self.preprocess(image, self.input_shape)
         return input_tensor, scale, original_shape, None
 
-    def _finalize_inference(self, outputs, expected_batch_size, scale,
-                            ratio_pad, conf_thres, orig_shape=None, **kwargs):
+    def _finalize_inference(
+        self, outputs, expected_batch_size, scale, ratio_pad, conf_thres, orig_shape=None, **kwargs
+    ):
         """重写: 使用自身的 postprocess (单输出 + sigmoid + topk)"""
         effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
 
-        detections = self.postprocess(
-            outputs, self.input_shape, effective_conf_thres,
-            orig_shape=orig_shape, **kwargs
-        )
+        detections = self.postprocess(outputs, self.input_shape, effective_conf_thres, orig_shape=orig_shape, **kwargs)
 
         if expected_batch_size > 1 and len(detections) > 1:
             detections = [detections[0]]

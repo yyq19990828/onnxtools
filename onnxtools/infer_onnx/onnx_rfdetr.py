@@ -8,7 +8,6 @@ RF-DETR模型ORT推理类
 """
 
 import logging
-from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -29,9 +28,15 @@ class RfdetrORT(BaseORT):
         >>> result = det(image)               # Result 对象
     """
 
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (576, 576),
-                 conf_thres: float = 0.001, iou_thres: float = 0.5,
-                 providers: Optional[List[str]] = None, **kwargs):
+    def __init__(
+        self,
+        onnx_path: str,
+        input_shape: tuple[int, int] = (576, 576),
+        conf_thres: float = 0.001,
+        iou_thres: float = 0.5,
+        providers: list[str] | None = None,
+        **kwargs,
+    ):
         """
         初始化RF-DETR检测器
 
@@ -50,9 +55,9 @@ class RfdetrORT(BaseORT):
     def _validate_rf_detr_format(self):
         """验证RF-DETR输出格式"""
         # 使用ONNX Runtime会话进行验证
-        dummy_input = np.random.randn(
-            self._expected_batch_size, 3, self.input_shape[0], self.input_shape[1]
-        ).astype(np.float32)
+        dummy_input = np.random.randn(self._expected_batch_size, 3, self.input_shape[0], self.input_shape[1]).astype(
+            np.float32
+        )
 
         feed_dict = {self.input_name: dummy_input}
         outputs = self._onnx_session.run(self.output_names, feed_dict)
@@ -70,7 +75,7 @@ class RfdetrORT(BaseORT):
             logging.warning(f"警告: pred_logits形状 {pred_logits_shape} 与pred_boxes不匹配")
 
     @staticmethod
-    def preprocess(image: np.ndarray, input_shape: Tuple[int, int]) -> Tuple[np.ndarray, float, tuple]:
+    def preprocess(image: np.ndarray, input_shape: tuple[int, int]) -> tuple[np.ndarray, float, tuple]:
         """
         RF-DETR预处理静态方法（对齐原始实现）
 
@@ -115,9 +120,11 @@ class RfdetrORT(BaseORT):
 
     @staticmethod
     def postprocess(
-        outputs: List[np.ndarray], input_shape: Tuple[int, int],
-        conf_thres: float, **kwargs,
-    ) -> List[np.ndarray]:
+        outputs: list[np.ndarray],
+        input_shape: tuple[int, int],
+        conf_thres: float,
+        **kwargs,
+    ) -> list[np.ndarray]:
         """
         RF-DETR后处理逻辑（对齐原始实现）
 
@@ -150,7 +157,7 @@ class RfdetrORT(BaseORT):
         # 为每个batch中的图像处理
         for i in range(bs):
             out_logits = pred_logits[i]  # [300, 15]
-            out_bbox = pred_boxes[i]     # [300, 4]
+            out_bbox = pred_boxes[i]  # [300, 4]
 
             # 使用sigmoid激活（对齐原始实现）
             prob = 1.0 / (1.0 + np.exp(-out_logits))  # sigmoid
@@ -168,7 +175,7 @@ class RfdetrORT(BaseORT):
 
             # 计算对应的box和label索引
             topk_boxes_idx = topk_indices // num_classes  # 对应的query索引
-            labels = topk_indices % num_classes           # 对应的类别索引
+            labels = topk_indices % num_classes  # 对应的类别索引
 
             # 提取对应的bbox
             boxes = out_bbox[topk_boxes_idx]  # [num_select, 4]
@@ -187,7 +194,7 @@ class RfdetrORT(BaseORT):
 
             # 缩放到原图尺寸（从归一化坐标[0,1]到像素坐标）
             # 如果有orig_shape参数，直接缩放到原图；否则缩放到输入尺寸
-            orig_shape = kwargs.get('orig_shape', None)
+            orig_shape = kwargs.get("orig_shape", None)
             if orig_shape is not None:
                 # 直接缩放到原图尺寸
                 orig_h, orig_w = orig_shape  # (H, W)

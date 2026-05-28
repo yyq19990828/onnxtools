@@ -20,6 +20,7 @@
 这个脚本演示了如何使用示例 03 中介绍的 extend() API
 来使用 TensorRT 网络 API 构建 TensorRT 网络。
 """
+
 import numpy as np
 import tensorrt as trt
 from polygraphy import func
@@ -36,12 +37,8 @@ OUTPUT_NAME = "output"
 def create_network(builder, network):
     # 这个网络会将输入张量加 1。
     inp = network.add_input(name=INPUT_NAME, shape=INPUT_SHAPE, dtype=trt.float32)
-    ones = network.add_constant(
-        shape=INPUT_SHAPE, weights=np.ones(shape=INPUT_SHAPE, dtype=np.float32)
-    ).get_output(0)
-    add = network.add_elementwise(
-        inp, ones, op=trt.ElementWiseOperation.SUM
-    ).get_output(0)
+    ones = network.add_constant(shape=INPUT_SHAPE, weights=np.ones(shape=INPUT_SHAPE, dtype=np.float32)).get_output(0)
+    add = network.add_elementwise(inp, ones, op=trt.ElementWiseOperation.SUM).get_output(0)
     add.name = OUTPUT_NAME
     network.mark_output(add)
 
@@ -56,9 +53,7 @@ def main():
     build_engine = EngineFromNetwork(create_network)
 
     with TrtRunner(build_engine) as runner:
-        feed_dict = {
-            INPUT_NAME: np.random.random_sample(INPUT_SHAPE).astype(np.float32)
-        }
+        feed_dict = {INPUT_NAME: np.random.random_sample(INPUT_SHAPE).astype(np.float32)}
 
         # 注意: 运行器拥有输出缓冲区，并可以在 `infer()` 调用之间自由重用它们。
         # 因此，如果要存储多次推理的结果，应使用 `copy.deepcopy()`。

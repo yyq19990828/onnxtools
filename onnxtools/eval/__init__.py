@@ -9,10 +9,10 @@ from .eval_coco import DetDatasetEvaluator
 from .eval_ocr import OCRDatasetEvaluator, SampleEvaluation
 
 __all__ = [
-    'DetDatasetEvaluator',
-    'OCRDatasetEvaluator',
-    'SampleEvaluation',
-    'ClsDatasetEvaluator',
-    'ClsSampleEvaluation',
-    'BranchConfig',
+    "DetDatasetEvaluator",
+    "OCRDatasetEvaluator",
+    "SampleEvaluation",
+    "ClsDatasetEvaluator",
+    "ClsSampleEvaluation",
+    "BranchConfig",
 ]

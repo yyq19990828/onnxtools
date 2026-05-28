@@ -8,19 +8,14 @@ Provides core OCR evaluation metrics including:
 """
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import Levenshtein
 
-__all__ = [
-    'calculate_edit_distance_metrics',
-    'calculate_accuracy',
-    'print_ocr_metrics',
-    'format_ocr_results_json'
-]
+__all__ = ["calculate_edit_distance_metrics", "calculate_accuracy", "print_ocr_metrics", "format_ocr_results_json"]
 
 
-def calculate_edit_distance_metrics(pred: str, gt: str) -> Tuple[int, float, float]:
+def calculate_edit_distance_metrics(pred: str, gt: str) -> tuple[int, float, float]:
     """Calculate edit distance related metrics
 
     Args:
@@ -47,7 +42,7 @@ def calculate_edit_distance_metrics(pred: str, gt: str) -> Tuple[int, float, flo
     return distance, normalized_ed, similarity
 
 
-def calculate_accuracy(predictions: List[Tuple[str, str]]) -> float:
+def calculate_accuracy(predictions: list[tuple[str, str]]) -> float:
     """Calculate complete accuracy (exact match ratio)
 
     Args:
@@ -69,7 +64,7 @@ def calculate_accuracy(predictions: List[Tuple[str, str]]) -> float:
     return correct_count / len(predictions)
 
 
-def print_ocr_metrics(results: Dict[str, Any]) -> None:
+def print_ocr_metrics(results: dict[str, Any]) -> None:
     """Print OCR evaluation metrics with Chinese character alignment
 
     Prints a two-row table format:
@@ -103,19 +98,20 @@ def print_ocr_metrics(results: Dict[str, Any]) -> None:
         统计信息              总样本数          评估数            过滤数            跳过数
         样本统计              1000            980             15              5
     """
+
     # Helper function to calculate display width (Chinese chars = 2, ASCII = 1)
     def display_width(s: str) -> int:
         """Calculate display width considering Chinese characters"""
         width = 0
         for char in s:
             # Chinese characters and full-width chars occupy 2 columns
-            if '\u4e00' <= char <= '\u9fff' or '\uff00' <= char <= '\uffef':
+            if "\u4e00" <= char <= "\u9fff" or "\uff00" <= char <= "\uffef":
                 width += 2
             else:
                 width += 1
         return width
 
-    def pad_string(s: str, target_width: int, align: str = 'center') -> str:
+    def pad_string(s: str, target_width: int, align: str = "center") -> str:
         """Pad string to target display width considering Chinese characters"""
         current_width = display_width(s)
         padding_needed = target_width - current_width
@@ -123,65 +119,65 @@ def print_ocr_metrics(results: Dict[str, Any]) -> None:
         if padding_needed <= 0:
             return s
 
-        if align == 'center':
+        if align == "center":
             left_pad = padding_needed // 2
             right_pad = padding_needed - left_pad
-            return ' ' * left_pad + s + ' ' * right_pad
-        elif align == 'left':
-            return s + ' ' * padding_needed
+            return " " * left_pad + s + " " * right_pad
+        elif align == "left":
+            return s + " " * padding_needed
         else:  # right
-            return ' ' * padding_needed + s
+            return " " * padding_needed + s
 
     # First row: Core metrics header
     header_line1 = (
-        pad_string('指标', 20) +
-        pad_string('完全准确率', 20) +
-        pad_string('归一化编辑距离', 20) +
-        pad_string('编辑距离相似度', 20)
+        pad_string("指标", 20)
+        + pad_string("完全准确率", 20)
+        + pad_string("归一化编辑距离", 20)
+        + pad_string("编辑距离相似度", 20)
     )
     print(header_line1)
 
     # First row: Core metrics values
-    acc = results.get('accuracy', 0)
-    norm_ed = results.get('normalized_edit_distance', 0)
-    ed_sim = results.get('edit_distance_similarity', 0)
+    acc = results.get("accuracy", 0)
+    norm_ed = results.get("normalized_edit_distance", 0)
+    ed_sim = results.get("edit_distance_similarity", 0)
 
     metrics_line = (
-        pad_string('OCR评估', 20) +
-        pad_string(f'{acc:.3f}', 20) +
-        pad_string(f'{norm_ed:.3f}', 20) +
-        pad_string(f'{ed_sim:.3f}', 20)
+        pad_string("OCR评估", 20)
+        + pad_string(f"{acc:.3f}", 20)
+        + pad_string(f"{norm_ed:.3f}", 20)
+        + pad_string(f"{ed_sim:.3f}", 20)
     )
     print(metrics_line)
     print()  # Empty line separator
 
     # Second row: Sample statistics header
     header_line2 = (
-        pad_string('统计信息', 20) +
-        pad_string('总样本数', 15) +
-        pad_string('评估数', 15) +
-        pad_string('过滤数', 15) +
-        pad_string('跳过数', 15)
+        pad_string("统计信息", 20)
+        + pad_string("总样本数", 15)
+        + pad_string("评估数", 15)
+        + pad_string("过滤数", 15)
+        + pad_string("跳过数", 15)
     )
     print(header_line2)
 
     # Second row: Sample statistics values
-    total = results.get('total_samples', 0)
-    evaluated = results.get('evaluated_samples', 0)
-    filtered = results.get('filtered_samples', 0)
-    skipped = results.get('skipped_samples', 0)
+    total = results.get("total_samples", 0)
+    evaluated = results.get("evaluated_samples", 0)
+    filtered = results.get("filtered_samples", 0)
+    skipped = results.get("skipped_samples", 0)
 
     stats_line = (
-        pad_string('样本统计', 20) +
-        pad_string(str(total), 15) +
-        pad_string(str(evaluated), 15) +
-        pad_string(str(filtered), 15) +
-        pad_string(str(skipped), 15)
+        pad_string("样本统计", 20)
+        + pad_string(str(total), 15)
+        + pad_string(str(evaluated), 15)
+        + pad_string(str(filtered), 15)
+        + pad_string(str(skipped), 15)
     )
     print(stats_line)
 
 
-def format_ocr_results_json(results: Dict[str, Any]) -> str:
+def format_ocr_results_json(results: dict[str, Any]) -> str:
     """Format OCR evaluation results as JSON string
 
     Args:

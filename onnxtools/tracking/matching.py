@@ -108,9 +108,7 @@ def fuse_score(cost: np.ndarray, det_scores: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def linear_assignment(
-    cost: np.ndarray, thresh: float
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def linear_assignment(cost: np.ndarray, thresh: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Solve a rectangular linear assignment problem with a cost cutoff.
 
     Args:
@@ -160,17 +158,9 @@ def linear_assignment(
             matched_rows.add(int(r))
             matched_cols.add(int(c))
 
-    matches_arr = (
-        np.asarray(matches, dtype=np.int64).reshape(-1, 2)
-        if matches
-        else np.empty((0, 2), dtype=np.int64)
-    )
-    unmatched_a = np.array(
-        [i for i in range(n) if i not in matched_rows], dtype=np.int64
-    )
-    unmatched_b = np.array(
-        [j for j in range(m) if j not in matched_cols], dtype=np.int64
-    )
+    matches_arr = np.asarray(matches, dtype=np.int64).reshape(-1, 2) if matches else np.empty((0, 2), dtype=np.int64)
+    unmatched_a = np.array([i for i in range(n) if i not in matched_rows], dtype=np.int64)
+    unmatched_b = np.array([j for j in range(m) if j not in matched_cols], dtype=np.int64)
     return matches_arr, unmatched_a, unmatched_b
 
 

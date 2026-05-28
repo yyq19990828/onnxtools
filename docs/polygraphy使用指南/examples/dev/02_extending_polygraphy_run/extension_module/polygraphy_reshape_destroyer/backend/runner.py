@@ -59,9 +59,7 @@ class IdentityOnlyRunner(BaseRunner):
         VALID_SPEEDS = ["slow", "medium", "fast"]
         if self.speed not in VALID_SPEEDS:
             # 与 Polygraphy 一样，扩展模块应该对任何不可恢复的错误使用 `G_LOGGER.critical()`。
-            G_LOGGER.critical(
-                f"Invalid speed: {self.speed}. Note: Valid speeds are: {VALID_SPEEDS}"
-            )
+            G_LOGGER.critical(f"Invalid speed: {self.speed}. Note: Valid speeds are: {VALID_SPEEDS}")
 
     @util.check_called_by("activate")
     def activate_impl(self):

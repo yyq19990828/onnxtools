@@ -9,7 +9,7 @@ Recommended usage:
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -19,6 +19,7 @@ from onnxtools.utils.drawing import draw_detections
 try:
     from .utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
     from .utils.supervision_preset import VisualizationPreset
+
     ANNOTATOR_AVAILABLE = True
 except ImportError:
     ANNOTATOR_AVAILABLE = False
@@ -30,6 +31,7 @@ except ImportError:
 # This is the recommended way to perform inference. It encapsulates all
 # functionality in a single, easy-to-use class.
 # ==============================================================================
+
 
 class InferencePipeline:
     """完整的推理管道类,封装检测、OCR识别和可视化功能。
@@ -62,21 +64,21 @@ class InferencePipeline:
         conf_thres: float = 0.5,
         iou_thres: float = 0.5,
         roi_top_ratio: float = 0.5,
-        plate_conf_thres: Optional[float] = None,
-        color_layer_model: str = 'models/color_layer.onnx',
-        ocr_model: str = 'models/ocr.onnx',
-        plate_yaml_path: str = 'configs/plate.yaml',
-        det_config: Optional[Union[str, Dict[int, str]]] = None,
-        annotator_preset: Optional[str] = None,
-        annotator_types: Optional[List[str]] = None,
+        plate_conf_thres: float | None = None,
+        color_layer_model: str = "models/color_layer.onnx",
+        ocr_model: str = "models/ocr.onnx",
+        plate_yaml_path: str = "configs/plate.yaml",
+        det_config: str | dict[int, str] | None = None,
+        annotator_preset: str | None = None,
+        annotator_types: list[str] | None = None,
         enable_tracking: bool = False,
         tracker_algo: str = "bytetrack",
         track_activation_threshold: float = 0.25,
         lost_track_buffer: int = 30,
         minimum_matching_threshold: float = 0.8,
         track_frame_rate: int = 30,
-        tracker_extra_kwargs: Optional[Dict[str, Any]] = None,
-        **kwargs
+        tracker_extra_kwargs: dict[str, Any] | None = None,
+        **kwargs,
     ):
         """初始化推理管道。
 
@@ -119,19 +121,16 @@ class InferencePipeline:
         self.tracker = None
         if self.enable_tracking:
             from onnxtools.tracking import create_tracker
+
             self.tracker = create_tracker(tracker_algo, **self._tracker_kwargs)
-            logging.info(
-                "Tracker '%s' enabled with kwargs=%s", tracker_algo, self._tracker_kwargs
-            )
+            logging.info("Tracker '%s' enabled with kwargs=%s", tracker_algo, self._tracker_kwargs)
 
         # 初始化检测器
         try:
             from onnxtools import create_detector
+
             self.detector = create_detector(
-                model_type=model_type,
-                onnx_path=model_path,
-                conf_thres=conf_thres,
-                iou_thres=iou_thres
+                model_type=model_type, onnx_path=model_path, conf_thres=conf_thres, iou_thres=iou_thres
             )
             logging.info(f"Initialized {model_type} detector from {model_path}")
         except Exception as e:
@@ -140,14 +139,9 @@ class InferencePipeline:
 
         # 初始化颜色/层级分类器和OCR模型(使用新API,自动加载配置)
         from onnxtools import ColorLayerORT, OcrORT
-        self.color_layer_classifier = ColorLayerORT(
-            color_layer_model,
-            plate_config_path=plate_yaml_path
-        )
-        self.ocr_model = OcrORT(
-            ocr_model,
-            plate_config_path=plate_yaml_path
-        )
+
+        self.color_layer_classifier = ColorLayerORT(color_layer_model, plate_config_path=plate_yaml_path)
+        self.ocr_model = OcrORT(ocr_model, plate_config_path=plate_yaml_path)
         logging.info("Initialized color/layer classifier and OCR model")
 
         # 保存character用于向后兼容
@@ -206,12 +200,7 @@ class InferencePipeline:
             if self.annotator_pipeline:
                 logging.info("Annotator pipeline initialized successfully")
 
-    def _create_annotator_pipeline(
-        self,
-        preset: Optional[str],
-        types: Optional[List[str]],
-        **kwargs
-    ) -> tuple:
+    def _create_annotator_pipeline(self, preset: str | None, types: list[str] | None, **kwargs) -> tuple:
         """创建annotator管道。
 
         Returns:
@@ -242,13 +231,13 @@ class InferencePipeline:
                     # 根据类型配置参数
                     if ann_type == AnnotatorType.ROUND_BOX:
                         config = {
-                            'thickness': kwargs.get('box_thickness', 2),
-                            'roundness': kwargs.get('roundness', 0.3)
+                            "thickness": kwargs.get("box_thickness", 2),
+                            "roundness": kwargs.get("roundness", 0.3),
                         }
                     elif ann_type == AnnotatorType.BLUR:
-                        config = {'kernel_size': kwargs.get('blur_kernel_size', 15)}
+                        config = {"kernel_size": kwargs.get("blur_kernel_size", 15)}
                     elif ann_type in [AnnotatorType.BOX, AnnotatorType.BOX_CORNER]:
-                        config = {'thickness': kwargs.get('box_thickness', 2)}
+                        config = {"thickness": kwargs.get("box_thickness", 2)}
 
                     pipeline.add(ann_type, config)
                 except ValueError:
@@ -258,10 +247,7 @@ class InferencePipeline:
 
         return None, None
 
-    def __call__(
-        self,
-        frame: np.ndarray
-    ) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+    def __call__(self, frame: np.ndarray) -> tuple[np.ndarray, list[dict[str, Any]]]:
         """执行完整的推理管道。
 
         Args:
@@ -284,8 +270,8 @@ class InferencePipeline:
     def _align_tracker_ids(
         boxes: np.ndarray,
         sv_detections,
-        output_data: List[Dict[str, Any]],
-    ) -> Optional[np.ndarray]:
+        output_data: list[dict[str, Any]],
+    ) -> np.ndarray | None:
         """Align ByteTrack's tracker_id back to per-detection order and JSON output.
 
         ByteTrack may drop unmatched detections, so it returns a Detections object
@@ -302,7 +288,7 @@ class InferencePipeline:
             Returns None if no ids were assigned (e.g. empty tracker output).
         """
         n = len(boxes)
-        per_box_ids: List[Optional[int]] = [None] * n
+        per_box_ids: list[int | None] = [None] * n
         tracked_ids = getattr(sv_detections, "tracker_id", None)
         if tracked_ids is not None and len(sv_detections) > 0:
             tracked_xyxy = sv_detections.xyxy
@@ -330,7 +316,7 @@ class InferencePipeline:
     def _map_tracked_to_original(
         boxes: np.ndarray,
         tracked_xyxy: np.ndarray,
-    ) -> List[int]:
+    ) -> list[int]:
         """Return original-detection indices for each tracked detection.
 
         ByteTrack preserves box coordinates exactly, so a near-zero L1 distance
@@ -343,10 +329,7 @@ class InferencePipeline:
         Returns:
             List of length M with original indices into ``boxes``.
         """
-        return [
-            int(np.argmin(np.abs(boxes - tracked_xyxy[i]).sum(axis=1)))
-            for i in range(len(tracked_xyxy))
-        ]
+        return [int(np.argmin(np.abs(boxes - tracked_xyxy[i]).sum(axis=1))) for i in range(len(tracked_xyxy))]
 
     def reset_tracker(self) -> None:
         """Reset tracker state — call between videos/cameras to restart IDs from 1.
@@ -357,7 +340,7 @@ class InferencePipeline:
             self.tracker.reset()
             logging.debug("Tracker '%s' state reset", self._tracker_algo)
 
-    def _process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+    def _process_frame(self, frame: np.ndarray) -> tuple[np.ndarray, list[dict[str, Any]]]:
         """内部推理处理流程，供__call__复用并便于子类覆盖."""
         # 1. Object Detection - now returns Result object
         result = self.detector(frame)
@@ -395,7 +378,7 @@ class InferencePipeline:
                 class_name = self.class_names[int(cls)] if int(cls) < len(self.class_names) else "unknown"
 
                 # Apply specific confidence threshold for plates
-                if class_name == 'plate' and conf < plate_conf_thres:
+                if class_name == "plate" and conf < plate_conf_thres:
                     plate_results.append(None)  # Keep lists in sync
                     continue
 
@@ -407,7 +390,7 @@ class InferencePipeline:
                 plate_text, color_str, layer_str = "", "", ""
                 plate_info = None
 
-                if class_name == 'plate':
+                if class_name == "plate":
                     exp_x1 = int(max(0, x1 - w * 0.1))
                     exp_y1 = int(max(0, y1 - h * 0.1))
                     exp_x2 = int(min(w_img, x2 + w * 0.1))
@@ -419,7 +402,7 @@ class InferencePipeline:
                         color_str, layer_str, color_conf = self.color_layer_classifier(plate_img)
 
                         # Use new API: OCRONNX.__call__() returns Optional[(text, avg_conf, char_confs)]
-                        is_double = (layer_str == "double")
+                        is_double = layer_str == "double"
                         ocr_result = self.ocr_model(plate_img, is_double_layer=is_double)
                         plate_text = ocr_result[0] if ocr_result else ""
 
@@ -427,33 +410,41 @@ class InferencePipeline:
                         should_display_ocr = (y1 >= roi_top_pixel) and (w > 50)
 
                         plate_info = {
-                            "plate_text": plate_text, "color": color_str, "layer": layer_str,
-                            "should_display_ocr": should_display_ocr
+                            "plate_text": plate_text,
+                            "color": color_str,
+                            "layer": layer_str,
+                            "should_display_ocr": should_display_ocr,
                         }
 
                 plate_results.append(plate_info)
 
                 # Populate JSON data regardless of display logic
-                if class_name == 'plate':
-                    output_data.append({
-                        "plate_box2d": float_xyxy, "plate_name": plate_text,
-                        "plate_color": color_str, "plate_layer": layer_str,
-                        "width": w, "height": h
-                    })
+                if class_name == "plate":
+                    output_data.append(
+                        {
+                            "plate_box2d": float_xyxy,
+                            "plate_name": plate_text,
+                            "plate_color": color_str,
+                            "plate_layer": layer_str,
+                            "width": w,
+                            "height": h,
+                        }
+                    )
                 else:
-                    output_data.append({
-                        "type": class_name, "box2d": float_xyxy, "color": "unknown",
-                        "width": w, "height": h
-                    })
+                    output_data.append(
+                        {"type": class_name, "box2d": float_xyxy, "color": "unknown", "width": w, "height": h}
+                    )
 
         # 2.5 Tracking (optional). Must run every frame — including frames with
         # zero detections — so lost_track_buffer ages correctly.
         tracked_sv_detections = None
-        tracker_ids: Optional[np.ndarray] = None
+        tracker_ids: np.ndarray | None = None
         if self.tracker is not None:
             import supervision as sv
+
             if len(result) > 0:
                 from onnxtools.infer_onnx import Result
+
                 track_input = Result(
                     boxes=boxes,
                     scores=scores,
@@ -467,9 +458,7 @@ class InferencePipeline:
                 track_input = sv.Detections.empty()
             tracked_sv_detections = self.tracker.update(track_input, frame)
             if len(result) > 0:
-                tracker_ids = self._align_tracker_ids(
-                    boxes, tracked_sv_detections, output_data
-                )
+                tracker_ids = self._align_tracker_ids(boxes, tracked_sv_detections, output_data)
 
         # 3. Draw detections
         # Use annotator pipeline if available, otherwise fall back to legacy drawing
@@ -478,6 +467,7 @@ class InferencePipeline:
             if len(result) > 0:
                 # Create a modified Result with clipped boxes for visualization
                 from onnxtools.infer_onnx import Result
+
                 vis_result = Result(
                     boxes=boxes,
                     scores=scores,
@@ -485,15 +475,13 @@ class InferencePipeline:
                     orig_shape=result.orig_shape,
                     names=result.names,
                     path=result.path,
-                    orig_img=frame
+                    orig_img=frame,
                 )
                 # Prefer the already-tracked detections if tracking is enabled
                 # (avoids running ByteTrack twice and ensures visualisations carry
                 # the same tracker_ids that landed in output_data).
                 sv_detections = (
-                    tracked_sv_detections
-                    if tracked_sv_detections is not None
-                    else vis_result.to_supervision()
+                    tracked_sv_detections if tracked_sv_detections is not None else vis_result.to_supervision()
                 )
 
                 # Import label creation functions
@@ -509,9 +497,7 @@ class InferencePipeline:
                     class_ids_lbl = class_ids[kept]
                     plate_results_lbl = [plate_results[i] for i in kept]
                     tracker_ids_lbl = (
-                        sv_detections.tracker_id
-                        if getattr(sv_detections, "tracker_id", None) is not None
-                        else None
+                        sv_detections.tracker_id if getattr(sv_detections, "tracker_id", None) is not None else None
                     )
                 else:
                     boxes_lbl = boxes
@@ -525,7 +511,11 @@ class InferencePipeline:
                     labels = create_confidence_labels(scores_lbl, tracker_ids=tracker_ids_lbl)
                 else:
                     labels = create_ocr_labels(
-                        boxes_lbl, scores_lbl, class_ids_lbl, plate_results_lbl, self.class_names,
+                        boxes_lbl,
+                        scores_lbl,
+                        class_ids_lbl,
+                        plate_results_lbl,
+                        self.class_names,
                         tracker_ids=tracker_ids_lbl,
                     )
 
@@ -537,17 +527,12 @@ class InferencePipeline:
             # Fall back to legacy drawing system
             if len(result) > 0:
                 # Convert boxes to old format [N, 6] with conf and cls
-                detections_array = np.concatenate([
-                    boxes,
-                    scores.reshape(-1, 1),
-                    class_ids.reshape(-1, 1)
-                ], axis=1)
+                detections_array = np.concatenate([boxes, scores.reshape(-1, 1), class_ids.reshape(-1, 1)], axis=1)
                 scaled_detections_for_drawing = [detections_array]
             else:
                 scaled_detections_for_drawing = []
             result_frame = draw_detections(
-                frame.copy(), scaled_detections_for_drawing, self.class_names, self.colors,
-                plate_results=plate_results
+                frame.copy(), scaled_detections_for_drawing, self.class_names, self.colors, plate_results=plate_results
             )
 
         return result_frame, output_data

@@ -1,10 +1,9 @@
 """Font detection utilities for cross-platform Chinese font support."""
 
 import os
-from typing import Optional
 
 
-def get_chinese_font_path() -> Optional[str]:
+def get_chinese_font_path() -> str | None:
     """
     Get Chinese font path with cross-platform support.
 
@@ -50,7 +49,7 @@ def validate_font_path(font_path: str) -> bool:
         return False
 
 
-def get_fallback_font_path(preferred_path: Optional[str] = None) -> Optional[str]:
+def get_fallback_font_path(preferred_path: str | None = None) -> str | None:
     """
     Get font path with fallback support.
 

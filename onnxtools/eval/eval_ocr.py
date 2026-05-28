@@ -21,11 +21,11 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import cv2
 
-__all__ = ['OCRDatasetEvaluator', 'SampleEvaluation']
+__all__ = ["OCRDatasetEvaluator", "SampleEvaluation"]
 
 
 @dataclass
@@ -54,6 +54,7 @@ class SampleEvaluation:
         >>> sample.is_correct
         True
     """
+
     image_path: str
     ground_truth: str
     predicted_text: str
@@ -89,7 +90,7 @@ class OCRDatasetEvaluator:
     """
 
     @staticmethod
-    def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, str]]:
+    def load_label_file(label_file: str, dataset_base_path: str) -> list[tuple[str, str]]:
         """Load label file with tab-separated format
 
         Supports two formats:
@@ -124,13 +125,13 @@ class OCRDatasetEvaluator:
         dataset = []
         base_path = Path(dataset_base_path)
 
-        with open(label_file, 'r', encoding='utf-8') as f:
+        with open(label_file, encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:  # Skip empty lines
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) != 2:
                     logging.warning(f"Skipping line {line_num}: Invalid format (expected tab-separated)")
                     continue
@@ -139,7 +140,7 @@ class OCRDatasetEvaluator:
 
                 # Check if image_path is a JSON array (multiple images)
                 image_paths = []
-                if image_path_str.startswith('[') and image_path_str.endswith(']'):
+                if image_path_str.startswith("[") and image_path_str.endswith("]"):
                     try:
                         # Parse JSON array of image paths
                         image_paths = json.loads(image_path_str)
@@ -179,10 +180,10 @@ class OCRDatasetEvaluator:
         label_file: str,
         dataset_base_path: str,
         conf_threshold: float = 0.5,
-        max_images: Optional[int] = None,
-        output_format: str = 'table',
-        min_width: int = 40
-    ) -> Dict[str, Any]:
+        max_images: int | None = None,
+        output_format: str = "table",
+        min_width: int = 40,
+    ) -> dict[str, Any]:
         """Evaluate OCR model on dataset
 
         Args:
@@ -221,7 +222,7 @@ class OCRDatasetEvaluator:
             True
         """
         # Validate output format
-        if output_format not in ['table', 'json']:
+        if output_format not in ["table", "json"]:
             raise ValueError(f"Invalid output_format: {output_format}. Must be 'table' or 'json'")
 
         # Import utility functions
@@ -279,8 +280,7 @@ class OCRDatasetEvaluator:
                 # Confidence filtering
                 if confidence < conf_threshold:
                     logging.debug(
-                        f"Filtered low confidence sample: {image_path} "
-                        f"(conf={confidence:.3f} < {conf_threshold})"
+                        f"Filtered low confidence sample: {image_path} (conf={confidence:.3f} < {conf_threshold})"
                     )
                     filtered_count += 1
                     continue
@@ -296,7 +296,7 @@ class OCRDatasetEvaluator:
                     confidence=confidence,
                     is_correct=(pred_text == gt_text),
                     edit_distance=dist,
-                    normalized_edit_distance=norm_ed
+                    normalized_edit_distance=norm_ed,
                 )
                 detailed_evaluations.append(sample_eval)
 
@@ -330,31 +330,31 @@ class OCRDatasetEvaluator:
 
         # Build results dictionary
         results = {
-            'accuracy': accuracy,
-            'normalized_edit_distance': avg_norm_ed,
-            'edit_distance_similarity': avg_ed_sim,
-            'total_samples': len(dataset),
-            'evaluated_samples': len(evaluations),
-            'filtered_samples': filtered_count,
-            'skipped_samples': skipped_count,
-            'evaluation_time': evaluation_time,
-            'avg_inference_time_ms': (evaluation_time / len(evaluations) * 1000) if evaluations else 0,
-            'per_sample_results': [
+            "accuracy": accuracy,
+            "normalized_edit_distance": avg_norm_ed,
+            "edit_distance_similarity": avg_ed_sim,
+            "total_samples": len(dataset),
+            "evaluated_samples": len(evaluations),
+            "filtered_samples": filtered_count,
+            "skipped_samples": skipped_count,
+            "evaluation_time": evaluation_time,
+            "avg_inference_time_ms": (evaluation_time / len(evaluations) * 1000) if evaluations else 0,
+            "per_sample_results": [
                 {
-                    'image_path': e.image_path,
-                    'ground_truth': e.ground_truth,
-                    'predicted_text': e.predicted_text,
-                    'confidence': e.confidence,
-                    'is_correct': e.is_correct,
-                    'edit_distance': e.edit_distance,
-                    'normalized_edit_distance': e.normalized_edit_distance
+                    "image_path": e.image_path,
+                    "ground_truth": e.ground_truth,
+                    "predicted_text": e.predicted_text,
+                    "confidence": e.confidence,
+                    "is_correct": e.is_correct,
+                    "edit_distance": e.edit_distance,
+                    "normalized_edit_distance": e.normalized_edit_distance,
                 }
                 for e in detailed_evaluations
-            ]
+            ],
         }
 
         # Output results
-        if output_format == 'json':
+        if output_format == "json":
             print(format_ocr_results_json(results))
         else:  # table
             print_ocr_metrics(results)

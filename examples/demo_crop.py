@@ -29,7 +29,7 @@ import argparse
 import json
 import logging
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import cv2
 
@@ -40,24 +40,20 @@ def infer_source_type(input_path: str) -> str:
     """推断输入源类型."""
     input_path_lower = input_path.lower()
     if os.path.isdir(input_path):
-        return 'folder'
-    elif any(input_path_lower.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']):
-        return 'image'
-    elif any(input_path_lower.endswith(ext) for ext in ['.mp4', '.avi', '.mov', '.mkv']):
-        return 'video'
-    elif input_path_lower.startswith('rtsp://'):
-        return 'rtsp'
+        return "folder"
+    elif any(input_path_lower.endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]):
+        return "image"
+    elif any(input_path_lower.endswith(ext) for ext in [".mp4", ".avi", ".mov", ".mkv"]):
+        return "video"
+    elif input_path_lower.startswith("rtsp://"):
+        return "rtsp"
     elif input_path.isdigit():
-        return 'camera'
+        return "camera"
     else:
-        return 'unknown'
+        return "unknown"
 
 
-def process_ocr_for_plate(
-    crop_img,
-    color_layer_classifier,
-    ocr_model
-) -> Tuple[str, str, str]:
+def process_ocr_for_plate(crop_img, color_layer_classifier, ocr_model) -> tuple[str, str, str]:
     """
     对车牌进行OCR识别和颜色/层级分类
 
@@ -83,7 +79,7 @@ def process_ocr_for_plate(
 
         # OCR识别
         if ocr_model:
-            is_double_layer = (plate_layer == "double")
+            is_double_layer = plate_layer == "double"
             ocr_result = ocr_model(crop_img, is_double_layer=is_double_layer)
             if ocr_result:
                 plate_text = ocr_result[0]
@@ -95,13 +91,8 @@ def process_ocr_for_plate(
 
 
 def crop_from_frame(
-    frame,
-    detector,
-    args,
-    color_layer_classifier=None,
-    ocr_model=None,
-    frame_name="frame"
-) -> Tuple[int, List[Dict[str, Any]]]:
+    frame, detector, args, color_layer_classifier=None, ocr_model=None, frame_name="frame"
+) -> tuple[int, list[dict[str, Any]]]:
     """
     从单帧图像中检测并裁剪目标区域
 
@@ -141,10 +132,7 @@ def crop_from_frame(
                 target_classes.append(similar_classes[0])
 
     if not target_classes:
-        logging.warning(
-            f"未找到目标类别。指定类别: {args.target_classes}, "
-            f"可用类别: {available_classes[:10]}..."
-        )
+        logging.warning(f"未找到目标类别。指定类别: {args.target_classes}, 可用类别: {available_classes[:10]}...")
         return cropped_count, output_data
 
     logging.debug(f"使用类别: {target_classes}")
@@ -157,19 +145,19 @@ def crop_from_frame(
         classes=target_classes,  # 使用类别名称过滤
         gain=gain,
         pad=args.pad,
-        square=args.square
+        square=args.square,
     )
 
     # 5. 处理裁剪结果
     for crop_data in crops:
         # 获取基本信息
-        box = crop_data['box']
+        box = crop_data["box"]
         w = int(box[2] - box[0])
         h = int(box[3] - box[1])
-        class_name = crop_data['class_name']
-        confidence = crop_data['confidence']
-        crop_img = crop_data['image']
-        crop_box = crop_data['crop_box']
+        class_name = crop_data["class_name"]
+        confidence = crop_data["confidence"]
+        crop_img = crop_data["image"]
+        crop_box = crop_data["crop_box"]
 
         # 过滤过小的检测框
         if w < args.min_width or h < args.min_height:
@@ -184,19 +172,13 @@ def crop_from_frame(
             "bbox": box.tolist(),
             "bbox_expanded": crop_box.tolist(),
             "width": w,
-            "height": h
+            "height": h,
         }
 
         # 6. 对车牌类进行OCR识别（如果启用）
-        if args.enable_ocr and class_name == 'plate':
-            plate_text, plate_color, plate_layer = process_ocr_for_plate(
-                crop_img, color_layer_classifier, ocr_model
-            )
-            detection_info.update({
-                "plate_text": plate_text,
-                "plate_color": plate_color,
-                "plate_layer": plate_layer
-            })
+        if args.enable_ocr and class_name == "plate":
+            plate_text, plate_color, plate_layer = process_ocr_for_plate(crop_img, color_layer_classifier, ocr_model)
+            detection_info.update({"plate_text": plate_text, "plate_color": plate_color, "plate_layer": plate_layer})
 
             # 车牌文件名格式: 车牌号_层级_颜色_宽x高_原图名.jpg
             safe_plate_text = plate_text if plate_text != "unknown" else f"plate_{crop_data['index']:03d}"
@@ -226,7 +208,7 @@ def process_source(args, detector, color_layer_classifier=None, ocr_model=None):
     total_cropped = 0
     all_detections = []
 
-    if source_type == 'image':
+    if source_type == "image":
         # 处理单张图像
         img = cv2.imread(args.input)
         if img is None:
@@ -242,10 +224,11 @@ def process_source(args, detector, color_layer_classifier=None, ocr_model=None):
 
         logging.info(f"完成处理，共裁剪 {cropped_count} 个目标")
 
-    elif source_type == 'folder':
+    elif source_type == "folder":
         # 处理文件夹中的所有图像
-        image_files = [f for f in os.listdir(args.input)
-                      if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
+        image_files = [
+            f for f in os.listdir(args.input) if f.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff"))
+        ]
         total_images = len(image_files)
         logging.info(f"在文件夹 '{args.input}' 中找到 {total_images} 张图像")
 
@@ -266,9 +249,9 @@ def process_source(args, detector, color_layer_classifier=None, ocr_model=None):
 
         logging.info(f"完成处理所有 {total_images} 张图像，共裁剪 {total_cropped} 个目标")
 
-    elif source_type in ['video', 'rtsp', 'camera']:
+    elif source_type in ["video", "rtsp", "camera"]:
         # 处理视频流
-        if source_type == 'camera':
+        if source_type == "camera":
             cap = cv2.VideoCapture(int(args.input))
         else:
             cap = cv2.VideoCapture(args.input)
@@ -280,7 +263,7 @@ def process_source(args, detector, color_layer_classifier=None, ocr_model=None):
         # 获取总帧数
         try:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        except:
+        except Exception:
             total_frames = 0
 
         if total_frames > 0:
@@ -322,7 +305,7 @@ def process_source(args, detector, color_layer_classifier=None, ocr_model=None):
     # 保存检测结果JSON
     if args.save_json and all_detections:
         json_path = os.path.join(args.output_dir, "detections.json")
-        with open(json_path, 'w', encoding='utf-8') as f:
+        with open(json_path, "w", encoding="utf-8") as f:
             json.dump(all_detections, f, ensure_ascii=False, indent=4)
         logging.info(f"检测结果已保存到: {json_path}")
 
@@ -342,10 +325,7 @@ def main(args):
     logging.info("正在初始化检测模型...")
     try:
         detector = create_detector(
-            model_type=args.model_type,
-            onnx_path=args.model_path,
-            conf_thres=args.conf_thres,
-            iou_thres=args.iou_thres
+            model_type=args.model_type, onnx_path=args.model_path, conf_thres=args.conf_thres, iou_thres=args.iou_thres
         )
     except Exception as e:
         logging.error(f"检测模型初始化失败: {e}")
@@ -365,9 +345,9 @@ def main(args):
     process_source(args, detector, color_layer_classifier, ocr_model)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='ONNX通用目标裁剪工具 - 使用 Result API',
+        description="ONNX通用目标裁剪工具 - 使用 Result API",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
@@ -384,64 +364,52 @@ if __name__ == '__main__':
   python %(prog)s --model-path models/yolo11n.onnx --model-type yolo \\
       --input data/sample.jpg --target-classes person car truck \\
       --output-dir runs/multi
-        """
+        """,
     )
 
     # 必需参数
-    parser.add_argument('--model-path', type=str, required=True,
-                       help='ONNX检测模型路径')
-    parser.add_argument('--model-type', type=str, default='yolo',
-                       choices=['rtdetr', 'yolo', 'rfdetr'],
-                       help='模型类型 (默认: yolo)')
-    parser.add_argument('--input', type=str, required=True,
-                       help='输入图像/视频路径、文件夹或摄像头ID')
+    parser.add_argument("--model-path", type=str, required=True, help="ONNX检测模型路径")
+    parser.add_argument(
+        "--model-type", type=str, default="yolo", choices=["rtdetr", "yolo", "rfdetr"], help="模型类型 (默认: yolo)"
+    )
+    parser.add_argument("--input", type=str, required=True, help="输入图像/视频路径、文件夹或摄像头ID")
 
     # 目标类别参数
-    parser.add_argument('--target-classes', type=str, nargs='+', required=True,
-                       help='要裁剪的目标类别列表 (例如: person plate car)')
+    parser.add_argument(
+        "--target-classes", type=str, nargs="+", required=True, help="要裁剪的目标类别列表 (例如: person plate car)"
+    )
 
     # 输出参数
-    parser.add_argument('--output-dir', type=str, default='runs/crops',
-                       help='裁剪图像保存目录 (默认: runs/crops)')
-    parser.add_argument('--save-json', action='store_true',
-                       help='保存检测结果JSON文件')
+    parser.add_argument("--output-dir", type=str, default="runs/crops", help="裁剪图像保存目录 (默认: runs/crops)")
+    parser.add_argument("--save-json", action="store_true", help="保存检测结果JSON文件")
 
     # 检测参数
-    parser.add_argument('--conf-thres', type=float, default=0.5,
-                       help='检测置信度阈值 (默认: 0.5)')
-    parser.add_argument('--iou-thres', type=float, default=0.5,
-                       help='NMS的IoU阈值 (默认: 0.5)')
+    parser.add_argument("--conf-thres", type=float, default=0.5, help="检测置信度阈值 (默认: 0.5)")
+    parser.add_argument("--iou-thres", type=float, default=0.5, help="NMS的IoU阈值 (默认: 0.5)")
 
     # 裁剪参数
-    parser.add_argument('--expand-ratio', type=float, default=0.0,
-                       help='边界框扩展比例 (0.1表示扩展10%%, 默认: 0.0)')
-    parser.add_argument('--pad', type=int, default=0,
-                       help='边界框填充像素 (默认: 0)')
-    parser.add_argument('--square', action='store_true',
-                       help='强制裁剪为正方形')
-    parser.add_argument('--min-width', type=int, default=10,
-                       help='最小检测框宽度(像素) (默认: 10)')
-    parser.add_argument('--min-height', type=int, default=10,
-                       help='最小检测框高度(像素) (默认: 10)')
+    parser.add_argument("--expand-ratio", type=float, default=0.0, help="边界框扩展比例 (0.1表示扩展10%%, 默认: 0.0)")
+    parser.add_argument("--pad", type=int, default=0, help="边界框填充像素 (默认: 0)")
+    parser.add_argument("--square", action="store_true", help="强制裁剪为正方形")
+    parser.add_argument("--min-width", type=int, default=10, help="最小检测框宽度(像素) (默认: 10)")
+    parser.add_argument("--min-height", type=int, default=10, help="最小检测框高度(像素) (默认: 10)")
 
     # OCR参数
-    parser.add_argument('--enable-ocr', action='store_true',
-                       help='启用车牌OCR识别和颜色/层级分类')
-    parser.add_argument('--color-layer-model', type=str,
-                       default='models/color_layer.onnx',
-                       help='颜色/层级模型路径')
-    parser.add_argument('--ocr-model', type=str,
-                       default='models/ocr_mobile.onnx',
-                       help='OCR模型路径')
+    parser.add_argument("--enable-ocr", action="store_true", help="启用车牌OCR识别和颜色/层级分类")
+    parser.add_argument("--color-layer-model", type=str, default="models/color_layer.onnx", help="颜色/层级模型路径")
+    parser.add_argument("--ocr-model", type=str, default="models/ocr_mobile.onnx", help="OCR模型路径")
 
     # 视频处理参数
-    parser.add_argument('--frame-skip', type=int, default=0,
-                       help='视频处理时跳帧数量 (0表示处理所有帧)')
+    parser.add_argument("--frame-skip", type=int, default=0, help="视频处理时跳帧数量 (0表示处理所有帧)")
 
     # 其他参数
-    parser.add_argument('--log-level', type=str, default='INFO',
-                       choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                       help='日志级别 (默认: INFO)')
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="日志级别 (默认: INFO)",
+    )
 
     args = parser.parse_args()
 
@@ -451,7 +419,7 @@ if __name__ == '__main__':
         exit(1)
 
     # 验证输入路径
-    if not args.input.isdigit() and not args.input.startswith('rtsp://'):
+    if not args.input.isdigit() and not args.input.startswith("rtsp://"):
         if not os.path.exists(args.input):
             print(f"错误: 输入路径不存在: {args.input}")
             exit(1)

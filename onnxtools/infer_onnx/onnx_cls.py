@@ -24,7 +24,6 @@ Example:
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -61,14 +60,14 @@ class ClsResult:
         >>> color, layer, conf = result
     """
 
-    __slots__ = ('labels', 'confidences', 'avg_confidence', 'logits')
+    __slots__ = ("labels", "confidences", "avg_confidence", "logits")
 
     def __init__(
         self,
-        labels: List[str],
-        confidences: List[float],
+        labels: list[str],
+        confidences: list[float],
         avg_confidence: float,
-        logits: Optional[List[NDArray[np.float32]]] = None
+        logits: list[NDArray[np.float32]] | None = None,
     ):
         """Initialize ClsResult.
 
@@ -109,14 +108,14 @@ class ClsResult:
 
     def __repr__(self) -> str:
         """String representation of ClsResult."""
-        labels_str = ', '.join(self.labels)
+        labels_str = ", ".join(self.labels)
         return f"ClsResult(labels=[{labels_str}], avg_confidence={self.avg_confidence:.3f})"
 
     def __len__(self) -> int:
         """Return number of classification branches."""
         return len(self.labels)
 
-    def __getitem__(self, index: int) -> Tuple[str, float]:
+    def __getitem__(self, index: int) -> tuple[str, float]:
         """Get label and confidence for a specific branch.
 
         Args:
@@ -163,9 +162,9 @@ class BaseClsORT(ABC):
     def __init__(
         self,
         onnx_path: str,
-        input_shape: Tuple[int, int] = (48, 168),
+        input_shape: tuple[int, int] = (48, 168),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None
+        providers: list[str] | None = None,
     ):
         """Initialize classification model.
 
@@ -178,13 +177,10 @@ class BaseClsORT(ABC):
         self.onnx_path = onnx_path
         self.conf_thres = conf_thres
         self._requested_input_shape = input_shape
-        self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        self.providers = providers or ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
         # Create ONNX Runtime session
-        self._onnx_session = onnxruntime.InferenceSession(
-            self.onnx_path,
-            providers=self.providers
-        )
+        self._onnx_session = onnxruntime.InferenceSession(self.onnx_path, providers=self.providers)
         logging.info(f"ONNX Runtime session created: {self._onnx_session.get_providers()}")
 
         # Get input/output names from model
@@ -197,7 +193,7 @@ class BaseClsORT(ABC):
 
         logging.info(f"Classification model initialized: {self.onnx_path}")
 
-    def _get_model_input_shape(self) -> Tuple[Tuple[int, int], int]:
+    def _get_model_input_shape(self) -> tuple[tuple[int, int], int]:
         """Get input shape and batch size from model metadata.
 
         Detects whether the model has a fixed or dynamic batch dimension.
@@ -210,16 +206,12 @@ class BaseClsORT(ABC):
         model_input_shape = self._onnx_session.get_inputs()[0].shape
 
         # Detect batch dimension: int > 0 means fixed, str/None means dynamic
-        if (len(model_input_shape) >= 4
-                and isinstance(model_input_shape[0], int)
-                and model_input_shape[0] > 0):
+        if len(model_input_shape) >= 4 and isinstance(model_input_shape[0], int) and model_input_shape[0] > 0:
             batch_size = model_input_shape[0]
         else:
             batch_size = 1
 
-        if (len(model_input_shape) == 4
-                and model_input_shape[2] is not None
-                and model_input_shape[3] is not None):
+        if len(model_input_shape) == 4 and model_input_shape[2] is not None and model_input_shape[3] is not None:
             # Shape format: [batch, channels, height, width]
             actual_height = int(model_input_shape[2])
             actual_width = int(model_input_shape[3])
@@ -232,10 +224,8 @@ class BaseClsORT(ABC):
     @staticmethod
     @abstractmethod
     def preprocess(
-        image: NDArray[np.uint8],
-        input_shape: Tuple[int, int],
-        **kwargs
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        image: NDArray[np.uint8], input_shape: tuple[int, int], **kwargs
+    ) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """Static preprocessing method.
 
         Args:
@@ -252,17 +242,10 @@ class BaseClsORT(ABC):
         Raises:
             NotImplementedError: Subclass must implement this method
         """
-        raise NotImplementedError(
-            f"{__class__.__name__}.preprocess() must be implemented by subclass"
-        )
+        raise NotImplementedError(f"{__class__.__name__}.preprocess() must be implemented by subclass")
 
     @abstractmethod
-    def postprocess(
-        self,
-        outputs: List[NDArray[np.float32]],
-        conf_thres: float,
-        **kwargs
-    ) -> ClsResult:
+    def postprocess(self, outputs: list[NDArray[np.float32]], conf_thres: float, **kwargs) -> ClsResult:
         """Post-processing method.
 
         Args:
@@ -276,14 +259,9 @@ class BaseClsORT(ABC):
         Raises:
             NotImplementedError: Subclass must implement this method
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__}.postprocess() must be implemented by subclass"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__}.postprocess() must be implemented by subclass")
 
-    def _prepare_inference(
-        self,
-        image: NDArray[np.uint8]
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+    def _prepare_inference(self, image: NDArray[np.uint8]) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """Phase 1: Preprocess image.
 
         Args:
@@ -297,10 +275,7 @@ class BaseClsORT(ABC):
         """
         return self.preprocess(image, self.input_shape)
 
-    def _execute_inference(
-        self,
-        input_tensor: NDArray[np.float32]
-    ) -> List[NDArray[np.float32]]:
+    def _execute_inference(self, input_tensor: NDArray[np.float32]) -> list[NDArray[np.float32]]:
         """Phase 2: Execute ONNX Runtime inference with automatic batch adaptation.
 
         For fixed-batch models (e.g. batch=4), the single input is repeated
@@ -314,9 +289,7 @@ class BaseClsORT(ABC):
             List of model output arrays (always batch=1)
         """
         if self._expected_batch_size > 1 and input_tensor.shape[0] == 1:
-            input_tensor = np.repeat(
-                input_tensor, self._expected_batch_size, axis=0
-            )
+            input_tensor = np.repeat(input_tensor, self._expected_batch_size, axis=0)
 
         feed_dict = {self.input_name: input_tensor}
         outputs = self._onnx_session.run(self.output_names, feed_dict)
@@ -326,12 +299,7 @@ class BaseClsORT(ABC):
 
         return outputs
 
-    def _finalize_inference(
-        self,
-        outputs: List[NDArray[np.float32]],
-        conf_thres: Optional[float],
-        **kwargs
-    ) -> ClsResult:
+    def _finalize_inference(self, outputs: list[NDArray[np.float32]], conf_thres: float | None, **kwargs) -> ClsResult:
         """Phase 3: Post-process outputs.
 
         Args:
@@ -345,12 +313,7 @@ class BaseClsORT(ABC):
         effective_conf_thres = conf_thres if conf_thres is not None else self.conf_thres
         return self.postprocess(outputs, effective_conf_thres, **kwargs)
 
-    def __call__(
-        self,
-        image: NDArray[np.uint8],
-        conf_thres: Optional[float] = None,
-        **kwargs
-    ) -> ClsResult:
+    def __call__(self, image: NDArray[np.uint8], conf_thres: float | None = None, **kwargs) -> ClsResult:
         """Execute classification inference.
 
         Template method that orchestrates the inference pipeline:
@@ -412,12 +375,12 @@ class ColorLayerORT(BaseClsORT):
     def __init__(
         self,
         onnx_path: str,
-        color_map: Optional[Dict[int, str]] = None,
-        layer_map: Optional[Dict[int, str]] = None,
-        input_shape: Tuple[int, int] = (48, 168),
+        color_map: dict[int, str] | None = None,
+        layer_map: dict[int, str] | None = None,
+        input_shape: tuple[int, int] = (48, 168),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None,
-        plate_config_path: Optional[str] = None
+        providers: list[str] | None = None,
+        plate_config_path: str | None = None,
     ):
         """Initialize color and layer classification model.
 
@@ -453,11 +416,8 @@ class ColorLayerORT(BaseClsORT):
         logging.info(f"ColorLayerORT initialized: {len(color_map)} colors, {len(layer_map)} layers")
 
     def _load_mappings(
-        self,
-        color_map: Optional[Dict[int, str]],
-        layer_map: Optional[Dict[int, str]],
-        plate_config_path: Optional[str]
-    ) -> Tuple[Dict[int, str], Dict[int, str]]:
+        self, color_map: dict[int, str] | None, layer_map: dict[int, str] | None, plate_config_path: str | None
+    ) -> tuple[dict[int, str], dict[int, str]]:
         """Load color and layer mappings from config.
 
         Priority:
@@ -480,16 +440,17 @@ class ColorLayerORT(BaseClsORT):
             if plate_config_path:
                 # Load from external config file
                 from onnxtools.config import load_plate_config
+
                 plate_config = load_plate_config(plate_config_path)
 
                 if color_map is None:
-                    color_map = plate_config.get('color_dict')
+                    color_map = plate_config.get("color_dict")
                     if not color_map:
                         raise ValueError("Failed to load color_map from external config")
                     logging.info(f"Loaded color_map from external config: {len(color_map)} colors")
 
                 if layer_map is None:
-                    layer_map = plate_config.get('layer_dict')
+                    layer_map = plate_config.get("layer_dict")
                     if not layer_map:
                         raise ValueError("Failed to load layer_map from external config")
                     logging.info(f"Loaded layer_map from external config: {len(layer_map)} layers")
@@ -497,25 +458,25 @@ class ColorLayerORT(BaseClsORT):
                 # Use default constants
                 if color_map is None:
                     from onnxtools.config import COLOR_MAP
+
                     color_map = COLOR_MAP
                     logging.info(f"Using default color_map: {len(color_map)} colors")
 
                 if layer_map is None:
                     from onnxtools.config import LAYER_MAP
+
                     layer_map = LAYER_MAP
                     logging.info(f"Using default layer_map: {len(layer_map)} layers")
 
         except Exception as e:
-            raise ValueError(f"Failed to load plate configuration: {e}")
+            raise ValueError(f"Failed to load plate configuration: {e}") from e
 
         return color_map, layer_map
 
     @staticmethod
     def preprocess(
-        image: NDArray[np.uint8],
-        input_shape: Tuple[int, int],
-        **kwargs
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        image: NDArray[np.uint8], input_shape: tuple[int, int], **kwargs
+    ) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """Preprocess image for classification.
 
         Processing pipeline:
@@ -574,12 +535,7 @@ class ColorLayerORT(BaseClsORT):
         exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
         return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
-    def postprocess(
-        self,
-        outputs: List[NDArray[np.float32]],
-        conf_thres: float,
-        **kwargs
-    ) -> ClsResult:
+    def postprocess(self, outputs: list[NDArray[np.float32]], conf_thres: float, **kwargs) -> ClsResult:
         """Post-process dual-branch outputs.
 
         Processing:
@@ -616,8 +572,8 @@ class ColorLayerORT(BaseClsORT):
         layer_conf = float(layer_probs[0, layer_idx])
 
         # Map to names
-        color_name = self.color_map.get(color_idx, f'unknown_{color_idx}')
-        layer_name = self.layer_map.get(layer_idx, f'unknown_{layer_idx}')
+        color_name = self.color_map.get(color_idx, f"unknown_{color_idx}")
+        layer_name = self.layer_map.get(layer_idx, f"unknown_{layer_idx}")
 
         # Low confidence warnings
         if color_conf < conf_thres:
@@ -632,7 +588,7 @@ class ColorLayerORT(BaseClsORT):
             labels=[color_name, layer_name],
             confidences=[color_conf, layer_conf],
             avg_confidence=avg_conf,
-            logits=[color_logits, layer_logits]
+            logits=[color_logits, layer_logits],
         )
 
 
@@ -667,11 +623,11 @@ class VehicleAttributeORT(BaseClsORT):
     def __init__(
         self,
         onnx_path: str,
-        type_map: Optional[Dict[int, str]] = None,
-        color_map: Optional[Dict[int, str]] = None,
-        input_shape: Tuple[int, int] = (224, 224),
+        type_map: dict[int, str] | None = None,
+        color_map: dict[int, str] | None = None,
+        input_shape: tuple[int, int] = (224, 224),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None
+        providers: list[str] | None = None,
     ):
         """Initialize vehicle attribute classification model.
 
@@ -689,11 +645,13 @@ class VehicleAttributeORT(BaseClsORT):
         # Load from config if not provided
         if type_map is None:
             from onnxtools.config import VEHICLE_TYPE_MAP
+
             type_map = VEHICLE_TYPE_MAP
             logging.info(f"Using default vehicle type_map: {len(type_map)} types")
 
         if color_map is None:
             from onnxtools.config import VEHICLE_COLOR_MAP
+
             color_map = VEHICLE_COLOR_MAP
             logging.info(f"Using default vehicle color_map: {len(color_map)} colors")
 
@@ -714,10 +672,8 @@ class VehicleAttributeORT(BaseClsORT):
 
     @staticmethod
     def preprocess(
-        image: NDArray[np.uint8],
-        input_shape: Tuple[int, int],
-        **kwargs
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        image: NDArray[np.uint8], input_shape: tuple[int, int], **kwargs
+    ) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """Preprocess image for vehicle attribute classification.
 
         Processing pipeline (based on PaddleClas config):
@@ -760,12 +716,7 @@ class VehicleAttributeORT(BaseClsORT):
 
         return input_tensor, 1.0, original_shape
 
-    def postprocess(
-        self,
-        outputs: List[NDArray[np.float32]],
-        conf_thres: float,
-        **kwargs
-    ) -> ClsResult:
+    def postprocess(self, outputs: list[NDArray[np.float32]], conf_thres: float, **kwargs) -> ClsResult:
         """Post-process single output with multi-label classification.
 
         Note: Model output already has sigmoid applied, so we directly use
@@ -790,8 +741,8 @@ class VehicleAttributeORT(BaseClsORT):
         combined_probs = outputs[0]  # Shape: [batch, 24]
 
         # Split into type and color probabilities
-        type_probs = combined_probs[:, :self.NUM_VEHICLE_TYPES]  # [batch, 13]
-        color_probs = combined_probs[:, self.NUM_VEHICLE_TYPES:]  # [batch, 11]
+        type_probs = combined_probs[:, : self.NUM_VEHICLE_TYPES]  # [batch, 13]
+        color_probs = combined_probs[:, self.NUM_VEHICLE_TYPES :]  # [batch, 11]
 
         # Get predictions (no softmax needed, model already has sigmoid)
         type_idx = int(np.argmax(type_probs, axis=-1)[0])
@@ -801,8 +752,8 @@ class VehicleAttributeORT(BaseClsORT):
         color_conf = float(color_probs[0, color_idx])
 
         # Map to names
-        type_name = self.type_map.get(type_idx, f'unknown_type_{type_idx}')
-        color_name = self.color_map.get(color_idx, f'unknown_color_{color_idx}')
+        type_name = self.type_map.get(type_idx, f"unknown_type_{type_idx}")
+        color_name = self.color_map.get(color_idx, f"unknown_color_{color_idx}")
 
         # Low confidence warnings
         if type_conf < conf_thres:
@@ -817,7 +768,7 @@ class VehicleAttributeORT(BaseClsORT):
             labels=[type_name, color_name],
             confidences=[type_conf, color_conf],
             avg_confidence=avg_conf,
-            logits=[type_probs, color_probs]  # Store probs instead of logits
+            logits=[type_probs, color_probs],  # Store probs instead of logits
         )
 
 
@@ -855,10 +806,10 @@ class HelmetORT(BaseClsORT):
     def __init__(
         self,
         onnx_path: str,
-        helmet_map: Optional[Dict[int, str]] = None,
-        input_shape: Tuple[int, int] = (128, 128),
+        helmet_map: dict[int, str] | None = None,
+        input_shape: tuple[int, int] = (128, 128),
         conf_thres: float = 0.5,
-        providers: Optional[List[str]] = None
+        providers: list[str] | None = None,
     ):
         """Initialize helmet classification model.
 
@@ -871,6 +822,7 @@ class HelmetORT(BaseClsORT):
         """
         if helmet_map is None:
             from onnxtools.config import HELMET_MAP
+
             helmet_map = HELMET_MAP
             logging.info(f"Using default helmet_map: {len(helmet_map)} classes")
 
@@ -884,11 +836,7 @@ class HelmetORT(BaseClsORT):
         logging.info(f"HelmetORT initialized: {len(helmet_map)} classes")
 
     @staticmethod
-    def _letterbox(
-        image: NDArray[np.uint8],
-        target_size: Tuple[int, int],
-        pad_value: int = 127
-    ) -> NDArray[np.uint8]:
+    def _letterbox(image: NDArray[np.uint8], target_size: tuple[int, int], pad_value: int = 127) -> NDArray[np.uint8]:
         """Resize image with LetterBox (preserve aspect ratio, pad to square).
 
         Args:
@@ -911,16 +859,14 @@ class HelmetORT(BaseClsORT):
         canvas = np.full((target_h, target_w, 3), pad_value, dtype=np.uint8)
         top = (target_h - new_h) // 2
         left = (target_w - new_w) // 2
-        canvas[top:top + new_h, left:left + new_w] = resized
+        canvas[top : top + new_h, left : left + new_w] = resized
 
         return canvas
 
     @staticmethod
     def preprocess(
-        image: NDArray[np.uint8],
-        input_shape: Tuple[int, int],
-        **kwargs
-    ) -> Tuple[NDArray[np.float32], float, Tuple[int, int]]:
+        image: NDArray[np.uint8], input_shape: tuple[int, int], **kwargs
+    ) -> tuple[NDArray[np.float32], float, tuple[int, int]]:
         """Preprocess image for helmet classification.
 
         Processing pipeline:
@@ -962,12 +908,7 @@ class HelmetORT(BaseClsORT):
 
         return input_tensor, 1.0, original_shape
 
-    def postprocess(
-        self,
-        outputs: List[NDArray[np.float32]],
-        conf_thres: float,
-        **kwargs
-    ) -> ClsResult:
+    def postprocess(self, outputs: list[NDArray[np.float32]], conf_thres: float, **kwargs) -> ClsResult:
         """Post-process helmet classification output.
 
         Processing:
@@ -994,14 +935,9 @@ class HelmetORT(BaseClsORT):
         pred_conf = float(probs[0, pred_idx])
 
         # Map to label
-        label = self.helmet_map.get(pred_idx, f'unknown_{pred_idx}')
+        label = self.helmet_map.get(pred_idx, f"unknown_{pred_idx}")
 
         if pred_conf < conf_thres:
             logging.warning(f"Low helmet confidence: {pred_conf:.3f}")
 
-        return ClsResult(
-            labels=[label],
-            confidences=[pred_conf],
-            avg_confidence=pred_conf,
-            logits=[logits]
-        )
+        return ClsResult(labels=[label], confidences=[pred_conf], avg_confidence=pred_conf, logits=[logits])

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import cv2
 import numpy as np
 
@@ -17,7 +15,7 @@ class UltralyticsLetterBox:
 
     def __init__(
         self,
-        new_shape: Tuple[int, int] = (640, 640),
+        new_shape: tuple[int, int] = (640, 640),
         auto: bool = False,
         scale_fill: bool = False,
         scaleup: bool = True,
@@ -51,7 +49,7 @@ class UltralyticsLetterBox:
         self.interpolation = interpolation
         self.half = half
 
-    def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int], Tuple[int, int]]:
+    def __call__(self, image: np.ndarray) -> tuple[np.ndarray, float, tuple[int, int], tuple[int, int]]:
         """
         Apply letterboxing to an image for object detection inference.
 
@@ -81,7 +79,6 @@ class UltralyticsLetterBox:
             r = min(r, 1.0)
 
         # Compute padding
-        ratio = r, r  # width, height ratios
         new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
         dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
 
@@ -90,7 +87,7 @@ class UltralyticsLetterBox:
         elif self.scale_fill:  # stretch
             dw, dh = 0.0, 0.0
             new_unpad = (new_shape[1], new_shape[0])
-            ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
+            new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
 
         if self.center:
             dw /= 2  # divide padding into 2 sides

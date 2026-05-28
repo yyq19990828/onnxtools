@@ -18,6 +18,7 @@
 """
 解析一个 ONNX 模型，然后用一个恒等层扩展它。
 """
+
 from polygraphy import func
 from polygraphy.backend.trt import NetworkFromOnnxPath
 

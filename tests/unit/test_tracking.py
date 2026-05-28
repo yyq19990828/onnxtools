@@ -39,9 +39,7 @@ class TestByteTrackBaseline:
 
         ids = []
         for _ in range(5):
-            tracked = tracker.update_with_detections(
-                _make_detections(boxes, scores, class_ids)
-            )
+            tracked = tracker.update_with_detections(_make_detections(boxes, scores, class_ids))
             assert tracked.tracker_id is not None
             assert len(tracked) == 1
             ids.append(int(tracked.tracker_id[0]))
@@ -60,9 +58,7 @@ class TestByteTrackBaseline:
         class_ids = np.array([0])
 
         # Establish track id on frame 0.
-        first = tracker.update_with_detections(
-            _make_detections(boxes, scores, class_ids)
-        )
+        first = tracker.update_with_detections(_make_detections(boxes, scores, class_ids))
         first_id = int(first.tracker_id[0])
 
         # Push 10 empty frames — well past lost_track_buffer=2.
@@ -73,25 +69,21 @@ class TestByteTrackBaseline:
         # new track. Once any id is emitted it must not be the original.
         reappeared_ids: list[int] = []
         for _ in range(10):
-            out = tracker.update_with_detections(
-                _make_detections(boxes, scores, class_ids)
-            )
+            out = tracker.update_with_detections(_make_detections(boxes, scores, class_ids))
             if out.tracker_id is not None and len(out.tracker_id) > 0:
                 reappeared_ids.append(int(out.tracker_id[0]))
 
         assert reappeared_ids, "ByteTrack never re-acquired the target"
-        assert all(tid != first_id for tid in reappeared_ids), (
-            f"ByteTrack reused expired id {first_id}: {reappeared_ids}"
-        )
+        assert all(
+            tid != first_id for tid in reappeared_ids
+        ), f"ByteTrack reused expired id {first_id}: {reappeared_ids}"
 
 
 class TestAlignTrackerIds:
     """`_align_tracker_ids` is the only piece of glue we own end-to-end."""
 
     def test_full_match(self):
-        boxes = np.array(
-            [[10.0, 10.0, 50.0, 50.0], [100.0, 100.0, 200.0, 200.0]]
-        )
+        boxes = np.array([[10.0, 10.0, 50.0, 50.0], [100.0, 100.0, 200.0, 200.0]])
         tracked = _make_detections(boxes, np.array([0.9, 0.8]), np.array([0, 1]))
         tracked.tracker_id = np.array([7, 11])
 
@@ -108,9 +100,7 @@ class TestAlignTrackerIds:
 
     def test_unmatched_detections_get_none(self):
         # boxes contains two detections; tracker only kept the first one
-        boxes = np.array(
-            [[10.0, 10.0, 50.0, 50.0], [300.0, 300.0, 400.0, 400.0]]
-        )
+        boxes = np.array([[10.0, 10.0, 50.0, 50.0], [300.0, 300.0, 400.0, 400.0]])
         tracked = _make_detections(boxes[:1], np.array([0.9]), np.array([0]))
         tracked.tracker_id = np.array([3])
 
@@ -127,9 +117,7 @@ class TestAlignTrackerIds:
     def test_low_conf_plate_skipped_in_output(self):
         # boxes has two detections but output_data only carries the high-conf
         # entry (simulates the pipeline's plate_conf_thres skip).
-        boxes = np.array(
-            [[10.0, 10.0, 50.0, 50.0], [100.0, 100.0, 200.0, 200.0]]
-        )
+        boxes = np.array([[10.0, 10.0, 50.0, 50.0], [100.0, 100.0, 200.0, 200.0]])
         tracked = _make_detections(boxes, np.array([0.9, 0.8]), np.array([0, 1]))
         tracked.tracker_id = np.array([5, 9])
 
@@ -169,7 +157,9 @@ class TestLabelTrackerPrefix:
         scores = np.array([0.9])
         class_ids = np.array([0])
         labels = create_ocr_labels(
-            boxes, scores, class_ids,
+            boxes,
+            scores,
+            class_ids,
             plate_results=[None],
             class_names={0: "vehicle"},
             tracker_ids=[42],

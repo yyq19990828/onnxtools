@@ -5,12 +5,10 @@ TensorRT网络后处理脚本
 优化包括：sigmoid、softmax、normalization、attention、reduction等层
 """
 
-from typing import Dict, List, Tuple
-
 import tensorrt as trt
 
 
-def _get_layer_operation_type(layer: 'trt.ILayer') -> str:
+def _get_layer_operation_type(layer: "trt.ILayer") -> str:
     """
     检测层的具体操作类型
 
@@ -37,11 +35,11 @@ def _get_layer_operation_type(layer: 'trt.ILayer') -> str:
             pass
 
         # 通过名称推断
-        if any(name in layer_name for name in ['sigmoid', 'sig']):
+        if any(name in layer_name for name in ["sigmoid", "sig"]):
             return "sigmoid_activation"
-        elif any(name in layer_name for name in ['tanh']):
+        elif any(name in layer_name for name in ["tanh"]):
             return "tanh_activation"
-        elif any(name in layer_name for name in ['relu', 'leaky']):
+        elif any(name in layer_name for name in ["relu", "leaky"]):
             return "relu_activation"
 
     # Unary层的具体操作检测
@@ -58,11 +56,11 @@ def _get_layer_operation_type(layer: 'trt.ILayer') -> str:
             pass
 
         # 通过名称推断
-        if any(name in layer_name for name in ['exp', 'exponential']):
+        if any(name in layer_name for name in ["exp", "exponential"]):
             return "exp_unary"
-        elif any(name in layer_name for name in ['log', 'logarithm']):
+        elif any(name in layer_name for name in ["log", "logarithm"]):
             return "log_unary"
-        elif any(name in layer_name for name in ['sqrt', 'square_root']):
+        elif any(name in layer_name for name in ["sqrt", "square_root"]):
             return "sqrt_unary"
 
     # ElementWise层的具体操作检测
@@ -94,15 +92,15 @@ def _get_layer_operation_type(layer: 'trt.ILayer') -> str:
             pass
 
         # 通过名称推断
-        if any(name in layer_name for name in ['reducemax', 'reduce_max']):
+        if any(name in layer_name for name in ["reducemax", "reduce_max"]):
             return "reduce_max"
-        elif any(name in layer_name for name in ['reducemin', 'reduce_min']):
+        elif any(name in layer_name for name in ["reducemin", "reduce_min"]):
             return "reduce_min"
 
-    return str(layer_type).split('.')[-1].lower()
+    return str(layer_type).split(".")[-1].lower()
 
 
-def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_name: str) -> Tuple[bool, str]:
+def _should_use_fp32_precision(layer: "trt.ILayer", operation_type: str, layer_name: str) -> tuple[bool, str]:
     """
     判断层是否应该使用FP32精度
 
@@ -114,7 +112,7 @@ def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_n
     Returns:
         (是否使用FP32, 原因)
     """
-    layer_name_lower = layer_name.lower()
+    layer_name.lower()
 
     # 总是需要FP32的层类型
     critical_operations = {
@@ -133,7 +131,7 @@ def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_n
 
     # 特定路径下的节点强制使用FP32
     critical_path_patterns = [
-        '/model.28/enc_score_head/',  # RTDETR encoder score head路径
+        "/model.28/enc_score_head/",  # RTDETR encoder score head路径
     ]
 
     for pattern in critical_path_patterns:
@@ -153,7 +151,7 @@ def _should_use_fp32_precision(layer: 'trt.ILayer', operation_type: str, layer_n
     return False, ""
 
 
-def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
+def postprocess(network: "trt.INetworkDefinition") -> "trt.INetworkDefinition":
     """
     对TensorRT网络进行智能后处理
 
@@ -163,23 +161,23 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
     Returns:
         修改后的网络
     """
-    print(f"=== TensorRT网络智能后处理开始 ===")
+    print("=== TensorRT网络智能后处理开始 ===")
     print(f"网络层数: {network.num_layers}")
     print(f"网络输入数: {network.num_inputs}")
     print(f"网络输出数: {network.num_outputs}")
 
     # 统计信息
-    fp32_stats: Dict[str, List[str]] = {
-        'softmax': [],
-        'normalization': [],
-        'topk': [],
-        'reduce': [],  # reduce操作(包含reducemax)
-        'sigmoid': [],
-        'critical_path': [],  # 关键路径节点
-        'attention': [],
-        'detection': [],
-        'numerical_unstable': [],
-        'failed': []
+    fp32_stats: dict[str, list[str]] = {
+        "softmax": [],
+        "normalization": [],
+        "topk": [],
+        "reduce": [],  # reduce操作(包含reducemax)
+        "sigmoid": [],
+        "critical_path": [],  # 关键路径节点
+        "attention": [],
+        "detection": [],
+        "numerical_unstable": [],
+        "failed": [],
     }
 
     total_layers = network.num_layers
@@ -222,40 +220,40 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
 
                     # 分类统计
                     layer_type = layer.type
-                    if '关键路径节点' in reason:
-                        fp32_stats['critical_path'].append(layer_name)
+                    if "关键路径节点" in reason:
+                        fp32_stats["critical_path"].append(layer_name)
                     elif layer_type == trt.LayerType.SOFTMAX:
-                        fp32_stats['softmax'].append(layer_name)
+                        fp32_stats["softmax"].append(layer_name)
                     elif layer_type == trt.LayerType.NORMALIZATION:
-                        fp32_stats['normalization'].append(layer_name)
+                        fp32_stats["normalization"].append(layer_name)
                     elif layer_type == trt.LayerType.TOPK:
-                        fp32_stats['topk'].append(layer_name)
-                    elif 'reduce' in operation_type:
-                        fp32_stats['reduce'].append(layer_name)
-                    elif 'sigmoid' in operation_type:
-                        fp32_stats['sigmoid'].append(layer_name)
+                        fp32_stats["topk"].append(layer_name)
+                    elif "reduce" in operation_type:
+                        fp32_stats["reduce"].append(layer_name)
+                    elif "sigmoid" in operation_type:
+                        fp32_stats["sigmoid"].append(layer_name)
                     # elif 'attention' in reason:
                     #     fp32_stats['attention'].append(layer_name)
                     # elif '检测' in reason:
                     #     fp32_stats['detection'].append(layer_name)
                     else:
-                        fp32_stats['numerical_unstable'].append(layer_name)
+                        fp32_stats["numerical_unstable"].append(layer_name)
 
-                    print(f"  ✓ [{i+1}/{total_layers}] {layer_name} ({operation_type}) → FP32: {reason}")
+                    print(f"  ✓ [{i + 1}/{total_layers}] {layer_name} ({operation_type}) → FP32: {reason}")
 
                 except Exception as layer_error:
-                    fp32_stats['failed'].append(f"{layer_name}: {str(layer_error)}")
-                    print(f"  ✗ [{i+1}/{total_layers}] {layer_name} 精度设置失败: {layer_error}")
+                    fp32_stats["failed"].append(f"{layer_name}: {str(layer_error)}")
+                    print(f"  ✗ [{i + 1}/{total_layers}] {layer_name} 精度设置失败: {layer_error}")
 
             processed_layers += 1
 
         except Exception as general_error:
-            fp32_stats['failed'].append(f"Layer {i}: {str(general_error)}")
-            print(f"  ✗ [{i+1}/{total_layers}] 层 {i} 处理失败: {general_error}")
+            fp32_stats["failed"].append(f"Layer {i}: {str(general_error)}")
+            print(f"  ✗ [{i + 1}/{total_layers}] 层 {i} 处理失败: {general_error}")
 
     # 输出详细统计
     print("\n=== 精度优化统计报告 ===")
-    total_fp32_layers = sum(len(layers) for key, layers in fp32_stats.items() if key != 'failed')
+    total_fp32_layers = sum(len(layers) for key, layers in fp32_stats.items() if key != "failed")
 
     print(f"处理层数: {processed_layers}/{total_layers}")
     print(f"FP32层总数: {total_fp32_layers}")
@@ -263,7 +261,7 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
 
     # 分类统计
     for category, layers in fp32_stats.items():
-        if layers and category != 'failed':
+        if layers and category != "failed":
             print(f"  {category.capitalize()}: {len(layers)} 层")
             for layer_name in layers[:3]:  # 只显示前3个
                 print(f"    - {layer_name}")
@@ -271,12 +269,12 @@ def postprocess(network: 'trt.INetworkDefinition') -> 'trt.INetworkDefinition':
                 print(f"    ... 还有 {len(layers) - 3} 层")
 
     # 失败统计
-    if fp32_stats['failed']:
-        print(f"\n=== 失败层详情 ===")
-        for failed in fp32_stats['failed'][:5]:  # 只显示前5个失败
+    if fp32_stats["failed"]:
+        print("\n=== 失败层详情 ===")
+        for failed in fp32_stats["failed"][:5]:  # 只显示前5个失败
             print(f"  ✗ {failed}")
-        if len(fp32_stats['failed']) > 5:
+        if len(fp32_stats["failed"]) > 5:
             print(f"  ... 还有 {len(fp32_stats['failed']) - 5} 个失败")
 
-    print(f"\n=== TensorRT网络智能后处理完成 ===")
+    print("\n=== TensorRT网络智能后处理完成 ===")
     return network

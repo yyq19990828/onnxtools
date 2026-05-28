@@ -46,17 +46,17 @@ class TestResultReadOnlyProperties:
 
     def test_names_property_read_only(self):
         """Test that names property cannot be reassigned."""
-        result = Result(orig_shape=(640, 640), names={0: 'vehicle'})
+        result = Result(orig_shape=(640, 640), names={0: "vehicle"})
 
         with pytest.raises(AttributeError, match="can't set attribute"):
-            result.names = {1: 'plate'}
+            result.names = {1: "plate"}
 
     def test_path_property_read_only(self):
         """Test that path property cannot be reassigned."""
-        result = Result(orig_shape=(640, 640), path='/path/to/image.jpg')
+        result = Result(orig_shape=(640, 640), path="/path/to/image.jpg")
 
         with pytest.raises(AttributeError, match="can't set attribute"):
-            result.path = '/another/path.jpg'
+            result.path = "/another/path.jpg"
 
     def test_orig_img_property_read_only(self):
         """Test that orig_img property cannot be reassigned."""

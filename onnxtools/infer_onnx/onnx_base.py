@@ -10,7 +10,6 @@ import ast
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -42,9 +41,14 @@ class BaseORT(ABC):
         >>> result.boxes, result.scores, result.class_ids
     """
 
-    def __init__(self, onnx_path: str, input_shape: Tuple[int, int] = (640, 640),
-                 conf_thres: float = 0.5, providers: Optional[List[str]] = None,
-                 det_config: Optional[Union[str, Dict[int, str]]] = None):
+    def __init__(
+        self,
+        onnx_path: str,
+        input_shape: tuple[int, int] = (640, 640),
+        conf_thres: float = 0.5,
+        providers: list[str] | None = None,
+        det_config: str | dict[int, str] | None = None,
+    ):
         """
         初始化ONNX模型推理器
 
@@ -62,11 +66,12 @@ class BaseORT(ABC):
         self.conf_thres = conf_thres
         self._requested_input_shape = input_shape  # 用户请求的输入形状
         self.input_shape = None  # 实际输入形状，将从模型中读取
-        self.providers = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        self.providers = providers or ["CUDAExecutionProvider", "CPUExecutionProvider"]
         self.det_config = det_config  # 保存配置（路径或字典）
 
         # 创建ONNX Runtime会话（立即创建并缓存，后续复用）
         import onnxruntime
+
         self._onnx_session = onnxruntime.InferenceSession(self.onnx_path, providers=self.providers)
         logging.info(f"ONNX Runtime会话已创建: {self._onnx_session.get_providers()}")
 
@@ -74,12 +79,12 @@ class BaseORT(ABC):
         model_info = self._get_model_info()
 
         # 从模型信息中提取属性
-        self.input_name = model_info.get('input_name')
-        self.output_names = model_info.get('output_names')
-        self.class_names = model_info.get('class_names', {})
+        self.input_name = model_info.get("input_name")
+        self.output_names = model_info.get("output_names")
+        self.class_names = model_info.get("class_names", {})
 
         # 从模型信息确定input_shape和expected_batch_size
-        model_input_shape = model_info.get('input_shape')
+        model_input_shape = model_info.get("input_shape")
         if model_input_shape and len(model_input_shape) >= 4:
             # 提取batch size (第0维)
             if isinstance(model_input_shape[0], int) and model_input_shape[0] > 0:
@@ -88,13 +93,21 @@ class BaseORT(ABC):
                 self._expected_batch_size = 1
 
             # 提取height和width (第2、3维)
-            if (isinstance(model_input_shape[2], int) and model_input_shape[2] > 0
-                    and isinstance(model_input_shape[3], int) and model_input_shape[3] > 0):
+            if (
+                isinstance(model_input_shape[2], int)
+                and model_input_shape[2] > 0
+                and isinstance(model_input_shape[3], int)
+                and model_input_shape[3] > 0
+            ):
                 self.input_shape = (model_input_shape[2], model_input_shape[3])
-                logging.info(f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}, batch_size: {self._expected_batch_size}")
+                logging.info(
+                    f"从ONNX模型metadata读取到固定输入形状: {self.input_shape}, batch_size: {self._expected_batch_size}"
+                )
             else:
                 self.input_shape = self._requested_input_shape
-                logging.info(f"模型输入形状为动态，使用用户指定形状: {self.input_shape}, batch_size: {self._expected_batch_size}")
+                logging.info(
+                    f"模型输入形状为动态，使用用户指定形状: {self.input_shape}, batch_size: {self._expected_batch_size}"
+                )
         else:
             self.input_shape = self._requested_input_shape
             self._expected_batch_size = 1
@@ -104,7 +117,7 @@ class BaseORT(ABC):
 
         logging.info(f"创建ONNX推理器: {self.onnx_path}")
 
-    def _get_model_info(self) -> Dict[str, any]:
+    def _get_model_info(self) -> dict[str, any]:
         """
         使用纯onnx库获取模型信息（不创建ORT会话，轻量级）
 
@@ -119,12 +132,7 @@ class BaseORT(ABC):
 
         import onnx
 
-        result = {
-            'input_name': None,
-            'output_names': [],
-            'input_shape': None,
-            'class_names': {}
-        }
+        result = {"input_name": None, "output_names": [], "input_shape": None, "class_names": {}}
 
         try:
             # 加载ONNX模型（只读取结构，不创建推理会话）
@@ -134,7 +142,7 @@ class BaseORT(ABC):
             # 获取输入信息
             if graph.input:
                 input_info = graph.input[0]
-                result['input_name'] = input_info.name
+                result["input_name"] = input_info.name
 
                 # 解析输入shape
                 input_shape = []
@@ -143,10 +151,10 @@ class BaseORT(ABC):
                         input_shape.append(dim.dim_param)  # 动态维度
                     else:
                         input_shape.append(dim.dim_value)  # 固定维度
-                result['input_shape'] = input_shape
+                result["input_shape"] = input_shape
 
             # 获取输出信息
-            result['output_names'] = [output.name for output in graph.output]
+            result["output_names"] = [output.name for output in graph.output]
 
             # 读取类别名称从metadata
             custom_metadata = {}
@@ -154,27 +162,27 @@ class BaseORT(ABC):
                 custom_metadata[prop.key] = prop.value
 
             # 尝试解析names字段
-            if 'names' in custom_metadata:
+            if "names" in custom_metadata:
                 try:
                     # 首先尝试JSON解析
-                    names_data = json.loads(custom_metadata['names'])
+                    names_data = json.loads(custom_metadata["names"])
                 except (json.JSONDecodeError, TypeError):
                     try:
                         # 如果JSON解析失败，尝试Python字典的literal_eval解析（Ultralytics格式）
-                        names_data = ast.literal_eval(custom_metadata['names'])
+                        names_data = ast.literal_eval(custom_metadata["names"])
                     except Exception:
                         names_data = None
 
                 # 处理不同的names格式
                 if isinstance(names_data, dict):
                     try:
-                        result['class_names'] = {int(k): str(v) for k, v in names_data.items()}
+                        result["class_names"] = {int(k): str(v) for k, v in names_data.items()}
                         logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
                     except (ValueError, TypeError):
-                        result['class_names'] = {i: str(v) for i, v in enumerate(names_data.values())}
+                        result["class_names"] = {i: str(v) for i, v in enumerate(names_data.values())}
                         logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
                 elif isinstance(names_data, list):
-                    result['class_names'] = {i: str(name) for i, name in enumerate(names_data)}
+                    result["class_names"] = {i: str(name) for i, name in enumerate(names_data)}
                     logging.info("从ONNX模型metadata读取到类别名称 (纯onnx库)")
 
             logging.info(f"从ONNX模型读取信息: input={result['input_name']}, outputs={result['output_names']}")
@@ -183,12 +191,12 @@ class BaseORT(ABC):
             logging.warning(f"从ONNX模型读取信息失败: {e}")
 
         # 如果metadata中没有类别名称，回退到配置文件
-        if not result['class_names']:
-            result['class_names'] = self._load_class_names_from_config()
+        if not result["class_names"]:
+            result["class_names"] = self._load_class_names_from_config()
 
         return result
 
-    def _load_class_names_from_config(self) -> Dict[int, str]:
+    def _load_class_names_from_config(self) -> dict[int, str]:
         """
         从配置加载类别名称（回退方案）
 
@@ -211,8 +219,9 @@ class BaseORT(ABC):
                 # 情况2: det_config 是字符串路径，从文件加载
                 elif isinstance(self.det_config, str):
                     from onnxtools.config import load_det_config
+
                     config = load_det_config(self.det_config)
-                    class_names = config.get('class_names')
+                    class_names = config.get("class_names")
 
                     if not class_names:
                         logging.warning("外部配置中没有class_names字段")
@@ -239,7 +248,7 @@ class BaseORT(ABC):
 
     @staticmethod
     @abstractmethod
-    def preprocess(image: np.ndarray, input_shape: Tuple[int, int], **kwargs) -> Tuple:
+    def preprocess(image: np.ndarray, input_shape: tuple[int, int], **kwargs) -> tuple:
         """
         静态预处理方法，将图像转换为模型输入格式
 
@@ -255,14 +264,13 @@ class BaseORT(ABC):
         Raises:
             NotImplementedError: 子类必须实现此方法
         """
-        raise NotImplementedError(
-            f"{__class__.__name__}.preprocess() must be implemented by subclass"
-        )
+        raise NotImplementedError(f"{__class__.__name__}.preprocess() must be implemented by subclass")
 
     @staticmethod
     @abstractmethod
-    def postprocess(prediction: np.ndarray, input_shape: Tuple[int, int],
-                    conf_thres: float, **kwargs) -> List[np.ndarray]:
+    def postprocess(
+        prediction: np.ndarray, input_shape: tuple[int, int], conf_thres: float, **kwargs
+    ) -> list[np.ndarray]:
         """
         静态后处理方法，将模型输出转换为检测结果
 
@@ -279,11 +287,9 @@ class BaseORT(ABC):
         Raises:
             NotImplementedError: 子类必须实现此方法
         """
-        raise NotImplementedError(
-            f"{__class__.__name__}.postprocess() must be implemented by subclass"
-        )
+        raise NotImplementedError(f"{__class__.__name__}.postprocess() must be implemented by subclass")
 
-    def _prepare_inference(self, image: np.ndarray) -> Tuple[np.ndarray, float, tuple, Optional[tuple]]:
+    def _prepare_inference(self, image: np.ndarray) -> tuple[np.ndarray, float, tuple, tuple | None]:
         """
         Phase 1: Prepare inference by initializing model and preprocessing image.
 
@@ -309,7 +315,7 @@ class BaseORT(ABC):
 
         # Use subclass name to determine return value format
         class_name = self.__class__.__name__
-        if class_name in ['RtdetrORT', 'RfdetrORT']:
+        if class_name in ["RtdetrORT", "RfdetrORT"]:
             # RT-DETR and RF-DETR return 3-tuple: (input_tensor, scale, original_shape)
             input_tensor, scale, original_shape = preprocess_result
             ratio_pad = None
@@ -319,7 +325,7 @@ class BaseORT(ABC):
 
         return input_tensor, scale, original_shape, ratio_pad
 
-    def _execute_inference(self, input_tensor: np.ndarray) -> Tuple[List[np.ndarray], int]:
+    def _execute_inference(self, input_tensor: np.ndarray) -> tuple[list[np.ndarray], int]:
         """
         Phase 2: Execute model inference with input tensor.
 
@@ -354,14 +360,14 @@ class BaseORT(ABC):
 
     def _finalize_inference(
         self,
-        outputs: List[np.ndarray],
+        outputs: list[np.ndarray],
         expected_batch_size: int,
         scale: float,
-        ratio_pad: Optional[tuple],
-        conf_thres: Optional[float],
-        orig_shape: Optional[tuple] = None,
-        **kwargs
-    ) -> List[np.ndarray]:
+        ratio_pad: tuple | None,
+        conf_thres: float | None,
+        orig_shape: tuple | None = None,
+        **kwargs,
+    ) -> list[np.ndarray]:
         """
         Phase 3: Finalize inference by post-processing outputs and filtering results.
 
@@ -388,34 +394,38 @@ class BaseORT(ABC):
         class_name = self.__class__.__name__
 
         # Different models have different postprocess signatures
-        if class_name == 'RfdetrORT':
+        if class_name == "RfdetrORT":
             # RF-DETR needs full outputs (List[np.ndarray])
             detections = self.postprocess(
-                outputs, self.input_shape, effective_conf_thres,
-                orig_shape=orig_shape, **kwargs
+                outputs, self.input_shape, effective_conf_thres, orig_shape=orig_shape, **kwargs
             )
-        elif class_name == 'RtdetrORT':
+        elif class_name == "RtdetrORT":
             # RT-DETR uses first output only
             detections = self.postprocess(
-                outputs[0], self.input_shape, effective_conf_thres,
-                orig_shape=orig_shape, **kwargs
+                outputs[0], self.input_shape, effective_conf_thres, orig_shape=orig_shape, **kwargs
             )
         else:
             # YOLO and other models need additional NMS parameters
             detections = self.postprocess(
-                outputs[0], self.input_shape, effective_conf_thres,
-                self.iou_thres, self.multi_label, self.has_objectness,
-                scale=scale, ratio_pad=ratio_pad, orig_shape=orig_shape
+                outputs[0],
+                self.input_shape,
+                effective_conf_thres,
+                self.iou_thres,
+                self.multi_label,
+                self.has_objectness,
+                scale=scale,
+                ratio_pad=ratio_pad,
+                orig_shape=orig_shape,
             )
 
         # If input is multi-batch but only processing one image, return only first batch result
-        if (expected_batch_size > 1 and len(detections) > 1):
+        if expected_batch_size > 1 and len(detections) > 1:
             detections = [detections[0]]
             logging.debug("只返回第一个batch的检测结果")
 
         return detections
 
-    def __call__(self, image: np.ndarray, conf_thres: Optional[float] = None, **kwargs) -> Result:
+    def __call__(self, image: np.ndarray, conf_thres: float | None = None, **kwargs) -> Result:
         """对单张图像执行推理(预处理 → ONNX 推理 → 后处理 → Result 包装)。
 
         Args:
@@ -450,8 +460,13 @@ class BaseORT(ABC):
 
         # Phase 3: Finalize inference
         detections = self._finalize_inference(
-            outputs, expected_batch_size, scale, ratio_pad, conf_thres,
-            orig_shape=original_shape, **kwargs,
+            outputs,
+            expected_batch_size,
+            scale,
+            ratio_pad,
+            conf_thres,
+            orig_shape=original_shape,
+            **kwargs,
         )
 
         # Convert list format to Result object (T014)
@@ -473,7 +488,7 @@ class BaseORT(ABC):
             class_ids=class_ids,
             orig_img=image,
             orig_shape=original_shape,
-            names=self.class_names
+            names=self.class_names,
         )
 
     def create_engine_dataloader(self, **kwargs):
@@ -489,6 +504,7 @@ class BaseORT(ABC):
             使用本检测器静态预处理方法的 ``CustomEngineDataLoader`` 实例。
         """
         from .engine_dataloader import create_dataloader_from_detector
+
         dataloader = create_dataloader_from_detector(self, **kwargs)
         # 直接赋值给私有属性，这样外部脚本调用后就会自动设置好
         self.engine_dataloader = dataloader
@@ -496,11 +512,7 @@ class BaseORT(ABC):
 
     # TODO 输出结果加上后处理，以及一些图像变换的中间超参
     def compare_engine(
-        self,
-        engine_path: Optional[str] = None,
-        save_engine: bool = False,
-        rtol: float = 1e-3,
-        atol: float = 1e-3
+        self, engine_path: str | None = None, save_engine: bool = False, rtol: float = 1e-3, atol: float = 1e-3
     ) -> bool:
         """
         使用Polygraphy比较ONNX模型和TensorRT引擎的推理结果
@@ -522,6 +534,7 @@ class BaseORT(ABC):
         if engine_path is not None:
             # 使用现有引擎文件
             from polygraphy import config
+
             config.USE_TENSORRT_RTX = True  # 启用RTX加速（不启用的trt 8.6.1 会报错
             build_engine = EngineFromPath(engine_path)
             trt_runner = TrtRunner(build_engine)
@@ -531,7 +544,7 @@ class BaseORT(ABC):
 
             if save_engine:
                 # 保存引擎文件
-                engine_save_path = str(Path(self.onnx_path).with_suffix('.engine'))
+                engine_save_path = str(Path(self.onnx_path).with_suffix(".engine"))
                 build_engine = SaveEngine(build_engine, path=engine_save_path)
 
             trt_runner = TrtRunner(build_engine)
@@ -546,10 +559,8 @@ class BaseORT(ABC):
         # 比较精度
         accuracy_results = Comparator.compare_accuracy(
             run_results,
-            compare_func=CompareFunc.simple(check_error_stat='quantile',
-                                            error_quantile=0.95,
-                                            rtol=rtol, atol=atol)
-                                            )
+            compare_func=CompareFunc.simple(check_error_stat="quantile", error_quantile=0.95, rtol=rtol, atol=atol),
+        )
 
         # 返回比较结果
         return bool(accuracy_results), run_results

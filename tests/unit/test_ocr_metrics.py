@@ -8,8 +8,6 @@ Tests edge cases and boundary conditions for:
 - Length difference scenarios
 """
 
-import pytest
-
 from onnxtools.utils.ocr_metrics import calculate_edit_distance_metrics
 
 
@@ -61,13 +59,13 @@ class TestEditDistanceEdgeCases:
         dist, norm_ed, sim = calculate_edit_distance_metrics("京A123", "京A12345")
         assert dist == 2  # Missing "45"
         assert abs(norm_ed - 0.286) < 0.01  # 2/7 ≈ 0.286
-        assert abs(sim - 0.714) < 0.01      # 1 - 0.286 ≈ 0.714
+        assert abs(sim - 0.714) < 0.01  # 1 - 0.286 ≈ 0.714
 
         # Longer predicted
         dist2, norm_ed2, sim2 = calculate_edit_distance_metrics("京A12345XY", "京A12345")
         assert dist2 == 2  # Extra "XY"
         assert abs(norm_ed2 - 0.222) < 0.01  # 2/9 ≈ 0.222
-        assert abs(sim2 - 0.778) < 0.01      # 1 - 0.222 ≈ 0.778
+        assert abs(sim2 - 0.778) < 0.01  # 1 - 0.222 ≈ 0.778
 
     def test_edit_distance_single_character(self):
         """Test single character strings"""
@@ -90,7 +88,7 @@ class TestEditDistanceEdgeCases:
         # One character inserted (A)
         assert dist == 1
         assert abs(norm_ed - 0.143) < 0.01  # 1/7 ≈ 0.143
-        assert abs(sim - 0.857) < 0.01      # 1 - 0.143 ≈ 0.857
+        assert abs(sim - 0.857) < 0.01  # 1 - 0.143 ≈ 0.857
 
     def test_edit_distance_deletion(self):
         """Test deletion operations"""
@@ -127,7 +125,7 @@ class TestEditDistanceEdgeCases:
         # First 2 characters match, last 3 are different
         assert dist == 3
         assert abs(norm_ed - 0.6) < 0.01  # 3/5 = 0.6
-        assert abs(sim - 0.4) < 0.01      # 1 - 0.6 = 0.4
+        assert abs(sim - 0.4) < 0.01  # 1 - 0.6 = 0.4
 
     def test_edit_distance_numbers_only(self):
         """Test with number-only strings"""
@@ -136,7 +134,7 @@ class TestEditDistanceEdgeCases:
         # Last digit different
         assert dist == 1
         assert abs(norm_ed - 0.2) < 0.01  # 1/5 = 0.2
-        assert abs(sim - 0.8) < 0.01      # 1 - 0.2 = 0.8
+        assert abs(sim - 0.8) < 0.01  # 1 - 0.2 = 0.8
 
     def test_edit_distance_mixed_content(self):
         """Test with mixed Chinese, letters, and numbers"""
@@ -226,7 +224,7 @@ class TestEditDistanceEdgeCases:
         long_pred_diff = "京A" + "1" * 99 + "2"
         dist2, norm_ed2, sim2 = calculate_edit_distance_metrics(long_pred_diff, long_gt)
         assert dist2 == 1
-        assert abs(norm_ed2 - 1/102) < 0.001  # 1/102
+        assert abs(norm_ed2 - 1 / 102) < 0.001  # 1/102
 
 
 class TestEditDistanceRealWorldScenarios:

@@ -9,6 +9,7 @@ import pytest
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+
 @pytest.mark.contract
 class TestConvertDetectionsContract:
     """Contract tests for detection format conversion to supervision.Detections."""
@@ -17,6 +18,7 @@ class TestConvertDetectionsContract:
         """Contract: convert_to_supervision_detections function must exist."""
         try:
             from onnxtools.utils.drawing import convert_to_supervision_detections
+
             assert callable(convert_to_supervision_detections), "Function must be callable"
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -31,7 +33,7 @@ class TestConvertDetectionsContract:
             sig = inspect.signature(convert_to_supervision_detections)
             params = list(sig.parameters.keys())
 
-            expected_params = ['detections_array', 'class_names']
+            expected_params = ["detections_array", "class_names"]
             assert params == expected_params, f"Expected {expected_params}, got {params}"
 
         except ImportError:
@@ -67,10 +69,10 @@ class TestConvertDetectionsContract:
             assert isinstance(result, sv.Detections), "Must return supervision.Detections object"
 
             # Check required attributes exist
-            assert hasattr(result, 'xyxy'), "Must have xyxy attribute"
-            assert hasattr(result, 'confidence'), "Must have confidence attribute"
-            assert hasattr(result, 'class_id'), "Must have class_id attribute"
-            assert hasattr(result, 'data'), "Must have data attribute"
+            assert hasattr(result, "xyxy"), "Must have xyxy attribute"
+            assert hasattr(result, "confidence"), "Must have confidence attribute"
+            assert hasattr(result, "class_id"), "Must have class_id attribute"
+            assert hasattr(result, "data"), "Must have data attribute"
 
             # Check array shapes
             num_detections = len(sample_detections[0])
@@ -92,8 +94,7 @@ class TestConvertDetectionsContract:
             expected_box = sample_detections[0][0][:4]  # [x1, y1, x2, y2]
             actual_box = result.xyxy[0]
 
-            np.testing.assert_array_equal(actual_box, expected_box,
-                                        "Bounding box coordinates must match input")
+            np.testing.assert_array_equal(actual_box, expected_box, "Bounding box coordinates must match input")
 
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -109,8 +110,9 @@ class TestConvertDetectionsContract:
             expected_conf = [det[4] for det in sample_detections[0]]
             actual_conf = result.confidence
 
-            np.testing.assert_array_almost_equal(actual_conf, expected_conf, decimal=6,
-                                                err_msg="Confidence scores must match input")
+            np.testing.assert_array_almost_equal(
+                actual_conf, expected_conf, decimal=6, err_msg="Confidence scores must match input"
+            )
 
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -126,8 +128,7 @@ class TestConvertDetectionsContract:
             expected_class_ids = [int(det[5]) for det in sample_detections[0]]
             actual_class_ids = result.class_id
 
-            np.testing.assert_array_equal(actual_class_ids, expected_class_ids,
-                                        "Class IDs must match input")
+            np.testing.assert_array_equal(actual_class_ids, expected_class_ids, "Class IDs must match input")
 
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -140,10 +141,10 @@ class TestConvertDetectionsContract:
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
             # Check class names in data
-            assert 'class_name' in result.data, "class_name must be in data metadata"
+            assert "class_name" in result.data, "class_name must be in data metadata"
 
             expected_names = [sample_class_names[int(det[5])] for det in sample_detections[0]]
-            actual_names = result.data['class_name']
+            actual_names = result.data["class_name"]
 
             assert actual_names == expected_names, "Class names must match expected mapping"
 
@@ -158,12 +159,15 @@ class TestConvertDetectionsContract:
             result = convert_to_supervision_detections(sample_detections, sample_class_names)
 
             # Check data types
-            assert result.xyxy.dtype == np.float32 or result.xyxy.dtype == np.float64, \
-                f"xyxy must be float type, got {result.xyxy.dtype}"
-            assert result.confidence.dtype == np.float32 or result.confidence.dtype == np.float64, \
-                f"confidence must be float type, got {result.confidence.dtype}"
-            assert result.class_id.dtype == np.int32 or result.class_id.dtype == np.int64, \
-                f"class_id must be int type, got {result.class_id.dtype}"
+            assert (
+                result.xyxy.dtype == np.float32 or result.xyxy.dtype == np.float64
+            ), f"xyxy must be float type, got {result.xyxy.dtype}"
+            assert (
+                result.confidence.dtype == np.float32 or result.confidence.dtype == np.float64
+            ), f"confidence must be float type, got {result.confidence.dtype}"
+            assert (
+                result.class_id.dtype == np.int32 or result.class_id.dtype == np.int64
+            ), f"class_id must be int type, got {result.class_id.dtype}"
 
         except ImportError:
             pytest.fail("convert_to_supervision_detections function must be implemented")
@@ -176,7 +180,7 @@ class TestConvertDetectionsContract:
             # Create multi-batch detections (should take first batch)
             multi_batch_detections = [
                 [[100.0, 100.0, 200.0, 150.0, 0.95, 0]],  # First batch
-                [[150.0, 150.0, 250.0, 200.0, 0.88, 1]]   # Second batch (should be ignored)
+                [[150.0, 150.0, 250.0, 200.0, 0.88, 1]],  # Second batch (should be ignored)
             ]
 
             result = convert_to_supervision_detections(multi_batch_detections, sample_class_names)
@@ -224,7 +228,7 @@ class TestConvertDetectionsContract:
             # Measure conversion time
             start_time = time.time()
             for _ in range(100):  # 100 iterations
-                result = convert_to_supervision_detections(large_detections, sample_class_names)
+                convert_to_supervision_detections(large_detections, sample_class_names)
             avg_time = (time.time() - start_time) / 100 * 1000  # ms
 
             assert avg_time < 5.0, f"Conversion too slow: {avg_time:.2f}ms (target: <5ms)"

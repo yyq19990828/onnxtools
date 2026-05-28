@@ -39,7 +39,6 @@
 """
 
 import argparse
-from typing import Tuple
 
 import numpy as np
 import onnx
@@ -57,9 +56,7 @@ def _resolve_output_shapes(model) -> dict:
     """
     import onnxruntime as ort
 
-    sess = ort.InferenceSession(
-        model.SerializeToString(), providers=["CPUExecutionProvider"]
-    )
+    sess = ort.InferenceSession(model.SerializeToString(), providers=["CPUExecutionProvider"])
     inp = sess.get_inputs()[0]
     shape = [d if isinstance(d, int) else 1 for d in inp.shape]
     dummy = np.zeros(shape, dtype=np.float32)
@@ -70,7 +67,7 @@ def _resolve_output_shapes(model) -> dict:
 def modify_model(
     input_path: str,
     output_path: str,
-    input_hw: Tuple[int, int] = (640, 640),
+    input_hw: tuple[int, int] = (640, 640),
     rename: bool = True,
     dynamic_batch: bool = True,
     normalize: bool = True,
@@ -96,11 +93,14 @@ def modify_model(
     # ========== 折叠常量 (先于改造) ==========
     if fold:
         from polygraphy.backend.onnx import fold_constants
+
         num_nodes_before = len(model.graph.node)
         model = fold_constants(model)
         num_nodes_after = len(model.graph.node)
-        print(f"Fold constants: {num_nodes_before} -> {num_nodes_after} nodes "
-              f"(removed {num_nodes_before - num_nodes_after})")
+        print(
+            f"Fold constants: {num_nodes_before} -> {num_nodes_after} nodes "
+            f"(removed {num_nodes_before - num_nodes_after})"
+        )
 
     graph = model.graph
 
@@ -115,16 +115,17 @@ def modify_model(
     need_resize = resize
 
     print(f"Model size: {model_h}x{model_w}, Input size: {input_h}x{input_w}")
-    print(f"Options: rename={rename}, dynamic_batch={dynamic_batch}, "
-          f"normalize={normalize}, resize={need_resize}, concat={concat}, fold={fold}")
+    print(
+        f"Options: rename={rename}, dynamic_batch={dynamic_batch}, "
+        f"normalize={normalize}, resize={need_resize}, concat={concat}, fold={fold}"
+    )
 
     # 推断输出维度 (动态维度需实跑一次解析)
     resolved_shapes = _resolve_output_shapes(model)
     out_dims = {name: int(shape[-1]) for name, shape in resolved_shapes.items()}
     total_out_dim = sum(out_dims.values())
     num_queries = int(resolved_shapes[graph.output[0].name][0])
-    print(f"Output dims: {out_dims}, queries: {num_queries}"
-          + (f" -> concat dim: {total_out_dim}" if concat else ""))
+    print(f"Output dims: {out_dims}, queries: {num_queries}" + (f" -> concat dim: {total_out_dim}" if concat else ""))
 
     # 确定输入节点名: 如果 rename 则用 "input"，否则保留原名
     ext_input_name = "input" if rename else orig_input_name
@@ -167,9 +168,7 @@ def modify_model(
         current_output = div_out
 
     if need_resize:
-        roi_tensor = numpy_helper.from_array(
-            np.array([], dtype=np.float32), name="resize_roi"
-        )
+        roi_tensor = numpy_helper.from_array(np.array([], dtype=np.float32), name="resize_roi")
         scales_tensor = numpy_helper.from_array(
             np.array([1.0, 1.0, model_h / input_h, model_w / input_w], dtype=np.float32),
             name="resize_scales",
@@ -208,9 +207,7 @@ def modify_model(
         actual_w = input_w if (normalize or need_resize) else model_w
         batch_dim = "batch" if dynamic_batch else (orig_shape[0].dim_value or 1)
 
-        new_input = helper.make_tensor_value_info(
-            ext_input_name, TensorProto.FLOAT, [batch_dim, 3, actual_h, actual_w]
-        )
+        new_input = helper.make_tensor_value_info(ext_input_name, TensorProto.FLOAT, [batch_dim, 3, actual_h, actual_w])
         while len(graph.input) > 0:
             graph.input.pop()
         graph.input.append(new_input)
@@ -230,9 +227,7 @@ def modify_model(
         graph.node.append(concat_node)
 
         out_name = "output" if rename else "concat_output"
-        new_output = helper.make_tensor_value_info(
-            out_name, TensorProto.FLOAT, ["batch", num_queries, total_out_dim]
-        )
+        new_output = helper.make_tensor_value_info(out_name, TensorProto.FLOAT, ["batch", num_queries, total_out_dim])
         while len(graph.output) > 0:
             graph.output.pop()
         graph.output.append(new_output)
@@ -251,13 +246,8 @@ def modify_model(
                 )
                 graph.node.append(rename_node)
 
-                out_shape = [
-                    d.dim_param if d.dim_param else d.dim_value
-                    for d in orig_out.type.tensor_type.shape.dim
-                ]
-                new_out = helper.make_tensor_value_info(
-                    new_name, TensorProto.FLOAT, out_shape
-                )
+                out_shape = [d.dim_param if d.dim_param else d.dim_value for d in orig_out.type.tensor_type.shape.dim]
+                new_out = helper.make_tensor_value_info(new_name, TensorProto.FLOAT, out_shape)
                 graph.output.remove(orig_out)
                 graph.output.append(new_out)
 
@@ -271,6 +261,7 @@ def modify_model(
     # ========== 验证并保存 ==========
     try:
         from onnx import shape_inference
+
         model = shape_inference.infer_shapes(model)
     except Exception as e:
         print(f"Shape inference warning: {e}")
@@ -292,8 +283,7 @@ def _print_model_info(path: str):
         dims = [d.dim_value or d.dim_param for d in out.type.tensor_type.shape.dim]
         print(f"  Output: {out.name}: {dims}")
 
-    added = [n.name for n in model.graph.node
-             if n.name.startswith("pre_") or n.name.startswith("post_")]
+    added = [n.name for n in model.graph.node if n.name.startswith("pre_") or n.name.startswith("post_")]
     if added:
         print(f"  Added nodes: {added}")
 
@@ -320,22 +310,17 @@ def main():
     )
     parser.add_argument("-i", "--input", required=True, help="输入 ONNX 模型路径")
     parser.add_argument("-o", "--output", required=True, help="输出 ONNX 模型路径")
-    parser.add_argument("--input-hw", type=int, nargs=2, default=[640, 640],
-                        metavar=("H", "W"), help="外部输入尺寸 (默认: 640 640)")
+    parser.add_argument(
+        "--input-hw", type=int, nargs=2, default=[640, 640], metavar=("H", "W"), help="外部输入尺寸 (默认: 640 640)"
+    )
 
     # 每个步骤独立的 bool 开关
-    parser.add_argument("--rename", action="store_true",
-                        help="重命名输入输出为 input/output")
-    parser.add_argument("--dynamic-batch", action="store_true",
-                        help="batch 维度改为动态")
-    parser.add_argument("--normalize", action="store_true",
-                        help="烧入 ImageNet 归一化 (mean/std)")
-    parser.add_argument("--resize", action="store_true",
-                        help="前插 Resize 节点 (input_hw -> model_hw)")
-    parser.add_argument("--concat", action="store_true",
-                        help="两个输出 Concat 成单输出 [batch,300,4+C]")
-    parser.add_argument("--fold", action="store_true",
-                        help="Polygraphy 折叠常量算子，精简计算图")
+    parser.add_argument("--rename", action="store_true", help="重命名输入输出为 input/output")
+    parser.add_argument("--dynamic-batch", action="store_true", help="batch 维度改为动态")
+    parser.add_argument("--normalize", action="store_true", help="烧入 ImageNet 归一化 (mean/std)")
+    parser.add_argument("--resize", action="store_true", help="前插 Resize 节点 (input_hw -> model_hw)")
+    parser.add_argument("--concat", action="store_true", help="两个输出 Concat 成单输出 [batch,300,4+C]")
+    parser.add_argument("--fold", action="store_true", help="Polygraphy 折叠常量算子，精简计算图")
 
     args = parser.parse_args()
 

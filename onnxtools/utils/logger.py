@@ -29,22 +29,23 @@ def setup_logger(level="INFO"):
 
     # Create a colored formatter and set it for the handler
     formatter = colorlog.ColoredFormatter(
-        '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
+        "%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
         log_colors={
-            'DEBUG':    'cyan',
-            'INFO':     'green',
-            'WARNING':  'yellow',
-            'ERROR':    'red',
-            'CRITICAL': 'red,bg_white',
-        }
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_white",
+        },
     )
     console_handler.setFormatter(formatter)
 
     # Add the handler to the logger
     logger.addHandler(console_handler)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Example usage:
     setup_logger("DEBUG")
     logging.debug("This is a debug message.")

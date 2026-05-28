@@ -95,7 +95,7 @@ class STrack:
     # ---- batch predict ---------------------------------------------------
 
     @staticmethod
-    def multi_predict(tracks: list["STrack"]) -> None:
+    def multi_predict(tracks: list[STrack]) -> None:
         if not tracks:
             return
         means = np.stack([t.mean for t in tracks])
@@ -122,11 +122,9 @@ class STrack:
         self.frame_id = frame_id
         self.start_frame = frame_id
 
-    def re_activate(self, new_track: "STrack", frame_id: int, new_id: bool = False) -> None:
+    def re_activate(self, new_track: STrack, frame_id: int, new_id: bool = False) -> None:
         assert self.kalman_filter is not None and self.mean is not None
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, new_track.xyah
-        )
+        self.mean, self.covariance = self.kalman_filter.update(self.mean, self.covariance, new_track.xyah)
         self.tracklet_len = 0
         self.state = TrackState.Tracked
         self.is_activated = True
@@ -137,13 +135,11 @@ class STrack:
         self.class_id = new_track.class_id
         self.last_xyxy = new_track.last_xyxy
 
-    def update(self, new_track: "STrack", frame_id: int) -> None:
+    def update(self, new_track: STrack, frame_id: int) -> None:
         assert self.kalman_filter is not None and self.mean is not None
         self.frame_id = frame_id
         self.tracklet_len += 1
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, new_track.xyah
-        )
+        self.mean, self.covariance = self.kalman_filter.update(self.mean, self.covariance, new_track.xyah)
         self.state = TrackState.Tracked
         self.is_activated = True
         self.score = new_track.score
@@ -174,15 +170,11 @@ def _sub_tracks(a: list[STrack], b: list[STrack]) -> list[STrack]:
     return [t for t in a if t.track_id not in ids_b]
 
 
-def _remove_duplicate_tracks(
-    a: list[STrack], b: list[STrack]
-) -> tuple[list[STrack], list[STrack]]:
+def _remove_duplicate_tracks(a: list[STrack], b: list[STrack]) -> tuple[list[STrack], list[STrack]]:
     """Resolve duplicates between two pools by keeping the older track."""
     if not a or not b:
         return a, b
-    pdist = iou_distance(
-        np.stack([t.tlbr for t in a]), np.stack([t.tlbr for t in b])
-    )
+    pdist = iou_distance(np.stack([t.tlbr for t in a]), np.stack([t.tlbr for t in b]))
     pairs = np.where(pdist < 0.15)
     dup_a, dup_b = set(), set()
     for ai, bi in zip(*pairs):
@@ -260,7 +252,9 @@ class ByteTrackNative(BaseTracker):
         STrack.reset_id()
 
     def update(
-        self, detections: sv.Detections, frame: np.ndarray  # frame unused
+        self,
+        detections: sv.Detections,
+        frame: np.ndarray,  # frame unused
     ) -> sv.Detections:
         del frame  # frame data not consumed by motion-only ByteTrack
         self.frame_id += 1
@@ -270,20 +264,14 @@ class ByteTrackNative(BaseTracker):
         lost: list[STrack] = []
         removed: list[STrack] = []
 
-        xyxy = (
-            detections.xyxy.astype(np.float32)
-            if detections.xyxy is not None
-            else np.empty((0, 4), dtype=np.float32)
-        )
+        xyxy = detections.xyxy.astype(np.float32) if detections.xyxy is not None else np.empty((0, 4), dtype=np.float32)
         scores = (
             detections.confidence
             if getattr(detections, "confidence", None) is not None
             else np.ones(len(xyxy), dtype=np.float32)
         )
         class_ids = (
-            detections.class_id
-            if getattr(detections, "class_id", None) is not None
-            else np.zeros(len(xyxy), dtype=int)
+            detections.class_id if getattr(detections, "class_id", None) is not None else np.zeros(len(xyxy), dtype=int)
         )
         scores = np.asarray(scores, dtype=np.float32)
         class_ids = np.asarray(class_ids, dtype=int)
@@ -300,12 +288,8 @@ class ByteTrackNative(BaseTracker):
         dets_low_scores = scores[inds_low]
         dets_low_classes = class_ids[inds_low]
 
-        detections_high = self._build_stracks(
-            dets_high_xyxy, dets_high_scores, dets_high_classes
-        )
-        detections_low = self._build_stracks(
-            dets_low_xyxy, dets_low_scores, dets_low_classes
-        )
+        detections_high = self._build_stracks(dets_high_xyxy, dets_high_scores, dets_high_classes)
+        detections_low = self._build_stracks(dets_low_xyxy, dets_low_scores, dets_low_classes)
 
         # Split tracked into unconfirmed and confirmed.
         unconfirmed: list[STrack] = []
@@ -336,11 +320,7 @@ class ByteTrackNative(BaseTracker):
                 refind.append(track)
 
         # ---- Stage 2: low-score detections vs unmatched Tracked tracks ---
-        r_tracked = [
-            strack_pool[int(i)]
-            for i in u_track
-            if strack_pool[int(i)].state == TrackState.Tracked
-        ]
+        r_tracked = [strack_pool[int(i)] for i in u_track if strack_pool[int(i)].state == TrackState.Tracked]
         dists2 = self._iou_dist(r_tracked, detections_low)
         matches2, u_track2, _ = linear_assignment(dists2, thresh=0.5)
 
@@ -364,9 +344,7 @@ class ByteTrackNative(BaseTracker):
         detections_remaining = [detections_high[int(i)] for i in u_det]
         dists3 = self._iou_dist(unconfirmed, detections_remaining)
         if dists3.size:
-            dists3 = fuse_score(
-                dists3, np.array([d.score for d in detections_remaining], dtype=np.float32)
-            )
+            dists3 = fuse_score(dists3, np.array([d.score for d in detections_remaining], dtype=np.float32))
         matches3, u_unc, u_det3 = linear_assignment(dists3, thresh=0.7)
 
         for it, idet in matches3:
@@ -393,9 +371,7 @@ class ByteTrackNative(BaseTracker):
                 removed.append(track)
 
         # ---- Maintain pools ----------------------------------------------
-        self.tracked_stracks = [
-            t for t in self.tracked_stracks if t.state == TrackState.Tracked
-        ]
+        self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
         self.tracked_stracks = _joint_tracks(self.tracked_stracks, activated)
         self.tracked_stracks = _joint_tracks(self.tracked_stracks, refind)
         self.lost_stracks = _sub_tracks(self.lost_stracks, self.tracked_stracks)
@@ -403,9 +379,7 @@ class ByteTrackNative(BaseTracker):
         self.lost_stracks = _sub_tracks(self.lost_stracks, removed)
         self.removed_stracks.extend(removed)
 
-        self.tracked_stracks, self.lost_stracks = _remove_duplicate_tracks(
-            self.tracked_stracks, self.lost_stracks
-        )
+        self.tracked_stracks, self.lost_stracks = _remove_duplicate_tracks(self.tracked_stracks, self.lost_stracks)
 
         # ---- Emit activated tracks ---------------------------------------
         output_tracks = [t for t in self.tracked_stracks if t.is_activated]
@@ -426,9 +400,7 @@ class ByteTrackNative(BaseTracker):
     # ---- helpers ---------------------------------------------------------
 
     @staticmethod
-    def _build_stracks(
-        xyxy: np.ndarray, scores: np.ndarray, classes: np.ndarray
-    ) -> list[STrack]:
+    def _build_stracks(xyxy: np.ndarray, scores: np.ndarray, classes: np.ndarray) -> list[STrack]:
         if xyxy.size == 0:
             return []
         xyah = _xyxy_to_xyah(xyxy)
@@ -439,9 +411,7 @@ class ByteTrackNative(BaseTracker):
             out.append(t)
         return out
 
-    def _iou_dist(
-        self, tracks: list[STrack], dets: list[STrack]
-    ) -> np.ndarray:
+    def _iou_dist(self, tracks: list[STrack], dets: list[STrack]) -> np.ndarray:
         if not tracks or not dets:
             return np.zeros((len(tracks), len(dets)), dtype=np.float32)
         a = np.stack([t.tlbr for t in tracks])

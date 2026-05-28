@@ -19,6 +19,7 @@
 """
 这个脚本加载由 `build_and_run.py` 构建的 TensorRT 引擎并运行推理。
 """
+
 import numpy as np
 from polygraphy.backend.common import BytesFromPath
 from polygraphy.backend.trt import EngineFromBytes, TrtRunner

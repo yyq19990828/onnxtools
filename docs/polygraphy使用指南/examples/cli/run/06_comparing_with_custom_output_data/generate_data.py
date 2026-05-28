@@ -19,6 +19,7 @@
 """
 为恒等模型生成输入和输出数据并将其保存到磁盘。
 """
+
 import numpy as np
 from polygraphy.comparator import RunResults
 from polygraphy.json import save_json

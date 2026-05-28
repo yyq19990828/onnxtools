@@ -24,11 +24,9 @@ Note: this script requires graphviz which can be installed manually:
     $ python3 -m pip install graphviz networkx
 """
 
-
 import argparse
 import shutil
 
-import graphviz
 from trex import *
 
 
@@ -45,14 +43,12 @@ def draw_engine(engine_json_fname: str):
     display_regions = True
     expand_layer_details = False
 
-    graph = to_dot(plan, formatter,
-                display_regions=display_regions,
-                expand_layer_details=expand_layer_details)
-    render_dot(graph, engine_json_fname, 'svg')
+    graph = to_dot(plan, formatter, display_regions=display_regions, expand_layer_details=expand_layer_details)
+    render_dot(graph, engine_json_fname, "svg")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('input', help="name of engine JSON file to draw")
+    parser.add_argument("input", help="name of engine JSON file to draw")
     args = parser.parse_args()
     draw_engine(engine_json_fname=args.input)

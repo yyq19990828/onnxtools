@@ -14,23 +14,23 @@ import cv2
 import numpy as np
 
 # 设置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # 添加项目路径到系统路径
 project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 
 from onnxtools import RUN, create_detector
-from onnxtools.config import COCO_CLASSES, COCO_COLORS, DET_CLASSES, DET_COLORS
+from onnxtools.config import COCO_CLASSES, COCO_COLORS, DET_CLASSES
 from onnxtools.utils.drawing import draw_detections
 
 
 def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description='比较ONNX模型和TensorRT引擎的推理结果精度，支持多张图片的可视化',
+        description="比较ONNX模型和TensorRT引擎的推理结果精度，支持多张图片的可视化",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
             使用示例:
             # 传统方式（无后缀，自动生成.onnx和.engine）
             %(prog)s --model-path models/rtdetr-20250729 --data-path data/苏州图片
@@ -46,77 +46,55 @@ def parse_arguments():
 
             # 其他参数组合（输入形状自动从ONNX模型读取）
             %(prog)s --model-path models/rtdetr-20250729.onnx --conf-thres 0.5 --rtol 1e-2
-            '''
+            """,
     )
 
     parser.add_argument(
-        '--model-path', '-m',
+        "--model-path",
+        "-m",
         type=str,
-        default='models/rtdetr-20250729',
-        help='模型路径（可带.onnx/.engine后缀，或不带后缀自动生成）'
+        default="models/rtdetr-20250729",
+        help="模型路径（可带.onnx/.engine后缀，或不带后缀自动生成）",
     )
 
     parser.add_argument(
-        '--engine-path', '-e',
+        "--engine-path", "-e", type=str, default=None, help="TensorRT引擎文件路径（可选，未指定时自动推导）"
+    )
+
+    parser.add_argument(
+        "--data-path",
+        "-d",
         type=str,
         default=None,
-        help='TensorRT引擎文件路径（可选，未指定时自动推导）'
+        help="图片数据路径（可以是文件夹或具体图片路径，默认为None使用合成数据）",
     )
 
     parser.add_argument(
-        '--data-path', '-d',
+        "--model-type",
+        "-t",
         type=str,
-        default=None,
-        help='图片数据路径（可以是文件夹或具体图片路径，默认为None使用合成数据）'
+        default="rtdetr",
+        choices=["rtdetr", "yolo", "rfdetr"],
+        help="模型类型 (默认: rtdetr)",
     )
 
-    parser.add_argument(
-        '--model-type', '-t',
-        type=str,
-        default='rtdetr',
-        choices=['rtdetr', 'yolo', 'rfdetr'],
-        help='模型类型 (默认: rtdetr)'
-    )
+    parser.add_argument("--conf-thres", type=float, default=0.25, help="置信度阈值 (默认: 0.25)")
 
+    parser.add_argument("--rtol", type=float, default=1e0, help="相对容差 (默认: 1e-3)")
 
-    parser.add_argument(
-        '--conf-thres',
-        type=float,
-        default=0.25,
-        help='置信度阈值 (默认: 0.25)'
-    )
+    parser.add_argument("--atol", type=float, default=1e-1, help="绝对容差 (默认: 1e-3)")
 
-    parser.add_argument(
-        '--rtol',
-        type=float,
-        default=1e0,
-        help='相对容差 (默认: 1e-3)'
-    )
+    parser.add_argument("--save-engine", action="store_true", help="当从ONNX构建引擎时是否保存引擎文件")
 
-    parser.add_argument(
-        '--atol',
-        type=float,
-        default=1e-1,
-        help='绝对容差 (默认: 1e-3)'
-    )
-
-    parser.add_argument(
-        '--save-engine',
-        action='store_true',
-        help='当从ONNX构建引擎时是否保存引擎文件'
-    )
-
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='显示详细输出'
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="显示详细输出")
 
     return parser.parse_args()
+
 
 def load_colors_and_class_names():
     """加载类别名称和颜色配置（使用onnxtools.config的硬编码配置）"""
     return DET_CLASSES, COCO_COLORS
+
 
 def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
     """对 compare_engine 返回的原始输出进行后处理，参考 __call__ 方法"""
@@ -127,7 +105,7 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
 
         # 预处理以获取scale和ratio_pad参数(仅YOLO需要)
         detector_class = type(detector)
-        if detector_class.__name__ == 'YoloORT':
+        if detector_class.__name__ == "YoloORT":
             preprocess_result = detector_class.preprocess(test_img, detector.input_shape)
             if len(preprocess_result) == 3:
                 _, scale, _ = preprocess_result
@@ -145,29 +123,35 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
             if len(prediction.shape) == 3 and prediction.shape[2] > 4:
                 # 检查分类分数部分的统计
                 scores = prediction[:, :, 4:]
-                logging.debug(f"分类分数统计: min={np.min(scores):.4f}, max={np.max(scores):.4f}, "
-                            f"mean={np.mean(scores):.4f}, std={np.std(scores):.4f}")
+                logging.debug(
+                    f"分类分数统计: min={np.min(scores):.4f}, max={np.max(scores):.4f}, "
+                    f"mean={np.mean(scores):.4f}, std={np.std(scores):.4f}"
+                )
 
         # 使用检测器类的静态postprocess方法
         # 注意：postprocess现在已经内置了orig_shape参数,会直接返回原图尺寸的坐标
-        if detector_class.__name__ == 'RfdetrORT':
+        if detector_class.__name__ == "RfdetrORT":
             detections = detector_class.postprocess(
-                raw_outputs, detector.input_shape, conf_thres,
-                orig_shape=(h_img, w_img)
+                raw_outputs, detector.input_shape, conf_thres, orig_shape=(h_img, w_img)
             )
-        elif detector_class.__name__ == 'RtdetrORT':
+        elif detector_class.__name__ == "RtdetrORT":
             prediction = raw_outputs[0] if isinstance(raw_outputs, list) else raw_outputs
             detections = detector_class.postprocess(
-                prediction, detector.input_shape, conf_thres,
-                orig_shape=(h_img, w_img)
+                prediction, detector.input_shape, conf_thres, orig_shape=(h_img, w_img)
             )
         else:
             # YOLO等模型 (统一使用Ultralytics预处理)
             prediction = raw_outputs[0] if isinstance(raw_outputs, list) else raw_outputs
             detections = detector_class.postprocess(
-                prediction, detector.input_shape, conf_thres,
-                detector.iou_thres, detector.multi_label, detector.has_objectness,
-                scale=scale, ratio_pad=ratio_pad, orig_shape=(h_img, w_img)
+                prediction,
+                detector.input_shape,
+                conf_thres,
+                detector.iou_thres,
+                detector.multi_label,
+                detector.has_objectness,
+                scale=scale,
+                ratio_pad=ratio_pad,
+                orig_shape=(h_img, w_img),
             )
 
         # 坐标已经在postprocess中还原到原图尺寸,无需额外处理
@@ -175,8 +159,10 @@ def post_process_raw_outputs(raw_outputs, detector, test_img, conf_thres=0.5):
     except Exception as e:
         logging.error(f"后处理失败: {e}")
         import traceback
+
         traceback.print_exc()
         return None, None
+
 
 def visualize_compare_results(test_images, run_results, class_names, colors, detector=None, engine_path=None):
     """可视化 compare_engine 的结果，支持多张图片"""
@@ -199,9 +185,9 @@ def visualize_compare_results(test_images, run_results, class_names, colors, det
         trt_runner_name = None
 
         for name in runner_names:
-            if 'onnxrt-runner' in name:
+            if "onnxrt-runner" in name:
                 onnx_runner_name = name
-            elif 'trt-runner' in name:
+            elif "trt-runner" in name:
                 trt_runner_name = name
 
         logging.info(f"找到运行器: ONNX={onnx_runner_name}, TRT={trt_runner_name}")
@@ -239,14 +225,28 @@ def visualize_compare_results(test_images, run_results, class_names, colors, det
                         logging.info(f"图片 {iteration_idx + 1} ONNX检测到 {len(onnx_detections[0])} 个目标")
                     else:
                         onnx_result_img = test_img.copy()
-                        cv2.putText(onnx_result_img, f"ONNX: No Detection (Image {iteration_idx + 1})", (10, 30),
-                                  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        cv2.putText(
+                            onnx_result_img,
+                            f"ONNX: No Detection (Image {iteration_idx + 1})",
+                            (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            (0, 0, 255),
+                            2,
+                        )
                         logging.info(f"图片 {iteration_idx + 1} ONNX未检测到目标")
                 except Exception as e:
                     logging.warning(f"图片 {iteration_idx + 1} ONNX后处理失败: {e}")
                     onnx_result_img = test_img.copy()
-                    cv2.putText(onnx_result_img, f"ONNX: Processing Failed (Image {iteration_idx + 1})", (10, 30),
-                              cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(
+                        onnx_result_img,
+                        f"ONNX: Processing Failed (Image {iteration_idx + 1})",
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 0, 255),
+                        2,
+                    )
 
                 # 如果有 TensorRT 结果，也进行比较
                 trt_result_img = None
@@ -276,39 +276,73 @@ def visualize_compare_results(test_images, run_results, class_names, colors, det
                             logging.info(f"  原始输出最大差异: {max_diff:.6f}")
 
                             # 详细比较前几个检测结果
-                            if onnx_detections and trt_detections and len(onnx_detections[0]) > 0 and len(trt_detections[0]) > 0:
+                            if (
+                                onnx_detections
+                                and trt_detections
+                                and len(onnx_detections[0]) > 0
+                                and len(trt_detections[0]) > 0
+                            ):
                                 logging.info(f"图片 {iteration_idx + 1} 详细检测结果比较 (前3个):")
                                 for i in range(min(3, len(onnx_detections[0]), len(trt_detections[0]))):
                                     onnx_det = onnx_detections[0][i]
                                     trt_det = trt_detections[0][i]
-                                    logging.info(f"  检测 {i+1}:")
-                                    logging.info(f"    ONNX: [{onnx_det[0]:.1f}, {onnx_det[1]:.1f}, {onnx_det[2]:.1f}, {onnx_det[3]:.1f}] conf:{onnx_det[4]:.3f} cls:{int(onnx_det[5])}")
-                                    logging.info(f"    TRT:  [{trt_det[0]:.1f}, {trt_det[1]:.1f}, {trt_det[2]:.1f}, {trt_det[3]:.1f}] conf:{trt_det[4]:.3f} cls:{int(trt_det[5])}")
+                                    logging.info(f"  检测 {i + 1}:")
+                                    logging.info(
+                                        f"    ONNX: [{onnx_det[0]:.1f}, {onnx_det[1]:.1f}, {onnx_det[2]:.1f}, {onnx_det[3]:.1f}] conf:{onnx_det[4]:.3f} cls:{int(onnx_det[5])}"
+                                    )
+                                    logging.info(
+                                        f"    TRT:  [{trt_det[0]:.1f}, {trt_det[1]:.1f}, {trt_det[2]:.1f}, {trt_det[3]:.1f}] conf:{trt_det[4]:.3f} cls:{int(trt_det[5])}"
+                                    )
                                     coord_diff = np.abs(onnx_det[:4] - trt_det[:4]).max()
                                     conf_diff = abs(onnx_det[4] - trt_det[4])
                                     logging.info(f"    差异: 坐标最大差异={coord_diff:.3f}, 置信度差异={conf_diff:.6f}")
 
                             # 检查是否真的使用了不同的原始输出
-                            logging.info(f"图片 {iteration_idx + 1} 原始输出形状: ONNX={onnx_output.shape}, TRT={trt_output.shape}")
+                            logging.info(
+                                f"图片 {iteration_idx + 1} 原始输出形状: ONNX={onnx_output.shape}, TRT={trt_output.shape}"
+                            )
                             if np.array_equal(onnx_output, trt_output):
                                 logging.warning(f"图片 {iteration_idx + 1} ⚠️ 警告: ONNX和TensorRT的原始输出完全相同！")
                             else:
-                                logging.info(f"图片 {iteration_idx + 1} ✅ 原始输出确实不同，均值差异: {np.abs(onnx_output.mean() - trt_output.mean()):.6f}")
+                                logging.info(
+                                    f"图片 {iteration_idx + 1} ✅ 原始输出确实不同，均值差异: {np.abs(onnx_output.mean() - trt_output.mean()):.6f}"
+                                )
                         else:
                             trt_result_img = test_img.copy()
-                            cv2.putText(trt_result_img, f"TensorRT: No Detection (Image {iteration_idx + 1})", (10, 30),
-                                      cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                            cv2.putText(
+                                trt_result_img,
+                                f"TensorRT: No Detection (Image {iteration_idx + 1})",
+                                (10, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                1,
+                                (0, 0, 255),
+                                2,
+                            )
                             logging.info(f"图片 {iteration_idx + 1} TensorRT未检测到目标")
                     except Exception as e:
                         logging.warning(f"图片 {iteration_idx + 1} TensorRT后处理失败: {e}")
                         trt_result_img = test_img.copy()
-                        cv2.putText(trt_result_img, f"TensorRT: Processing Failed (Image {iteration_idx + 1})", (10, 30),
-                                  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        cv2.putText(
+                            trt_result_img,
+                            f"TensorRT: Processing Failed (Image {iteration_idx + 1})",
+                            (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            (0, 0, 255),
+                            2,
+                        )
                 else:
                     # 没有TensorRT结果
                     trt_result_img = test_img.copy()
-                    cv2.putText(trt_result_img, f"TensorRT: No Result (Image {iteration_idx + 1})", (10, 30),
-                              cv2.FONT_HERSHEY_SIMPLEX, 1, (128, 128, 128), 2)
+                    cv2.putText(
+                        trt_result_img,
+                        f"TensorRT: No Result (Image {iteration_idx + 1})",
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (128, 128, 128),
+                        2,
+                    )
 
                 # 创建当前图片的对比图像
                 h, w = test_img.shape[:2]
@@ -376,7 +410,9 @@ def visualize_compare_results(test_images, run_results, class_names, colors, det
     except Exception as e:
         logging.error(f"可视化结果失败: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 def test_rtdetr_compare_engine(args):
     """测试RT-DETR的compare_engine方法，支持多张图片"""
@@ -392,22 +428,22 @@ def test_rtdetr_compare_engine(args):
 
         # 检查model_path是否有后缀
         if model_path.suffix:
-            if model_path.suffix.lower() == '.onnx':
+            if model_path.suffix.lower() == ".onnx":
                 # 如果是.onnx文件，生成对应的.engine文件
                 onnx_path = str(model_path)
-                engine_path = str(model_path.with_suffix('.engine'))
-            elif model_path.suffix.lower() == '.engine':
+                engine_path = str(model_path.with_suffix(".engine"))
+            elif model_path.suffix.lower() == ".engine":
                 # 如果是.engine文件，生成对应的.onnx文件
                 engine_path = str(model_path)
-                onnx_path = str(model_path.with_suffix('.onnx'))
+                onnx_path = str(model_path.with_suffix(".onnx"))
             else:
                 # 其他后缀，保持原有逻辑
-                onnx_path = str(model_path.with_suffix('.onnx'))
-                engine_path = str(model_path.with_suffix('.engine'))
+                onnx_path = str(model_path.with_suffix(".onnx"))
+                engine_path = str(model_path.with_suffix(".engine"))
         else:
             # 没有后缀，保持原有逻辑
-            onnx_path = str(model_path.with_suffix('.onnx'))
-            engine_path = str(model_path.with_suffix('.engine'))
+            onnx_path = str(model_path.with_suffix(".onnx"))
+            engine_path = str(model_path.with_suffix(".engine"))
 
         return onnx_path, engine_path
 
@@ -457,18 +493,14 @@ def test_rtdetr_compare_engine(args):
         # 创建检测器（使用参数中的配置）
         logging.info(f"创建{args.model_type.upper()}检测器...")
         detector = create_detector(
-            model_type=args.model_type,
-            onnx_path=onnx_path,
-            conf_thres=args.conf_thres,
-            det_config = COCO_CLASSES
+            model_type=args.model_type, onnx_path=onnx_path, conf_thres=args.conf_thres, det_config=COCO_CLASSES
         )
 
         logging.info(f"成功创建检测器: {type(detector).__name__}")
         logging.info(f"检测器实际输入形状: {detector.input_shape}")
 
         # 创建数据加载器
-        detector.create_engine_dataloader(image_paths=test_image_paths,
-                                          iterations=4)
+        detector.create_engine_dataloader(image_paths=test_image_paths, iterations=4)
 
         # 确保数据加载器已创建
         if detector.engine_dataloader is None:
@@ -521,10 +553,7 @@ def test_rtdetr_compare_engine(args):
         try:
             logging.info(f"尝试使用现有TensorRT引擎: {engine_path}")
             accuracy_match, run_results = detector.compare_engine(
-                engine_path=engine_path,
-                save_engine=False,
-                rtol=args.rtol,
-                atol=args.atol
+                engine_path=engine_path, save_engine=False, rtol=args.rtol, atol=args.atol
             )
         except Exception as e:
             logging.warning(f"现有引擎文件无效: {e}")
@@ -532,10 +561,10 @@ def test_rtdetr_compare_engine(args):
 
             # 从 ONNX构建新引擎并保存
             accuracy_match, run_results = detector.compare_engine(
-                engine_path=None,     # 不指定引擎路径，从 ONNX构建
+                engine_path=None,  # 不指定引擎路径，从 ONNX构建
                 save_engine=args.save_engine,  # 使用参数中的保存设置
-                rtol=args.rtol,       # 使用参数中的相对容差
-                atol=args.atol        # 使用参数中的绝对容差
+                rtol=args.rtol,  # 使用参数中的相对容差
+                atol=args.atol,  # 使用参数中的绝对容差
             )
 
         # 获取compare_engine的结果进行后处理和画图
@@ -575,8 +604,10 @@ def test_rtdetr_compare_engine(args):
     except Exception as e:
         logging.error(f"测试过程中发生错误: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """主函数"""
@@ -609,6 +640,7 @@ def main():
     else:
         logging.error("测试完成: 失败 ❌")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

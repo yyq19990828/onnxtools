@@ -4,8 +4,6 @@ Contract test for VisualizationPreset loading and creation.
 This test MUST FAIL before implementation (TDD approach).
 """
 
-from pathlib import Path
-
 import pytest
 
 from onnxtools.utils.supervision_annotator import AnnotatorPipeline, AnnotatorType
@@ -22,7 +20,7 @@ class TestVisualizationPresetContract:
         assert isinstance(preset, VisualizationPreset)
         assert preset.name is not None
         assert preset.description is not None
-        assert hasattr(preset, 'annotators')
+        assert hasattr(preset, "annotators")
 
     def test_load_lightweight_preset(self):
         """Test loading lightweight preset from YAML."""
@@ -54,13 +52,7 @@ class TestVisualizationPresetContract:
 
     def test_load_all_five_presets(self):
         """Test that all 5 predefined presets can be loaded."""
-        preset_names = [
-            Presets.STANDARD,
-            Presets.LIGHTWEIGHT,
-            Presets.PRIVACY,
-            Presets.DEBUG,
-            Presets.HIGH_CONTRAST
-        ]
+        preset_names = [Presets.STANDARD, Presets.LIGHTWEIGHT, Presets.PRIVACY, Presets.DEBUG, Presets.HIGH_CONTRAST]
 
         for preset_name in preset_names:
             preset = VisualizationPreset.from_yaml(preset_name)
@@ -77,7 +69,7 @@ class TestVisualizationPresetContract:
         """Test that loaded preset has 'name' attribute."""
         preset = VisualizationPreset.from_yaml(Presets.STANDARD)
 
-        assert hasattr(preset, 'name')
+        assert hasattr(preset, "name")
         assert isinstance(preset.name, str)
         assert len(preset.name) > 0
 
@@ -85,14 +77,14 @@ class TestVisualizationPresetContract:
         """Test that loaded preset has 'description' attribute."""
         preset = VisualizationPreset.from_yaml(Presets.STANDARD)
 
-        assert hasattr(preset, 'description')
+        assert hasattr(preset, "description")
         assert isinstance(preset.description, str)
 
     def test_preset_has_annotators_list(self):
         """Test that loaded preset has 'annotators' list."""
         preset = VisualizationPreset.from_yaml(Presets.STANDARD)
 
-        assert hasattr(preset, 'annotators')
+        assert hasattr(preset, "annotators")
         assert isinstance(preset.annotators, list)
         assert len(preset.annotators) > 0
 
@@ -106,20 +98,13 @@ class TestVisualizationPresetContract:
 
     def test_all_presets_create_valid_pipelines(self):
         """Test that all presets can create valid pipelines."""
-        preset_names = [
-            Presets.STANDARD,
-            Presets.LIGHTWEIGHT,
-            Presets.PRIVACY,
-            Presets.DEBUG,
-            Presets.HIGH_CONTRAST
-        ]
+        preset_names = [Presets.STANDARD, Presets.LIGHTWEIGHT, Presets.PRIVACY, Presets.DEBUG, Presets.HIGH_CONTRAST]
 
         for preset_name in preset_names:
             preset = VisualizationPreset.from_yaml(preset_name)
             pipeline = preset.create_pipeline()
 
-            assert isinstance(pipeline, AnnotatorPipeline), \
-                f"Preset {preset_name} failed to create pipeline"
+            assert isinstance(pipeline, AnnotatorPipeline), f"Preset {preset_name} failed to create pipeline"
 
     def test_preset_custom_yaml_file_path(self, tmp_path):
         """Test loading preset from custom YAML file path."""
@@ -160,9 +145,9 @@ presets:
         annotator_types = []
         for ann_config in preset.annotators:
             if isinstance(ann_config, dict):
-                annotator_types.append(ann_config.get('type'))
+                annotator_types.append(ann_config.get("type"))
             elif isinstance(ann_config, tuple):
-                annotator_types.append(ann_config[0].value if hasattr(ann_config[0], 'value') else str(ann_config[0]))
+                annotator_types.append(ann_config[0].value if hasattr(ann_config[0], "value") else str(ann_config[0]))
 
         # Standard preset should have box-related and label annotators
         assert len(annotator_types) >= 1, "Standard preset should have at least 1 annotator"
@@ -175,10 +160,10 @@ presets:
         annotator_types = []
         for ann_config in preset.annotators:
             if isinstance(ann_config, dict):
-                annotator_types.append(ann_config.get('type'))
+                annotator_types.append(ann_config.get("type"))
             elif isinstance(ann_config, tuple):
                 ann_type = ann_config[0]
-                annotator_types.append(ann_type.value if hasattr(ann_type, 'value') else str(ann_type))
+                annotator_types.append(ann_type.value if hasattr(ann_type, "value") else str(ann_type))
 
         assert len(annotator_types) >= 1, "Privacy preset should have annotators"
 
@@ -187,5 +172,4 @@ presets:
         preset = VisualizationPreset.from_yaml(Presets.DEBUG)
 
         # Debug preset should have multiple annotators (box, bar, label, etc.)
-        assert len(preset.annotators) >= 2, \
-            "Debug preset should have multiple annotators for detailed visualization"
+        assert len(preset.annotators) >= 2, "Debug preset should have multiple annotators for detailed visualization"

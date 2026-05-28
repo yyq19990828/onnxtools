@@ -11,13 +11,12 @@
 """
 
 import re
-from typing import List, Union
 
 from polygraphy.backend.onnx import OnnxFromPath
 from polygraphy.backend.onnx.util import all_tensor_names
 
 
-def get_model_tensors(model_path: str) -> List[str]:
+def get_model_tensors(model_path: str) -> list[str]:
     """
     获取模型中所有可用的张量名称
 
@@ -32,10 +31,10 @@ def get_model_tensors(model_path: str) -> List[str]:
         model = loader()
         return all_tensor_names(model, include_inputs=False)
     except Exception as e:
-        raise RuntimeError(f"加载模型失败: {e}")
+        raise RuntimeError(f"加载模型失败: {e}") from e
 
 
-def select_tensors(model_path: str, selector: Union[str, List[int], int]) -> List[str]:
+def select_tensors(model_path: str, selector: str | list[int] | int) -> list[str]:
     """
     根据不同方式选择张量
 
@@ -69,11 +68,11 @@ def select_tensors(model_path: str, selector: Union[str, List[int], int]) -> Lis
         raise ValueError(f"不支持的选择器类型: {type(selector)}")
 
 
-def _select_by_pattern(tensor_names: List[str], pattern: str) -> List[str]:
+def _select_by_pattern(tensor_names: list[str], pattern: str) -> list[str]:
     """根据模式选择张量"""
     try:
         # 将通配符转换为正则表达式
-        regex_pattern = pattern.replace('*', '.*').replace('?', '.')
+        regex_pattern = pattern.replace("*", ".*").replace("?", ".")
         compiled_pattern = re.compile(regex_pattern, re.IGNORECASE)
 
         selected = []
@@ -83,10 +82,10 @@ def _select_by_pattern(tensor_names: List[str], pattern: str) -> List[str]:
 
         return selected
     except Exception as e:
-        raise ValueError(f"模式匹配失败: {e}")
+        raise ValueError(f"模式匹配失败: {e}") from e
 
 
-def _select_by_indices(tensor_names: List[str], indices: List[int]) -> List[str]:
+def _select_by_indices(tensor_names: list[str], indices: list[int]) -> list[str]:
     """根据索引选择张量 (1-based)"""
     selected = []
     for idx in indices:
@@ -98,15 +97,14 @@ def _select_by_indices(tensor_names: List[str], indices: List[int]) -> List[str]
     return selected
 
 
-def _select_first_n(tensor_names: List[str], n: int) -> List[str]:
+def _select_first_n(tensor_names: list[str], n: int) -> list[str]:
     """选择前N个张量"""
     if n <= 0:
         return []
     return tensor_names[:n]
 
 
-def generate_polygraphy_command(model_path: str, selected_tensors: List[str],
-                               backend: str = "onnx") -> str:
+def generate_polygraphy_command(model_path: str, selected_tensors: list[str], backend: str = "onnx") -> str:
     """
     生成Polygraphy命令行
 
@@ -122,22 +120,22 @@ def generate_polygraphy_command(model_path: str, selected_tensors: List[str],
         return ""
 
     backend_flag = "--onnx-outputs" if backend == "onnx" else "--trt-outputs"
-    tensor_args = ' \\\n    '.join(f'"{name}"' for name in selected_tensors)
+    tensor_args = " \\\n    ".join(f'"{name}"' for name in selected_tensors)
 
     return f"""polygraphy run {model_path} \\
   {backend_flag} \\
     {tensor_args}"""
 
 
-def print_selection_summary(model_path: str, selector, selected_tensors: List[str]):
+def print_selection_summary(model_path: str, selector, selected_tensors: list[str]):
     """打印选择摘要"""
-    print(f"\n📊 张量选择摘要")
+    print("\n📊 张量选择摘要")
     print(f"模型: {model_path}")
     print(f"选择器: {selector}")
     print(f"选中张量数: {len(selected_tensors)}")
 
     if selected_tensors:
-        print(f"\n选中的张量:")
+        print("\n选中的张量:")
         for i, name in enumerate(selected_tensors, 1):
             print(f"  {i:2d}. {name}")
 
@@ -160,10 +158,10 @@ def main():
 
     try:
         # 解析选择器
-        if selector_str.startswith('[') and selector_str.endswith(']'):
+        if selector_str.startswith("[") and selector_str.endswith("]"):
             # 索引列表: [1,2,3,5]
             indices_str = selector_str[1:-1]
-            selector = [int(x.strip()) for x in indices_str.split(',')]
+            selector = [int(x.strip()) for x in indices_str.split(",")]
         elif selector_str.isdigit():
             # 数字: 20
             selector = int(selector_str)
@@ -179,7 +177,7 @@ def main():
 
         # 生成命令
         if selected:
-            print(f"\n🎯 生成的Polygraphy命令:")
+            print("\n🎯 生成的Polygraphy命令:")
             print(generate_polygraphy_command(model_path, selected, "onnx"))
 
     except Exception as e:

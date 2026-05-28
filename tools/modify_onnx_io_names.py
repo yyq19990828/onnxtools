@@ -7,7 +7,6 @@
 import argparse
 import os
 import sys
-from pathlib import Path
 
 try:
     import numpy as np
@@ -38,7 +37,7 @@ def modify_onnx_io_names(input_path: str, output_path: str, input_name: str = "i
     # 使用onnx-graphsurgeon加载模型
     graph = gs.import_onnx(onnx.load(input_path))
 
-    print(f"模型加载成功!")
+    print("模型加载成功!")
     print(f"原始输入节点数量: {len(graph.inputs)}")
     print(f"原始输出节点数量: {len(graph.outputs)}")
 
@@ -121,57 +120,41 @@ def main():
 
   # 指定自定义的输入输出名字
   python tools/modify_onnx_io_names.py --input-name "data" --output-name "result"
-        """
+        """,
     )
 
     parser.add_argument(
-        "-i", "--input",
-        default="models/ocr_mobile.onnx",
-        help="输入ONNX模型路径 (默认: models/ocr_mobile.onnx)"
+        "-i", "--input", default="models/ocr_mobile.onnx", help="输入ONNX模型路径 (默认: models/ocr_mobile.onnx)"
     )
 
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         default="models/ocr_mobile_modified.onnx",
-        help="输出ONNX模型路径 (默认: models/ocr_mobile_modified.onnx)"
+        help="输出ONNX模型路径 (默认: models/ocr_mobile_modified.onnx)",
     )
 
-    parser.add_argument(
-        "--input-name",
-        default="input",
-        help="新的输入名字 (默认: input)"
-    )
+    parser.add_argument("--input-name", default="input", help="新的输入名字 (默认: input)")
 
-    parser.add_argument(
-        "--output-name",
-        default="output",
-        help="新的输出名字 (默认: output)"
-    )
+    parser.add_argument("--output-name", default="output", help="新的输出名字 (默认: output)")
 
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="如果输出文件已存在，是否覆盖"
-    )
+    parser.add_argument("--overwrite", action="store_true", help="如果输出文件已存在，是否覆盖")
 
     args = parser.parse_args()
 
     # 检查输出文件是否已存在
     if os.path.exists(args.output) and not args.overwrite:
         response = input(f"输出文件 '{args.output}' 已存在，是否覆盖? (y/N): ")
-        if response.lower() not in ['y', 'yes']:
+        if response.lower() not in ["y", "yes"]:
             print("操作已取消")
             return
 
     try:
         modify_onnx_io_names(
-            input_path=args.input,
-            output_path=args.output,
-            input_name=args.input_name,
-            output_name=args.output_name
+            input_path=args.input, output_path=args.output, input_name=args.input_name, output_name=args.output_name
         )
 
-        print(f"\n✅ 成功修改模型输入输出名字!")
+        print("\n✅ 成功修改模型输入输出名字!")
         print(f"   输入文件: {args.input}")
         print(f"   输出文件: {args.output}")
         print(f"   输入名字: {args.input_name}")

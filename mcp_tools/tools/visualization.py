@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import cv2
-from mcp.server.fastmcp import Image as MCPImage
 
 from ..config import DEFAULT_OUTPUT_DIR
 from ..models import AnnotateImageInput, CropDetectionsInput, ViewImageInput, ZoomToObjectInput
@@ -26,13 +25,12 @@ if TYPE_CHECKING:
 # Core Tool Implementations (shared by all registration functions)
 # ============================================================================
 
+
 async def _crop_detections_impl(params: CropDetectionsInput) -> str:
     """Core implementation for crop_detections tool."""
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Get detector
         detector = get_detector(
@@ -92,11 +90,7 @@ async def _crop_detections_impl(params: CropDetectionsInput) -> str:
                     "index": c.get("index", i),
                     "class_name": c.get("class_name", "unknown"),
                     "confidence": float(c.get("confidence", 0)),
-                    "box": (
-                        c["box"].tolist()
-                        if hasattr(c.get("box"), "tolist")
-                        else list(c.get("box", []))
-                    ),
+                    "box": (c["box"].tolist() if hasattr(c.get("box"), "tolist") else list(c.get("box", []))),
                 }
                 for i, c in enumerate(crops)
             ],
@@ -112,9 +106,7 @@ async def _annotate_image_impl(params: AnnotateImageInput) -> str:
     """Core implementation for annotate_image tool."""
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Get detector
         detector = get_detector(
@@ -137,16 +129,11 @@ async def _annotate_image_impl(params: AnnotateImageInput) -> str:
 
         # Save if output path provided
         if params.output_path:
-            result.save(
-                params.output_path, annotator_preset=params.annotator_preset.value
-            )
+            result.save(params.output_path, annotator_preset=params.annotator_preset.value)
             response["output_path"] = params.output_path
             response["message"] = f"Annotated image saved to {params.output_path}"
         else:
-            response["message"] = (
-                "Image annotated successfully. "
-                "Provide output_path parameter to save the result."
-            )
+            response["message"] = "Image annotated successfully. Provide output_path parameter to save the result."
 
         if params.response_format.value == "json":
             return json.dumps(response, indent=2)
@@ -170,9 +157,7 @@ async def _zoom_to_object_impl(params: ZoomToObjectInput):
     """Core implementation for zoom_to_object tool."""
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Get detector
         detector = get_detector(
@@ -191,14 +176,8 @@ async def _zoom_to_object_impl(params: ZoomToObjectInput):
         filtered = result.filter(classes=[params.target_class])
 
         if len(filtered) == 0:
-            available_classes = list(set(
-                result.names.get(int(cid), "unknown")
-                for cid in result.class_ids
-            ))
-            return (
-                f"No '{params.target_class}' detected in the image. "
-                f"Available classes: {available_classes}"
-            )
+            available_classes = list(set(result.names.get(int(cid), "unknown") for cid in result.class_ids))
+            return f"No '{params.target_class}' detected in the image. Available classes: {available_classes}"
 
         # Sort by confidence and get the best one
         best_idx = filtered.scores.argmax()
@@ -236,9 +215,7 @@ async def _view_image_impl(params: ViewImageInput):
 
     try:
         # Load image
-        image, _ = await load_image(
-            params.image_path, params.image_source.value
-        )
+        image, _ = await load_image(params.image_path, params.image_source.value)
 
         # Scale image if scale != 1.0
         if params.scale != 1.0:
@@ -246,13 +223,9 @@ async def _view_image_impl(params: ViewImageInput):
             new_w = int(w * params.scale)
             new_h = int(h * params.scale)
 
-            interpolation = INTERPOLATION_MAP.get(
-                params.interpolation.value, cv2.INTER_LANCZOS4
-            )
+            interpolation = INTERPOLATION_MAP.get(params.interpolation.value, cv2.INTER_LANCZOS4)
 
-            image = cv2.resize(
-                image, (new_w, new_h), interpolation=interpolation
-            )
+            image = cv2.resize(image, (new_w, new_h), interpolation=interpolation)
 
         # Convert to MCP Image and return
         return to_mcp_image(image, format="jpeg")
@@ -264,6 +237,7 @@ async def _view_image_impl(params: ViewImageInput):
 # ============================================================================
 # Tool Registration Functions
 # ============================================================================
+
 
 def register_visualization_tools(mcp: "FastMCP") -> None:
     """Register all visualization tools with the MCP server.

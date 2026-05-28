@@ -10,19 +10,21 @@ Version: 1.0.0
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
 try:
     import supervision as sv
+
     SUPERVISION_AVAILABLE = True
 except ImportError:
     SUPERVISION_AVAILABLE = False
 
 try:
     import cv2
+
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
@@ -84,13 +86,13 @@ class Result:
 
     def __init__(
         self,
-        boxes: Optional[npt.NDArray[np.float32]] = None,
-        scores: Optional[npt.NDArray[np.float32]] = None,
-        class_ids: Optional[npt.NDArray[np.int32]] = None,
-        orig_img: Optional[npt.NDArray[np.uint8]] = None,
-        orig_shape: Optional[tuple[int, int]] = None,
-        names: Optional[dict[int, str]] = None,
-        path: Optional[str] = None
+        boxes: npt.NDArray[np.float32] | None = None,
+        scores: npt.NDArray[np.float32] | None = None,
+        class_ids: npt.NDArray[np.int32] | None = None,
+        orig_img: npt.NDArray[np.uint8] | None = None,
+        orig_shape: tuple[int, int] | None = None,
+        names: dict[int, str] | None = None,
+        path: str | None = None,
     ) -> None:
         """Initialize Result object with detection data.
 
@@ -139,15 +141,15 @@ class Result:
         # V6: Length consistency validation
         lengths = []
         if boxes is not None:
-            lengths.append(('boxes', len(boxes)))
+            lengths.append(("boxes", len(boxes)))
         if scores is not None:
-            lengths.append(('scores', len(scores)))
+            lengths.append(("scores", len(scores)))
         if class_ids is not None:
-            lengths.append(('class_ids', len(class_ids)))
+            lengths.append(("class_ids", len(class_ids)))
 
         if lengths:
             first_len = lengths[0][1]
-            for name, length in lengths[1:]:
+            for _name, length in lengths[1:]:
                 if length != first_len:
                     raise ValueError("boxes, scores, and class_ids must have the same length")
 
@@ -208,7 +210,7 @@ class Result:
         return self._class_ids
 
     @property
-    def orig_img(self) -> Optional[npt.NDArray[np.uint8]]:
+    def orig_img(self) -> npt.NDArray[np.uint8] | None:
         """Original input image (BGR format).
 
         Returns:
@@ -235,7 +237,7 @@ class Result:
         return self._names
 
     @property
-    def path(self) -> Optional[str]:
+    def path(self) -> str | None:
         """Image file path.
 
         Returns:
@@ -265,11 +267,7 @@ class Result:
         Returns:
             str: Detailed representation of Result object.
         """
-        return (
-            f"Result(n={len(self)}, "
-            f"orig_shape={self.orig_shape}, "
-            f"has_img={self.orig_img is not None})"
-        )
+        return f"Result(n={len(self)}, orig_shape={self.orig_shape}, has_img={self.orig_img is not None})"
 
     def __str__(self) -> str:
         """Return human-readable string representation.
@@ -289,7 +287,7 @@ class Result:
         counts_str = ", ".join([f"{name}: {count}" for name, count in class_counts.items()])
         return f"Result: {num_dets} detection(s) ({counts_str})"
 
-    def __getitem__(self, index: Union[int, slice]) -> "Result":
+    def __getitem__(self, index: int | slice) -> "Result":
         """Get detection(s) by index or slice (T011, T012).
 
         This method returns a new Result object containing a subset of detections.
@@ -318,17 +316,19 @@ class Result:
                 if actual_index < 0:
                     raise IndexError(f"index {index} is out of bounds")
                 # Use internal arrays to preserve None when appropriate
-                boxes_indexed = self._boxes[actual_index:actual_index+1] if self._boxes is not None else None
-                scores_indexed = self._scores[actual_index:actual_index+1] if self._scores is not None else None
-                class_ids_indexed = self._class_ids[actual_index:actual_index+1] if self._class_ids is not None else None
+                boxes_indexed = self._boxes[actual_index : actual_index + 1] if self._boxes is not None else None
+                scores_indexed = self._scores[actual_index : actual_index + 1] if self._scores is not None else None
+                class_ids_indexed = (
+                    self._class_ids[actual_index : actual_index + 1] if self._class_ids is not None else None
+                )
             else:
                 # Positive index: check bounds first
                 if index >= len(self):
                     raise IndexError(f"index {index} is out of bounds for axis 0 with size {len(self)}")
                 # Use internal arrays to preserve None when appropriate
-                boxes_indexed = self._boxes[index:index+1] if self._boxes is not None else None
-                scores_indexed = self._scores[index:index+1] if self._scores is not None else None
-                class_ids_indexed = self._class_ids[index:index+1] if self._class_ids is not None else None
+                boxes_indexed = self._boxes[index : index + 1] if self._boxes is not None else None
+                scores_indexed = self._scores[index : index + 1] if self._scores is not None else None
+                class_ids_indexed = self._class_ids[index : index + 1] if self._class_ids is not None else None
         else:
             # Slice: numpy automatically preserves dimensions
             boxes_indexed = self._boxes[index] if self._boxes is not None else None
@@ -342,7 +342,7 @@ class Result:
             orig_img=self.orig_img,  # Shared original image
             orig_shape=self.orig_shape,  # Shared shape
             names=self.names,  # Shared names dict
-            path=self.path  # Shared path
+            path=self.path,  # Shared path
         )
 
     # ============================================================================
@@ -407,17 +407,14 @@ class Result:
 
         # Create supervision.Detections object
         return sv.Detections(
-            xyxy=self.boxes,
-            confidence=self.scores,
-            class_id=self.class_ids,
-            data={'class_name': class_names_list}
+            xyxy=self.boxes, confidence=self.scores, class_id=self.class_ids, data={"class_name": class_names_list}
         )
 
     # ============================================================================
     # Visualization methods (T026, T027, T028, T029)
     # ============================================================================
 
-    def plot(self, annotator_preset: str = 'standard') -> npt.NDArray[np.uint8]:
+    def plot(self, annotator_preset: str = "standard") -> npt.NDArray[np.uint8]:
         """Plot detections on the original image using Supervision pipeline (T026).
 
         This method draws bounding boxes and labels on the original image using
@@ -453,8 +450,7 @@ class Result:
 
         if not SUPERVISION_AVAILABLE:
             raise ImportError(
-                "supervision library is required for plot() method. "
-                "Install it with: pip install supervision==0.26.1"
+                "supervision library is required for plot() method. Install it with: pip install supervision==0.26.1"
             )
 
         # Import visualization utilities
@@ -475,7 +471,7 @@ class Result:
 
         return annotated_image
 
-    def show(self, window_name: str = 'Result', annotator_preset: str = 'standard') -> None:
+    def show(self, window_name: str = "Result", annotator_preset: str = "standard") -> None:
         """Display annotated image in a window using cv2.imshow() (T027).
 
         This is a convenience method that calls plot() and displays the result.
@@ -495,8 +491,7 @@ class Result:
         """
         if not CV2_AVAILABLE:
             raise ImportError(
-                "opencv-python is required for show() method. "
-                "Install it with: pip install opencv-contrib-python"
+                "opencv-python is required for show() method. Install it with: pip install opencv-contrib-python"
             )
 
         # plot() will handle orig_img validation (T029)
@@ -507,7 +502,7 @@ class Result:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def save(self, output_path: str, annotator_preset: str = 'standard') -> None:
+    def save(self, output_path: str, annotator_preset: str = "standard") -> None:
         """Save annotated image to file using cv2.imwrite() (T028).
 
         This is a convenience method that calls plot() and saves the result.
@@ -527,8 +522,7 @@ class Result:
         """
         if not CV2_AVAILABLE:
             raise ImportError(
-                "opencv-python is required for save() method. "
-                "Install it with: pip install opencv-contrib-python"
+                "opencv-python is required for save() method. Install it with: pip install opencv-contrib-python"
             )
 
         # plot() will handle orig_img validation (T029)
@@ -541,11 +535,7 @@ class Result:
 
     # ===== Phase 5: Filtering and Transformations (US3) =====
 
-    def filter(
-        self,
-        conf_threshold: Optional[float] = None,
-        classes: Optional[List[Union[int, str]]] = None
-    ) -> "Result":
+    def filter(self, conf_threshold: float | None = None, classes: list[int | str] | None = None) -> "Result":
         """Filter detections by confidence threshold and/or class IDs/names.
 
         Creates a new Result object containing only detections that match
@@ -582,26 +572,20 @@ class Result:
         """
         # T039: Parameter validation
         if conf_threshold is not None:
-            if not isinstance(conf_threshold, (int, float)):
-                raise ValueError(
-                    f"conf_threshold must be a number, got {type(conf_threshold).__name__}"
-                )
+            if not isinstance(conf_threshold, int | float):
+                raise ValueError(f"conf_threshold must be a number, got {type(conf_threshold).__name__}")
             if not 0.0 <= conf_threshold <= 1.0:
-                raise ValueError(
-                    f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}"
-                )
+                raise ValueError(f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}")
 
         # Convert class names to IDs if needed
         class_ids_to_filter = None
         if classes is not None:
-            if not isinstance(classes, (list, tuple)):
-                raise ValueError(
-                    f"classes must be a list or tuple, got {type(classes).__name__}"
-                )
+            if not isinstance(classes, list | tuple):
+                raise ValueError(f"classes must be a list or tuple, got {type(classes).__name__}")
 
             class_ids_to_filter = []
             for c in classes:
-                if isinstance(c, (int, np.integer)):
+                if isinstance(c, int | np.integer):
                     # Already an ID
                     class_ids_to_filter.append(int(c))
                 elif isinstance(c, str):
@@ -614,20 +598,17 @@ class Result:
                             break
                     if not found:
                         raise ValueError(
-                            f"Class name '{c}' not found in names dict. "
-                            f"Available classes: {list(self.names.values())}"
+                            f"Class name '{c}' not found in names dict. Available classes: {list(self.names.values())}"
                         )
                 else:
-                    raise ValueError(
-                        f"classes must contain int or str values, got {type(c).__name__}"
-                    )
+                    raise ValueError(f"classes must contain int or str values, got {type(c).__name__}")
 
         # Start with all True mask
         mask = np.ones(len(self), dtype=bool)
 
         # T036: Apply confidence threshold filter
         if conf_threshold is not None and len(self) > 0:
-            mask &= (self.scores >= conf_threshold)
+            mask &= self.scores >= conf_threshold
 
         # T037: Apply class filter
         if class_ids_to_filter is not None and len(self) > 0:
@@ -643,7 +624,7 @@ class Result:
                 orig_shape=self.orig_shape,
                 names=self.names,
                 path=self.path,
-                orig_img=self.orig_img
+                orig_img=self.orig_img,
             )
 
         # Return new Result with filtered detections
@@ -654,10 +635,10 @@ class Result:
             orig_shape=self.orig_shape,
             names=self.names,
             path=self.path,
-            orig_img=self.orig_img
+            orig_img=self.orig_img,
         )
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Get summary statistics of detection results.
 
         Returns a dictionary containing:
@@ -683,11 +664,11 @@ class Result:
         if n == 0:
             # Return empty statistics for empty results
             return {
-                'total_detections': 0,
-                'class_counts': {},
-                'avg_confidence': 0.0,
-                'min_confidence': 0.0,
-                'max_confidence': 0.0
+                "total_detections": 0,
+                "class_counts": {},
+                "avg_confidence": 0.0,
+                "min_confidence": 0.0,
+                "max_confidence": 0.0,
             }
 
         # Count detections per class
@@ -695,27 +676,27 @@ class Result:
         for cls_id in np.unique(self.class_ids):
             cls_id_int = int(cls_id)
             count = int(np.sum(self.class_ids == cls_id))
-            class_name = self.names.get(cls_id_int, f'class_{cls_id_int}')
+            class_name = self.names.get(cls_id_int, f"class_{cls_id_int}")
             class_counts[class_name] = count
 
         return {
-            'total_detections': n,
-            'class_counts': class_counts,
-            'avg_confidence': float(np.mean(self.scores)),
-            'min_confidence': float(np.min(self.scores)),
-            'max_confidence': float(np.max(self.scores))
+            "total_detections": n,
+            "class_counts": class_counts,
+            "avg_confidence": float(np.mean(self.scores)),
+            "min_confidence": float(np.min(self.scores)),
+            "max_confidence": float(np.max(self.scores)),
         }
 
     # ===== Phase 6: Cropping Methods (US4) =====
 
     def crop(
         self,
-        conf_threshold: Optional[float] = None,
-        classes: Optional[List[Union[int, str]]] = None,
+        conf_threshold: float | None = None,
+        classes: list[int | str] | None = None,
         gain: float = 1.02,
         pad: int = 10,
-        square: bool = False
-    ) -> List[Dict[str, Any]]:
+        square: bool = False,
+    ) -> list[dict[str, Any]]:
         """裁剪检测区域，返回图像数组及元数据。
 
         此方法提取每个检测框对应的图像区域，支持边界框扩展和过滤。
@@ -779,9 +760,7 @@ class Result:
         if pad < 0:
             raise ValueError(f"pad must be non-negative, got {pad}")
         if conf_threshold is not None and not (0.0 <= conf_threshold <= 1.0):
-            raise ValueError(
-                f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}"
-            )
+            raise ValueError(f"conf_threshold must be in [0.0, 1.0] range, got {conf_threshold}")
 
         # 使用 filter() 方法进行过滤（复用现有逻辑）
         filtered_result = self.filter(conf_threshold=conf_threshold, classes=classes)
@@ -829,29 +808,31 @@ class Result:
             crop_img = self.orig_img[y1_new:y2_new, x1_new:x2_new]
 
             # 构造返回字典
-            crops.append({
-                'image': crop_img,
-                'box': box,
-                'crop_box': np.array([x1_new, y1_new, x2_new, y2_new], dtype=np.float32),
-                'class_id': class_id,
-                'class_name': class_name,
-                'confidence': confidence,
-                'index': idx
-            })
+            crops.append(
+                {
+                    "image": crop_img,
+                    "box": box,
+                    "crop_box": np.array([x1_new, y1_new, x2_new, y2_new], dtype=np.float32),
+                    "class_id": class_id,
+                    "class_name": class_name,
+                    "confidence": confidence,
+                    "index": idx,
+                }
+            )
 
         return crops
 
     def save_crop(
         self,
-        save_dir: Union[str, Path],
-        file_name: Union[str, Path] = "im.jpg",
-        conf_threshold: Optional[float] = None,
-        classes: Optional[List[Union[int, str]]] = None,
+        save_dir: str | Path,
+        file_name: str | Path = "im.jpg",
+        conf_threshold: float | None = None,
+        classes: list[int | str] | None = None,
         gain: float = 1.02,
         pad: int = 10,
         square: bool = False,
-        save_class_dirs: bool = True
-    ) -> List[Path]:
+        save_class_dirs: bool = True,
+    ) -> list[Path]:
         """保存裁剪的检测区域到文件。
 
         按类别保存每个检测框对应的裁剪图像，支持边界框扩展、过滤和目录自动创建。
@@ -905,16 +886,10 @@ class Result:
         try:
             save_dir_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            raise ValueError(f"Cannot create directory {save_dir}: {e}")
+            raise ValueError(f"Cannot create directory {save_dir}: {e}") from e
 
         # 调用 crop() 方法获取裁剪结果
-        crops = self.crop(
-            conf_threshold=conf_threshold,
-            classes=classes,
-            gain=gain,
-            pad=pad,
-            square=square
-        )
+        crops = self.crop(conf_threshold=conf_threshold, classes=classes, gain=gain, pad=pad, square=square)
 
         # 空结果直接返回
         if len(crops) == 0:
@@ -928,8 +903,8 @@ class Result:
 
         # 遍历每个裁剪结果
         for idx, crop_data in enumerate(crops):
-            crop_img = crop_data['image']
-            class_name = crop_data['class_name']
+            crop_img = crop_data["image"]
+            class_name = crop_data["class_name"]
 
             # 构造保存路径
             if save_class_dirs:
@@ -970,4 +945,4 @@ def _sanitize_filename(name: str) -> str:
         >>> _sanitize_filename("test 123")
         'test123'
     """
-    return "".join(c if c.isalnum() or c in ('_', '-') else '' if c == ' ' else '_' for c in name)
+    return "".join(c if c.isalnum() or c in ("_", "-") else "" if c == " " else "_" for c in name)

@@ -100,9 +100,11 @@ class TestHelmetORTPostprocess:
     @pytest.fixture
     def helmet_ort_mock(self):
         """Create a HelmetORT-like object without loading a real model."""
+
         class MockHelmetORT:
             helmet_map = {0: "normal", 1: "helmet_missing"}
             postprocess = HelmetORT.postprocess
+
         return MockHelmetORT()
 
     def test_normal_prediction(self, helmet_ort_mock):
@@ -152,6 +154,7 @@ class TestHelmetORTPostprocess:
 
     def test_unknown_class_index(self):
         """Should handle unmapped class index gracefully."""
+
         class MockHelmetORT:
             helmet_map = {0: "normal"}  # Missing class 1
             postprocess = HelmetORT.postprocess
@@ -198,6 +201,7 @@ class TestHelmetORTInit:
     def test_default_helmet_map(self):
         """Default helmet_map should have 2 classes."""
         from onnxtools.config import HELMET_MAP
+
         assert len(HELMET_MAP) == 2
         assert 0 in HELMET_MAP
         assert 1 in HELMET_MAP
@@ -214,11 +218,5 @@ class TestHelmetORTInit:
     def test_constants(self):
         """Class constants should be correct."""
         assert HelmetORT.LETTERBOX_PAD_VALUE == 127
-        np.testing.assert_array_almost_equal(
-            HelmetORT.IMAGENET_MEAN,
-            [0.485, 0.456, 0.406]
-        )
-        np.testing.assert_array_almost_equal(
-            HelmetORT.IMAGENET_STD,
-            [0.229, 0.224, 0.225]
-        )
+        np.testing.assert_array_almost_equal(HelmetORT.IMAGENET_MEAN, [0.485, 0.456, 0.406])
+        np.testing.assert_array_almost_equal(HelmetORT.IMAGENET_STD, [0.229, 0.224, 0.225])

@@ -53,8 +53,7 @@ class BaseTracker(ABC):
     name: str = "base"
 
     @abstractmethod
-    def update(self, detections: sv.Detections, frame: np.ndarray) -> sv.Detections:
-        ...
+    def update(self, detections: sv.Detections, frame: np.ndarray) -> sv.Detections: ...
 
     @abstractmethod
     def reset(self) -> None:
@@ -143,9 +142,7 @@ def create_tracker(algo: str = "bytetrack", **kwargs: Any) -> BaseTracker:
         from .ocsort import OCSORT
 
         return OCSORT(**kwargs)
-    raise ValueError(
-        f"Unknown tracker algorithm: {algo!r}. Supported: {SUPPORTED_TRACKERS}"
-    )
+    raise ValueError(f"Unknown tracker algorithm: {algo!r}. Supported: {SUPPORTED_TRACKERS}")
 
 
 __all__ = [

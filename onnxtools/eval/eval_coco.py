@@ -8,8 +8,9 @@
 
 import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -34,14 +35,14 @@ class DetDatasetEvaluator:
     def evaluate_dataset(
         self,
         dataset_path: str,
-        output_transform: Optional[Callable] = None,
+        output_transform: Callable | None = None,
         conf_threshold: float = 0.25,  # 与Ultralytics验证模式对齐，避免过低阈值产生大量误检
         iou_threshold: float = 0.7,  # 保留参数以保持一致性
-        max_images: Optional[int] = None,
-        exclude_files: Optional[List[str]] = None,  # 允许用户指定需要排除的文件
-        exclude_labels_containing: Optional[List[str]] = None,  # 允许用户指定需要排除的标签内容
-        class_mapping: Optional[Dict[Union[int, str], List[Union[int, str]]]] = None  # 类别映射
-    ) -> Dict[str, Any]:
+        max_images: int | None = None,
+        exclude_files: list[str] | None = None,  # 允许用户指定需要排除的文件
+        exclude_labels_containing: list[str] | None = None,  # 允许用户指定需要排除的标签内容
+        class_mapping: dict[int | str, list[int | str]] | None = None,  # 类别映射
+    ) -> dict[str, Any]:
         """
         在YOLO格式数据集上评估模型性能
 
@@ -116,7 +117,7 @@ class DetDatasetEvaluator:
                 logging.info("使用根目录下的images/labels进行评估")
 
         # 获取所有图像文件
-        image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif']
+        image_extensions = [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"]
         image_files = []
         for ext in image_extensions:
             image_files.extend(list(images_dir.glob(f"*{ext}")))
@@ -159,18 +160,14 @@ class DetDatasetEvaluator:
         names = {}
         data_yaml = dataset_path / "classes.yaml"
         if data_yaml.exists():
-            with open(data_yaml, 'r', encoding='utf-8') as f:
+            with open(data_yaml, encoding="utf-8") as f:
                 data_config = yaml.safe_load(f)
-                names = data_config.get('names', {})
+                names = data_config.get("names", {})
                 if isinstance(names, list):
                     names = {i: name for i, name in enumerate(names)}
 
         # 性能统计
-        times = {
-            'preprocess': [],
-            'inference': [],
-            'postprocess': []
-        }
+        times = {"preprocess": [], "inference": [], "postprocess": []}
 
         logging.info(f"评估 {len(image_files)} 张图像...")
 
@@ -200,11 +197,7 @@ class DetDatasetEvaluator:
             if output_transform is not None:
                 # 构造旧格式的 detections 用于 output_transform
                 if len(result) > 0:
-                    old_format_det = np.column_stack([
-                        result.boxes,
-                        result.scores,
-                        result.class_ids
-                    ])
+                    old_format_det = np.column_stack([result.boxes, result.scores, result.class_ids])
                     detections = [old_format_det]
                 else:
                     detections = [np.zeros((0, 6))]
@@ -213,9 +206,9 @@ class DetDatasetEvaluator:
             postprocess_end = time.time()
 
             # 记录时间
-            times['preprocess'].append((preprocess_start - start_time) * 1000)
-            times['inference'].append((inference_end - preprocess_start) * 1000)
-            times['postprocess'].append((postprocess_end - inference_end) * 1000)
+            times["preprocess"].append((preprocess_start - start_time) * 1000)
+            times["inference"].append((inference_end - preprocess_start) * 1000)
+            times["postprocess"].append((postprocess_end - inference_end) * 1000)
 
             # 处理检测结果
             # 注意：Result 对象中的 boxes 坐标已经是原图坐标系
@@ -224,11 +217,7 @@ class DetDatasetEvaluator:
             # 因此这里无需额外缩放
             if len(result) > 0:
                 # 从 Result 对象构造 [N, 6] 格式: [x1, y1, x2, y2, conf, class]
-                pred = np.column_stack([
-                    result.boxes,
-                    result.scores,
-                    result.class_ids
-                ]).copy()
+                pred = np.column_stack([result.boxes, result.scores, result.class_ids]).copy()
             else:
                 pred = np.zeros((0, 6))
 
@@ -243,16 +232,12 @@ class DetDatasetEvaluator:
         if exclude_labels_containing:
             exclude_class_ids = self._parse_exclude_classes(exclude_labels_containing, names)
             if exclude_class_ids:
-                predictions, ground_truths = self._apply_class_exclusion(
-                    predictions, ground_truths, exclude_class_ids
-                )
+                predictions, ground_truths = self._apply_class_exclusion(predictions, ground_truths, exclude_class_ids)
                 logging.info(f"类别排除已应用: 排除了 {len(exclude_class_ids)} 个类别")
 
         # 应用类别映射（如果提供）
         if class_mapping is not None:
-            gt_id_mapping, pred_id_mapping, new_names = self._parse_class_mapping(
-                class_mapping, names
-            )
+            gt_id_mapping, pred_id_mapping, new_names = self._parse_class_mapping(class_mapping, names)
             predictions, ground_truths = self._apply_class_mapping(
                 predictions, ground_truths, gt_id_mapping, pred_id_mapping
             )
@@ -266,11 +251,11 @@ class DetDatasetEvaluator:
         results = evaluate_detection(predictions, ground_truths, names)
 
         # 添加性能统计
-        if times['preprocess']:
-            results['speed_preprocess'] = np.mean(times['preprocess'])
-            results['speed_inference'] = np.mean(times['inference'])
-            results['speed_loss'] = 0.0
-            results['speed_postprocess'] = np.mean(times['postprocess'])
+        if times["preprocess"]:
+            results["speed_preprocess"] = np.mean(times["preprocess"])
+            results["speed_inference"] = np.mean(times["inference"])
+            results["speed_loss"] = 0.0
+            results["speed_postprocess"] = np.mean(times["postprocess"])
 
         # 打印结果
         print_metrics(results, names)
@@ -283,7 +268,7 @@ class DetDatasetEvaluator:
             return np.zeros((0, 5))
 
         labels = []
-        with open(label_path, 'r') as f:
+        with open(label_path) as f:
             for line in f.readlines():
                 parts = line.strip().split()
                 if len(parts) >= 5:
@@ -308,10 +293,8 @@ class DetDatasetEvaluator:
         return np.array(labels) if labels else np.zeros((0, 5))
 
     def _parse_class_mapping(
-        self,
-        class_mapping: Dict[Union[int, str], List[Union[int, str]]],
-        names: Dict[int, str]
-    ) -> Tuple[Dict[int, int], Dict[int, int], Dict[int, str]]:
+        self, class_mapping: dict[int | str, list[int | str]], names: dict[int, str]
+    ) -> tuple[dict[int, int], dict[int, int], dict[int, str]]:
         """
         解析类别映射，分别为 GT 和 Pred 构建 {原ID: 新ID} 映射
 
@@ -334,12 +317,12 @@ class DetDatasetEvaluator:
         gt_name_to_id = {v: k for k, v in names.items()}
 
         # 构建模型 name -> id 的反向映射
-        model_names = getattr(self.detector, 'class_names', {})
+        model_names = getattr(self.detector, "class_names", {})
         pred_name_to_id = {v: k for k, v in model_names.items()}
 
-        gt_id_mapping = {}    # {数据集class_id: 新ID}
+        gt_id_mapping = {}  # {数据集class_id: 新ID}
         pred_id_mapping = {}  # {模型class_id: 新ID}
-        new_names = {}        # {新ID: 新名称}
+        new_names = {}  # {新ID: 新名称}
 
         for new_idx, (target, sources) in enumerate(class_mapping.items()):
             # 确定目标类别名称
@@ -382,11 +365,11 @@ class DetDatasetEvaluator:
 
     def _apply_class_mapping(
         self,
-        predictions: List[np.ndarray],
-        ground_truths: List[np.ndarray],
-        gt_id_mapping: Dict[int, int],
-        pred_id_mapping: Dict[int, int]
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        predictions: list[np.ndarray],
+        ground_truths: list[np.ndarray],
+        gt_id_mapping: dict[int, int],
+        pred_id_mapping: dict[int, int],
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """
         对 pred 和 gt 分别应用类别ID映射
 
@@ -448,11 +431,7 @@ class DetDatasetEvaluator:
 
         return mapped_predictions, mapped_ground_truths
 
-    def _parse_exclude_classes(
-        self,
-        exclude_labels: List[str],
-        names: Dict[int, str]
-    ) -> set:
+    def _parse_exclude_classes(self, exclude_labels: list[str], names: dict[int, str]) -> set:
         """
         解析要排除的类别，返回类别ID集合
 
@@ -485,11 +464,8 @@ class DetDatasetEvaluator:
         return exclude_ids
 
     def _apply_class_exclusion(
-        self,
-        predictions: List[np.ndarray],
-        ground_truths: List[np.ndarray],
-        exclude_ids: set
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        self, predictions: list[np.ndarray], ground_truths: list[np.ndarray], exclude_ids: set
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """
         从 pred 和 gt 中排除指定类别的检测目标
 

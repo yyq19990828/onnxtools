@@ -6,9 +6,11 @@ def softmax(x, axis=1):
     e_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
     return e_x / e_x.sum(axis=axis, keepdims=True)
 
+
 def sigmoid(x):
     """Compute sigmoid values for each sets of scores in x."""
     return 1 / (1 + np.exp(-x))
+
 
 def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     """
@@ -26,6 +28,7 @@ def xywh2xyxy(x: np.ndarray) -> np.ndarray:
     y[..., 2] = x[..., 0] + x[..., 2] / 2  # bottom right x
     y[..., 3] = x[..., 1] + x[..., 3] / 2  # bottom right y
     return y
+
 
 def non_max_suppression(
     prediction: np.ndarray,
@@ -63,8 +66,8 @@ def non_max_suppression(
     max_nms = 30000  # maximum number of boxes into NMS
 
     bs = prediction.shape[0]  # batch size
-    assert 0 <= conf_thres <= 1, f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0'
-    assert 0 <= iou_thres <= 1, f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
+    assert 0 <= conf_thres <= 1, f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
+    assert 0 <= iou_thres <= 1, f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
 
     output = [np.zeros((0, 6))] * bs
     for xi, x in enumerate(prediction):  # image index, image inference
@@ -75,7 +78,7 @@ def non_max_suppression(
         if has_objectness:  # 传统YOLO格式，有objectness分支
             # 提取objectness和类别分数
             obj_conf = x[:, 4:5]  # objectness score
-            cls_conf = x[:, 5:]   # class scores
+            cls_conf = x[:, 5:]  # class scores
 
             # 处理原始logits（如果需要）
             if np.max(obj_conf) > 1:
@@ -90,7 +93,7 @@ def non_max_suppression(
                 # 在multi_label模式下，需要处理多个类别
                 # 这里暂时简化为取最大值（后续可以优化）
                 conf = np.max(class_scores, axis=1, keepdims=True)
-                mask = (conf.flatten() >= conf_thres)
+                mask = conf.flatten() >= conf_thres
 
                 if not np.any(mask):
                     continue
@@ -104,7 +107,7 @@ def non_max_suppression(
                 # 使用obj_conf * max(cls_conf)作为置信度
                 class_scores = cls_conf
                 conf = obj_conf.flatten() * np.max(class_scores, axis=1)
-                mask = (conf >= conf_thres)
+                mask = conf >= conf_thres
 
                 if not np.any(mask):
                     continue
@@ -126,7 +129,7 @@ def non_max_suppression(
 
             # 计算置信度和类别
             conf = np.max(class_scores, axis=1, keepdims=True)
-            mask = (conf.flatten() >= conf_thres)
+            mask = conf.flatten() >= conf_thres
 
             if not np.any(mask):
                 continue

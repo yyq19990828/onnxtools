@@ -17,7 +17,6 @@ Usage:
 import argparse
 import os
 import sys
-import time
 from pathlib import Path
 
 from polygraphy import config, mod
@@ -46,95 +45,46 @@ sys.path.insert(0, str(project_root))
 
 from onnxtools.infer_onnx import RUN
 
-trt = mod.lazy_import('tensorrt>=8.5')
+trt = mod.lazy_import("tensorrt>=8.5")
 
 
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description='构建TensorRT引擎并可选地与ONNX Runtime进行比较',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        description="构建TensorRT引擎并可选地与ONNX Runtime进行比较",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     # 主要参数
-    parser.add_argument(
-        '--onnx-path',
-        type=str,
-        required=True,
-        help='输入的ONNX模型路径'
-    )
+    parser.add_argument("--onnx-path", type=str, required=True, help="输入的ONNX模型路径")
 
     parser.add_argument(
-        '--engine-path',
-        type=str,
-        default=None,
-        help='输出的TensorRT引擎路径（默认与ONNX同名，扩展名为.engine）'
+        "--engine-path", type=str, default=None, help="输出的TensorRT引擎路径（默认与ONNX同名，扩展名为.engine）"
     )
 
     # 构建参数
-    build_group = parser.add_argument_group('构建参数')
-    build_group.add_argument(
-        '--fp16',
-        action='store_true',
-        default=True,
-        help='启用FP16精度（默认启用）'
-    )
+    build_group = parser.add_argument_group("构建参数")
+    build_group.add_argument("--fp16", action="store_true", default=True, help="启用FP16精度（默认启用）")
+
+    build_group.add_argument("--no-fp16", action="store_true", help="禁用FP16精度，使用FP32")
 
     build_group.add_argument(
-        '--no-fp16',
-        action='store_true',
-        help='禁用FP16精度，使用FP32'
-    )
-
-    build_group.add_argument(
-        '--optimization-level',
-        type=int,
-        default=3,
-        choices=[0, 1, 2, 3, 4, 5],
-        help='TensorRT构建优化级别（0-5）'
+        "--optimization-level", type=int, default=3, choices=[0, 1, 2, 3, 4, 5], help="TensorRT构建优化级别（0-5）"
     )
 
     # 比较功能参数
-    compare_group = parser.add_argument_group('比较功能参数')
-    compare_group.add_argument(
-        '--compare',
-        action='store_true',
-        help='是否开启ONNX Runtime和TensorRT的精度对比'
-    )
+    compare_group = parser.add_argument_group("比较功能参数")
+    compare_group.add_argument("--compare", action="store_true", help="是否开启ONNX Runtime和TensorRT的精度对比")
 
-    compare_group.add_argument(
-        '--rtol',
-        type=float,
-        default=1e-3,
-        help='相对容差，用于精度比较（默认1e-3）'
-    )
+    compare_group.add_argument("--rtol", type=float, default=1e-3, help="相对容差，用于精度比较（默认1e-3）")
 
-    compare_group.add_argument(
-        '--atol',
-        type=float,
-        default=1e-3,
-        help='绝对容差，用于精度比较（默认1e-3）'
-    )
+    compare_group.add_argument("--atol", type=float, default=1e-3, help="绝对容差，用于精度比较（默认1e-3）")
 
-    compare_group.add_argument(
-        '--iterations',
-        type=int,
-        default=1,
-        help='性能测试迭代次数（默认10次）'
-    )
+    compare_group.add_argument("--iterations", type=int, default=1, help="性能测试迭代次数（默认10次）")
 
-    compare_group.add_argument(
-        '--warmup',
-        type=int,
-        default=3,
-        help='性能测试预热次数（默认3次）'
-    )
+    compare_group.add_argument("--warmup", type=int, default=3, help="性能测试预热次数（默认3次）")
 
-    compare_group.add_argument(
-        '--save-outputs',
-        action='store_true',
-        help='保存推理结果到文件进行详细分析'
-    )
+    compare_group.add_argument("--save-outputs", action="store_true", help="保存推理结果到文件进行详细分析")
 
     return parser.parse_args()
 
@@ -143,7 +93,7 @@ def get_engine_path(onnx_path, engine_path):
     """生成引擎路径"""
     if engine_path is None:
         onnx_file = Path(onnx_path)
-        engine_path = str(onnx_file.with_suffix('.engine'))
+        engine_path = str(onnx_file.with_suffix(".engine"))
     return engine_path
 
 
@@ -172,7 +122,7 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
 
             try:
                 response = input("是否现在启用比较功能？(y/n): ").strip().lower()
-                if response in ['y', 'yes', '是', 'Y']:
+                if response in ["y", "yes", "是", "Y"]:
                     return True, True  # skip_build=True, enable_compare=True
             except KeyboardInterrupt:
                 print("\n用户取消操作")
@@ -181,7 +131,7 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
         # 询问是否跳过构建
         try:
             response = input("引擎文件已存在，是否跳过构建？(Y/n): ").strip().lower()
-            if response in ['', 'y', 'yes', '是', 'Y']:
+            if response in ["", "y", "yes", "是", "Y"]:
                 return True, compare_enabled  # skip_build=True, compare_enabled=原值
             else:
                 print("将重新构建引擎文件...")
@@ -235,9 +185,9 @@ def main():
         print("配置优化的TensorRT构建参数...")
         create_config = CreateConfig(
             fp16=args.fp16,
-            precision_constraints='prefer',
+            precision_constraints="prefer",
             profiles=None,
-            builder_optimization_level=args.optimization_level
+            builder_optimization_level=args.optimization_level,
         )
 
         print(f"TensorRT构建配置: FP16={create_config.fp16}, 优化级别={args.optimization_level}")
@@ -247,10 +197,10 @@ def main():
 
         # 网络后处理仅在FP16开启时进行
         if args.fp16:
-            postprocess_script = 'tools/network_postprocess.py'
+            postprocess_script = "tools/network_postprocess.py"
             if os.path.exists(postprocess_script):
                 print(f"FP16模式已启用，加载智能网络后处理脚本: {postprocess_script}")
-                postprocess_func = InvokeFromScript(postprocess_script, name='postprocess')
+                postprocess_func = InvokeFromScript(postprocess_script, name="postprocess")
                 network = PostprocessNetwork(parse_network_from_onnx, func=postprocess_func)
             else:
                 print("FP16模式已启用，但未找到网络后处理脚本，使用默认配置")
@@ -304,11 +254,11 @@ def main():
         print(f"比较阶段: 设置 USE_TENSORRT_RTX = {config.USE_TENSORRT_RTX}")
         # 获取比较参数
         compare_args = {
-            'rtol': args.rtol,
-            'atol': args.atol,
-            'iterations': args.iterations,
-            'warmup': args.warmup,
-            'save_outputs': args.save_outputs
+            "rtol": args.rtol,
+            "atol": args.atol,
+            "iterations": args.iterations,
+            "warmup": args.warmup,
+            "save_outputs": args.save_outputs,
         }
         run_comparison(args.onnx_path, saved_engine_for_comparison, engine_path, **compare_args)
     elif compare_enabled:
@@ -316,10 +266,14 @@ def main():
     elif not skip_build:
         print(f"✓ TensorRT引擎构建完成: {engine_path}")
         print("💡 提示: 使用 --compare 参数可进行精度对比测试")
-        print("   示例: python tools/build_engine.py --onnx-path <path> --engine-path <path> --compare --rtol 1e-2 --atol 1e-3")
+        print(
+            "   示例: python tools/build_engine.py --onnx-path <path> --engine-path <path> --compare --rtol 1e-2 --atol 1e-3"
+        )
 
 
-def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, iterations=10, warmup=3, save_outputs=False):
+def run_comparison(
+    onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, iterations=10, warmup=3, save_outputs=False
+):
     """运行ONNX Runtime和TensorRT对比"""
     print("\n=== 开始模型推理对比 ===")
     print(f"比较参数: 相对容差={rtol}, 绝对容差={atol}, 迭代次数={iterations}, 预热次数={warmup}")
@@ -340,23 +294,24 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             print(f"预热阶段: 运行 {warmup} 次...")
             for i in range(warmup):
                 _ = Comparator.run(runners)
-                print(f"预热进度: {i+1}/{warmup}")
+                print(f"预热进度: {i + 1}/{warmup}")
 
         # 正式测试阶段
         print(f"正式测试: 运行 {iterations} 次...")
         all_results = []
         import time
+
         start_time = time.time()
 
         for i in range(iterations):
             results = Comparator.run(runners)
             all_results.append(results)
-            print(f"测试进度: {i+1}/{iterations}")
+            print(f"测试进度: {i + 1}/{iterations}")
 
         total_time = time.time() - start_time
         avg_time_per_iteration = total_time / iterations
 
-        print(f"\n=== 性能统计 ===")
+        print("\n=== 性能统计 ===")
         print(f"总测试时间: {total_time:.4f}s")
         print(f"平均每次推理: {avg_time_per_iteration:.4f}s")
 
@@ -386,10 +341,7 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             print(f"保存输出文件到: {output_dir}")
 
             compare_func = CompareFunc.simple(
-                rtol=rtol,
-                atol=atol,
-                save_heatmaps=heatmap_path,
-                save_error_metrics_plot=error_plot_path
+                rtol=rtol, atol=atol, save_heatmaps=heatmap_path, save_error_metrics_plot=error_plot_path
             )
         else:
             compare_func = CompareFunc.simple(rtol=rtol, atol=atol, fail_fast=True)
@@ -424,10 +376,8 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
             #     json.dump(summary, f, indent=2)
             # print(f"✓ 精度概况已保存到: {summary_path}")
 
-
         success &= bool(accuracy_result)
         print(f"精度对比结果: {'✓ 通过' if accuracy_result else '✗ 失败'}")
-
 
         # 最终报告
         print_final_report(success, engine_path, rtol, atol, avg_time_per_iteration)
@@ -439,14 +389,16 @@ def run_comparison(onnx_path, save_engine, engine_path, rtol=1e-3, atol=1e-3, it
         print(f"比较过程中发生错误: {e}")
         sys.exit(1)
 
+
 def print_performance_stats(results):
     """打印性能统计"""
     print("\n=== 性能统计 ===")
     for runner_name, result in results.items():
-        if hasattr(result, 'runtime'):
+        if hasattr(result, "runtime"):
             print(f"{runner_name} 推理时间: {result.runtime:.4f}s")
         else:
             print(f"{runner_name}: 推理完成")
+
 
 def print_final_report(success, engine_path, rtol=1e-3, atol=1e-3, avg_time=None):
     """打印最终报告"""
@@ -467,5 +419,5 @@ def print_final_report(success, engine_path, rtol=1e-3, atol=1e-3, avg_time=None
         print("  3. 验证模型输入数据范围")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

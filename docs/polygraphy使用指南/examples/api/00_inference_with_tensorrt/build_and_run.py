@@ -20,6 +20,7 @@
 这个脚本从一个 ONNX identity 模型开始，
 构建并运行一个启用了 FP16 精度的 TensorRT 引擎。
 """
+
 import numpy as np
 from polygraphy.backend.trt import CreateConfig, EngineFromNetwork, NetworkFromOnnxPath, SaveEngine, TrtRunner
 

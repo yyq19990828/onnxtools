@@ -9,7 +9,7 @@ import glob
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
@@ -18,10 +18,7 @@ from polygraphy.logger import G_LOGGER
 
 # 类型检查时导入，避免循环导入
 if TYPE_CHECKING:
-    from .onnx_base import BaseORT
-    from .onnx_rfdetr import RfdetrORT
-    from .onnx_rtdetr import RtdetrORT
-    from .onnx_yolo import YoloORT
+    pass
 
 
 class CustomEngineDataLoader(DataLoader):
@@ -35,13 +32,13 @@ class CustomEngineDataLoader(DataLoader):
     def __init__(
         self,
         detector_class,  # 检测器类（非实例）
-        input_shape: Tuple[int, int],
+        input_shape: tuple[int, int],
         input_name: str,
-        image_paths: Optional[List[Union[str, Path]]] = None,
-        images: Optional[List[np.ndarray]] = None,
+        image_paths: list[str | Path] | None = None,
+        images: list[np.ndarray] | None = None,
         iterations: int = 10,
-        preprocess_kwargs: Optional[Dict[str, Any]] = None,
-        **kwargs
+        preprocess_kwargs: dict[str, Any] | None = None,
+        **kwargs,
     ):
         """
         初始化自定义数据加载器
@@ -62,7 +59,7 @@ class CustomEngineDataLoader(DataLoader):
         self.detector_class = detector_class
         self.input_shape = input_shape
         self.input_name = input_name
-        self.image_paths = self._process_image_paths(image_paths or [''])
+        self.image_paths = self._process_image_paths(image_paths or [""])
         self.images = images or []
         self.preprocess_kwargs = preprocess_kwargs or {}
         self._cached_images = {}  # 缓存加载的图像
@@ -78,9 +75,11 @@ class CustomEngineDataLoader(DataLoader):
             self.data_source = "synthetic"
             self.data_length = iterations
 
-        G_LOGGER.info(f"CustomEngineDataLoader 初始化: 检测器={detector_class.__name__}, 数据源={self.data_source}, 数据长度={self.data_length}")
+        G_LOGGER.info(
+            f"CustomEngineDataLoader 初始化: 检测器={detector_class.__name__}, 数据源={self.data_source}, 数据长度={self.data_length}"
+        )
 
-    def _process_image_paths(self, paths: List[Union[str, Path]]) -> List[Path]:
+    def _process_image_paths(self, paths: list[str | Path]) -> list[Path]:
         """
         处理输入路径列表，支持文件夹路径和具体图片路径
 
@@ -91,7 +90,7 @@ class CustomEngineDataLoader(DataLoader):
             List[Path]: 处理后的图片文件路径列表
         """
         processed_paths = []
-        supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
+        supported_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp"}
 
         for path in paths:
             path = Path(path)
@@ -182,9 +181,7 @@ class CustomEngineDataLoader(DataLoader):
             image = self._load_image(index)
 
             # 使用检测器类的静态预处理方法
-            preprocess_result = self.detector_class.preprocess(
-                image, self.input_shape, **self.preprocess_kwargs
-            )
+            preprocess_result = self.detector_class.preprocess(image, self.input_shape, **self.preprocess_kwargs)
 
             # 处理不同预处理方法的返回值格式
             if len(preprocess_result) == 3:
@@ -218,11 +215,11 @@ class CustomEngineDataLoader(DataLoader):
         """
         try:
             # 检查是否有已缓存的batch size信息
-            if hasattr(self, '_cached_batch_size'):
+            if hasattr(self, "_cached_batch_size"):
                 return self._cached_batch_size
 
             # 尝试通过检测器类的静态方法获取batch size信息
-            if hasattr(self.detector_class, '_get_batch_size_from_onnx'):
+            if hasattr(self.detector_class, "_get_batch_size_from_onnx"):
                 batch_size = self.detector_class._get_batch_size_from_onnx()
                 self._cached_batch_size = batch_size
                 return batch_size
@@ -244,12 +241,12 @@ class CustomEngineDataLoader(DataLoader):
 
 def create_engine_dataloader(
     detector_class,
-    input_shape: Tuple[int, int],
+    input_shape: tuple[int, int],
     input_name: str,
-    image_paths: Optional[List[Union[str, Path]]] = None,
-    images: Optional[List[np.ndarray]] = None,
+    image_paths: list[str | Path] | None = None,
+    images: list[np.ndarray] | None = None,
     iterations: int = 4,
-    **kwargs
+    **kwargs,
 ) -> CustomEngineDataLoader:
     """
     工厂函数：创建引擎比较数据加载器
@@ -273,17 +270,17 @@ def create_engine_dataloader(
         image_paths=image_paths,
         images=images,
         iterations=iterations,
-        **kwargs
+        **kwargs,
     )
 
 
 # 便捷函数，从检测器实例创建DataLoader
 def create_dataloader_from_detector(
     detector_instance,
-    image_paths: Optional[List[Union[str, Path]]] = None,
-    images: Optional[List[np.ndarray]] = None,
+    image_paths: list[str | Path] | None = None,
+    images: list[np.ndarray] | None = None,
     iterations: int = 2,
-    **kwargs
+    **kwargs,
 ) -> CustomEngineDataLoader:
     """
     从检测器实例创建数据加载器（便捷函数）
@@ -300,8 +297,8 @@ def create_dataloader_from_detector(
     """
     # 提取特定于不同检测器类的预处理参数
     preprocess_kwargs = {}
-    if hasattr(detector_instance, 'use_ultralytics_preprocess'):
-        preprocess_kwargs['use_ultralytics_preprocess'] = detector_instance.use_ultralytics_preprocess
+    if hasattr(detector_instance, "use_ultralytics_preprocess"):
+        preprocess_kwargs["use_ultralytics_preprocess"] = detector_instance.use_ultralytics_preprocess
 
     return CustomEngineDataLoader(
         detector_class=detector_instance.__class__,
@@ -311,5 +308,5 @@ def create_dataloader_from_detector(
         images=images,
         iterations=iterations,
         preprocess_kwargs=preprocess_kwargs,
-        **kwargs
+        **kwargs,
     )

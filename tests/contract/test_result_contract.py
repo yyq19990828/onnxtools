@@ -27,13 +27,7 @@ class TestResultInitializationContract:
         names = {0: "vehicle"}
 
         # Expected: status 200, properties accessible
-        result = Result(
-            boxes=boxes,
-            scores=scores,
-            class_ids=class_ids,
-            orig_shape=orig_shape,
-            names=names
-        )
+        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=orig_shape, names=names)
 
         # Verify properties are accessible
         assert result.boxes is not None
@@ -51,12 +45,7 @@ class TestResultInitializationContract:
         orig_shape = (640, 640)
 
         # Expected: status 200, boxes_shape (0, 4), scores_shape (0,)
-        result = Result(
-            boxes=boxes,
-            scores=scores,
-            class_ids=class_ids,
-            orig_shape=orig_shape
-        )
+        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=orig_shape)
 
         # Verify empty array shapes
         assert result.boxes.shape == (0, 4)
@@ -149,14 +138,14 @@ class TestResultIndexingContract:
     def test_indexing_preserves_metadata(self):
         """Contract: Indexing must preserve orig_shape, names, path."""
         boxes = np.array([[10, 20, 30, 40], [50, 60, 70, 80]], dtype=np.float32)
-        names = {0: 'vehicle', 1: 'plate'}
-        result = Result(boxes=boxes, orig_shape=(640, 480), names=names, path='/test.jpg')
+        names = {0: "vehicle", 1: "plate"}
+        result = Result(boxes=boxes, orig_shape=(640, 480), names=names, path="/test.jpg")
 
         # Contract: Indexed result must share metadata
         first = result[0]
         assert first.orig_shape == (640, 480)
         assert first.names == names
-        assert first.path == '/test.jpg'
+        assert first.path == "/test.jpg"
 
     def test_empty_slice_returns_empty_result(self):
         """Contract: Empty slice must return valid empty Result."""
@@ -222,16 +211,15 @@ class TestResultFilteringContract:
         stats = result.summary()
 
         # Contract: must return dict with specific keys
-        required_keys = {'total_detections', 'class_counts', 'avg_confidence',
-                        'min_confidence', 'max_confidence'}
+        required_keys = {"total_detections", "class_counts", "avg_confidence", "min_confidence", "max_confidence"}
         assert set(stats.keys()) == required_keys
 
         # Contract: types must be correct
-        assert isinstance(stats['total_detections'], int)
-        assert isinstance(stats['class_counts'], dict)
-        assert isinstance(stats['avg_confidence'], float)
-        assert isinstance(stats['min_confidence'], float)
-        assert isinstance(stats['max_confidence'], float)
+        assert isinstance(stats["total_detections"], int)
+        assert isinstance(stats["class_counts"], dict)
+        assert isinstance(stats["avg_confidence"], float)
+        assert isinstance(stats["min_confidence"], float)
+        assert isinstance(stats["max_confidence"], float)
 
 
 class TestResultVisualizationContract:
@@ -244,7 +232,7 @@ class TestResultVisualizationContract:
         boxes = np.array([[10, 20, 30, 40]], dtype=np.float32)
         scores = np.array([0.9], dtype=np.float32)
         class_ids = np.array([0], dtype=np.int32)
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640), names={0: 'test'})
+        result = Result(boxes=boxes, scores=scores, class_ids=class_ids, orig_shape=(640, 640), names={0: "test"})
 
         sv_detections = result.to_supervision()
         assert isinstance(sv_detections, sv.Detections)
@@ -255,8 +243,9 @@ class TestResultVisualizationContract:
         scores = np.array([0.9], dtype=np.float32)
         class_ids = np.array([0], dtype=np.int32)
         orig_img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_img=orig_img, orig_shape=(640, 640), names={0: 'test'})
+        result = Result(
+            boxes=boxes, scores=scores, class_ids=class_ids, orig_img=orig_img, orig_shape=(640, 640), names={0: "test"}
+        )
 
         annotated = result.plot()
         assert isinstance(annotated, np.ndarray)
@@ -280,10 +269,11 @@ class TestResultVisualizationContract:
         scores = np.array([0.9], dtype=np.float32)
         class_ids = np.array([0], dtype=np.int32)
         orig_img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-        result = Result(boxes=boxes, scores=scores, class_ids=class_ids,
-                       orig_img=orig_img, orig_shape=(640, 640), names={0: 'test'})
+        result = Result(
+            boxes=boxes, scores=scores, class_ids=class_ids, orig_img=orig_img, orig_shape=(640, 640), names={0: "test"}
+        )
 
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:

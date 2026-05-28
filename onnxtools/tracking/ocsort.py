@@ -160,9 +160,7 @@ class KalmanBoxTracker:
             previous_box = self._previous_obs(self.age)
             self.velocity = _speed_direction(previous_box, bbox)
 
-        self.last_observation = np.array(
-            [bbox[0], bbox[1], bbox[2], bbox[3], score], dtype=np.float32
-        )
+        self.last_observation = np.array([bbox[0], bbox[1], bbox[2], bbox[3], score], dtype=np.float32)
         self.observations[self.age] = self.last_observation
         self.history_observations.append(self.last_observation)
         self.time_since_update = 0
@@ -284,11 +282,7 @@ class OCSORT(BaseTracker):
         del frame
         self.frame_count += 1
 
-        xyxy = (
-            detections.xyxy.astype(np.float32)
-            if detections.xyxy is not None
-            else np.empty((0, 4), dtype=np.float32)
-        )
+        xyxy = detections.xyxy.astype(np.float32) if detections.xyxy is not None else np.empty((0, 4), dtype=np.float32)
         scores = (
             np.asarray(detections.confidence, dtype=np.float32)
             if getattr(detections, "confidence", None) is not None
@@ -323,38 +317,26 @@ class OCSORT(BaseTracker):
             trks_arr = np.empty((0, 4), dtype=np.float32)
 
         velocities = np.array(
-            [
-                t.velocity if t.velocity is not None else np.zeros(2, dtype=np.float32)
-                for t in self.trackers
-            ],
+            [t.velocity if t.velocity is not None else np.zeros(2, dtype=np.float32) for t in self.trackers],
             dtype=np.float32,
         ).reshape(-1, 2)
         previous_obs = np.array(
-            [
-                t._previous_obs(t.age)
-                for t in self.trackers
-            ],
+            [t._previous_obs(t.age) for t in self.trackers],
             dtype=np.float32,
         ).reshape(-1, 5)
 
         # ---- Stage 1: IoU + OCM ------------------------------------------
-        matches, u_det, u_trk = self._associate(
-            xyxy, trks_arr, velocities, previous_obs
-        )
+        matches, u_det, u_trk = self._associate(xyxy, trks_arr, velocities, previous_obs)
         for d, t in matches:
             self.trackers[int(t)].update(xyxy[int(d)], float(scores[int(d)]), int(class_ids[int(d)]))
 
         # ---- Stage 2: OCR — use last observations for unmatched tracks ---
         if len(u_trk) > 0 and len(u_det) > 0:
-            last_boxes = np.stack(
-                [self.trackers[int(t)].last_observation[:4] for t in u_trk]
-            ).astype(np.float32)
+            last_boxes = np.stack([self.trackers[int(t)].last_observation[:4] for t in u_trk]).astype(np.float32)
             left_dets = xyxy[u_det]
             iou_ocr = box_iou_batch(left_dets, last_boxes)
             # Cost = 1 - IoU, only valid when last observation exists.
-            valid = np.array(
-                [self.trackers[int(t)].last_observation.sum() >= 0 for t in u_trk]
-            )
+            valid = np.array([self.trackers[int(t)].last_observation.sum() >= 0 for t in u_trk])
             cost = 1.0 - iou_ocr  # [Du, Tu]
             if not valid.all():
                 cost[:, ~valid] = 1e6
@@ -363,17 +345,13 @@ class OCSORT(BaseTracker):
             for it, idet in m2:
                 trk_idx = int(u_trk[int(it)])
                 det_idx = int(u_det[int(idet)])
-                self.trackers[trk_idx].update(
-                    xyxy[det_idx], float(scores[det_idx]), int(class_ids[det_idx])
-                )
+                self.trackers[trk_idx].update(xyxy[det_idx], float(scores[det_idx]), int(class_ids[det_idx]))
             u_det = np.array([u_det[int(k)] for k in u_d2], dtype=np.int64)
             u_trk = np.array([u_trk[int(k)] for k in u_t2], dtype=np.int64)
 
         # ---- Create new trackers for unmatched high-score detections -----
         for i in u_det:
-            t = KalmanBoxTracker(
-                xyxy[int(i)], float(scores[int(i)]), int(class_ids[int(i)]), delta_t=self.delta_t
-            )
+            t = KalmanBoxTracker(xyxy[int(i)], float(scores[int(i)]), int(class_ids[int(i)]), delta_t=self.delta_t)
             self.trackers.append(t)
 
         # ---- Emit + cull -------------------------------------------------
@@ -384,14 +362,8 @@ class OCSORT(BaseTracker):
 
         survivors: list[KalmanBoxTracker] = []
         for t in self.trackers:
-            if t.time_since_update < 1 and (
-                t.hit_streak >= self.min_hits or self.frame_count <= self.min_hits
-            ):
-                box = (
-                    t.last_observation[:4]
-                    if t.last_observation.sum() >= 0
-                    else t.get_state()
-                )
+            if t.time_since_update < 1 and (t.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
+                box = t.last_observation[:4] if t.last_observation.sum() >= 0 else t.get_state()
                 out_xyxy.append(box)
                 out_scores.append(t.score)
                 out_classes.append(t.class_id)
@@ -430,9 +402,7 @@ class OCSORT(BaseTracker):
             )
 
         iou = box_iou_batch(detections, trackers).T  # [T, D]
-        angle_cost = _angle_cost(
-            detections, trackers, velocities, previous_obs, vdc_weight=self.inertia
-        )
+        angle_cost = _angle_cost(detections, trackers, velocities, previous_obs, vdc_weight=self.inertia)
         # Final cost: lower IoU and lower momentum agreement -> higher cost.
         cost = -(iou + angle_cost)
         # Gate by raw IoU (not iou+angle) — matches reference behaviour.

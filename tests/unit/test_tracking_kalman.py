@@ -70,9 +70,7 @@ class TestKalmanFilterXYAH:
     def test_gating_distance_nonnegative(self):
         kf = KalmanFilterXYAH()
         mean, cov = kf.initiate(np.array([10.0, 20.0, 0.5, 100.0]))
-        d = kf.gating_distance(
-            mean, cov, np.array([[11.0, 21.0, 0.51, 101.0], [50.0, 60.0, 0.6, 120.0]])
-        )
+        d = kf.gating_distance(mean, cov, np.array([[11.0, 21.0, 0.51, 101.0], [50.0, 60.0, 0.6, 120.0]]))
         assert d.shape == (2,)
         assert np.all(d >= 0)
         # Farther measurement should have larger distance.

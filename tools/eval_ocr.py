@@ -38,9 +38,8 @@ import argparse
 import json
 import shutil
 import sys
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -54,36 +53,32 @@ from onnxtools import OCRDatasetEvaluator, OcrORT, SampleEvaluation, setup_logge
 logging.getLogger("polygraphy").setLevel(logging.WARNING)
 
 
-def analyze_errors(results: Dict[str, Any], top_n: int = 10) -> None:
+def analyze_errors(results: dict[str, Any], top_n: int = 10) -> None:
     """Analyze and display error cases using SampleEvaluation objects
 
     Args:
         results: Evaluation results dictionary containing per_sample_results
         top_n: Number of worst cases to display
     """
-    if 'per_sample_results' not in results:
+    if "per_sample_results" not in results:
         print("\n⚠️ No per-sample results available for error analysis")
         return
 
     # Convert dict results to SampleEvaluation objects for type safety
-    per_sample_objs = [
-        SampleEvaluation(**sample) for sample in results['per_sample_results']
-    ]
+    per_sample_objs = [SampleEvaluation(**sample) for sample in results["per_sample_results"]]
 
     # Separate correct and incorrect samples
     correct_samples = [s for s in per_sample_objs if s.is_correct]
     incorrect_samples = [s for s in per_sample_objs if not s.is_correct]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("📊 Error Analysis Report")
-    print("="*80)
+    print("=" * 80)
 
     # Overall statistics
     total = len(per_sample_objs)
-    print(f"\n✅ Correct predictions: {len(correct_samples)}/{total} "
-          f"({len(correct_samples)/total*100:.2f}%)")
-    print(f"❌ Incorrect predictions: {len(incorrect_samples)}/{total} "
-          f"({len(incorrect_samples)/total*100:.2f}%)")
+    print(f"\n✅ Correct predictions: {len(correct_samples)}/{total} ({len(correct_samples) / total * 100:.2f}%)")
+    print(f"❌ Incorrect predictions: {len(incorrect_samples)}/{total} ({len(incorrect_samples) / total * 100:.2f}%)")
 
     if not incorrect_samples:
         print("\n🎉 Perfect accuracy! No errors to analyze.")
@@ -94,31 +89,28 @@ def analyze_errors(results: Dict[str, Any], top_n: int = 10) -> None:
 
     # Display top error cases
     print(f"\n🔍 Top {min(top_n, len(incorrect_samples))} Worst Error Cases:")
-    print("-"*80)
+    print("-" * 80)
 
     for i, sample in enumerate(incorrect_samples[:top_n], 1):
         print(f"\n[{i}] Image: {Path(sample.image_path).name}")
         print(f"    Ground Truth:  '{sample.ground_truth}'")
         print(f"    Predicted:     '{sample.predicted_text}'")
         print(f"    Confidence:    {sample.confidence:.3f}")
-        print(f"    Edit Distance: {sample.edit_distance} "
-              f"(normalized: {sample.normalized_edit_distance:.3f})")
+        print(f"    Edit Distance: {sample.edit_distance} (normalized: {sample.normalized_edit_distance:.3f})")
         print(f"    Similarity:    {1.0 - sample.normalized_edit_distance:.3f}")
 
         # Highlight character differences
         if len(sample.ground_truth) == len(sample.predicted_text):
             diff_positions = [
-                i for i, (gt_c, pred_c) in
-                enumerate(zip(sample.ground_truth, sample.predicted_text))
-                if gt_c != pred_c
+                i for i, (gt_c, pred_c) in enumerate(zip(sample.ground_truth, sample.predicted_text)) if gt_c != pred_c
             ]
             if diff_positions:
                 print(f"    Diff positions: {diff_positions}")
 
     # Error type analysis
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("📈 Error Type Distribution")
-    print("="*80)
+    print("=" * 80)
 
     error_types = analyze_error_types(incorrect_samples)
 
@@ -136,12 +128,12 @@ def analyze_errors(results: Dict[str, Any], top_n: int = 10) -> None:
     avg_conf = sum(s.confidence for s in incorrect_samples) / len(incorrect_samples)
     avg_ed = sum(s.normalized_edit_distance for s in incorrect_samples) / len(incorrect_samples)
 
-    print(f"\n📊 Error Statistics:")
+    print("\n📊 Error Statistics:")
     print(f"   - Average confidence: {avg_conf:.3f}")
     print(f"   - Average normalized edit distance: {avg_ed:.3f}")
 
 
-def analyze_error_types(samples: List[SampleEvaluation]) -> Dict[str, int]:
+def analyze_error_types(samples: list[SampleEvaluation]) -> dict[str, int]:
     """Categorize error types using SampleEvaluation objects
 
     Args:
@@ -151,13 +143,13 @@ def analyze_error_types(samples: List[SampleEvaluation]) -> Dict[str, int]:
         Dictionary with error type counts
     """
     error_types = {
-        'length_errors': 0,
-        'too_short': 0,
-        'too_long': 0,
-        'char_errors': 0,
-        'single_char_error': 0,
-        'multi_char_error': 0,
-        'low_confidence': 0
+        "length_errors": 0,
+        "too_short": 0,
+        "too_long": 0,
+        "char_errors": 0,
+        "single_char_error": 0,
+        "multi_char_error": 0,
+        "low_confidence": 0,
     }
 
     for sample in samples:
@@ -166,43 +158,41 @@ def analyze_error_types(samples: List[SampleEvaluation]) -> Dict[str, int]:
 
         # Length errors
         if gt_len != pred_len:
-            error_types['length_errors'] += 1
+            error_types["length_errors"] += 1
             if pred_len < gt_len:
-                error_types['too_short'] += 1
+                error_types["too_short"] += 1
             else:
-                error_types['too_long'] += 1
+                error_types["too_long"] += 1
 
         # Character errors
         if sample.edit_distance == 1:
-            error_types['single_char_error'] += 1
+            error_types["single_char_error"] += 1
         elif sample.edit_distance > 1:
-            error_types['multi_char_error'] += 1
-        error_types['char_errors'] += 1
+            error_types["multi_char_error"] += 1
+        error_types["char_errors"] += 1
 
         # Low confidence
         if sample.confidence < 0.7:
-            error_types['low_confidence'] += 1
+            error_types["low_confidence"] += 1
 
     return error_types
 
 
-def analyze_confidence_distribution(results: Dict[str, Any]) -> None:
+def analyze_confidence_distribution(results: dict[str, Any]) -> None:
     """Analyze confidence score distribution using SampleEvaluation objects
 
     Args:
         results: Evaluation results dictionary
     """
-    if 'per_sample_results' not in results:
+    if "per_sample_results" not in results:
         return
 
     # Convert to SampleEvaluation objects
-    per_sample_objs = [
-        SampleEvaluation(**sample) for sample in results['per_sample_results']
-    ]
+    per_sample_objs = [SampleEvaluation(**sample) for sample in results["per_sample_results"]]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("📊 Confidence Distribution Analysis")
-    print("="*80)
+    print("=" * 80)
 
     # Separate by correctness
     correct_samples = [s for s in per_sample_objs if s.is_correct]
@@ -211,20 +201,20 @@ def analyze_confidence_distribution(results: Dict[str, Any]) -> None:
     if correct_samples:
         correct_confs = [s.confidence for s in correct_samples]
         print(f"\n✅ Correct predictions ({len(correct_samples)} samples):")
-        print(f"   - Average confidence: {sum(correct_confs)/len(correct_confs):.3f}")
+        print(f"   - Average confidence: {sum(correct_confs) / len(correct_confs):.3f}")
         print(f"   - Min confidence:     {min(correct_confs):.3f}")
         print(f"   - Max confidence:     {max(correct_confs):.3f}")
 
     if incorrect_samples:
         incorrect_confs = [s.confidence for s in incorrect_samples]
         print(f"\n❌ Incorrect predictions ({len(incorrect_samples)} samples):")
-        print(f"   - Average confidence: {sum(incorrect_confs)/len(incorrect_confs):.3f}")
+        print(f"   - Average confidence: {sum(incorrect_confs) / len(incorrect_confs):.3f}")
         print(f"   - Min confidence:     {min(incorrect_confs):.3f}")
         print(f"   - Max confidence:     {max(incorrect_confs):.3f}")
 
     # Confidence ranges
     ranges = [(0.0, 0.5), (0.5, 0.7), (0.7, 0.9), (0.9, 1.0)]
-    print(f"\n📊 Confidence Range Distribution:")
+    print("\n📊 Confidence Range Distribution:")
 
     for low, high in ranges:
         in_range = [s for s in per_sample_objs if low <= s.confidence < high]
@@ -232,31 +222,28 @@ def analyze_confidence_distribution(results: Dict[str, Any]) -> None:
 
         if in_range:
             accuracy = len(correct_in_range) / len(in_range) * 100
-            print(f"   [{low:.1f}, {high:.1f}): {len(in_range):3d} samples, "
-                  f"accuracy: {accuracy:5.1f}%")
+            print(f"   [{low:.1f}, {high:.1f}): {len(in_range):3d} samples, accuracy: {accuracy:5.1f}%")
 
 
-def find_common_mistakes(results: Dict[str, Any], top_n: int = 5) -> None:
+def find_common_mistakes(results: dict[str, Any], top_n: int = 5) -> None:
     """Find and display common mistake patterns using SampleEvaluation
 
     Args:
         results: Evaluation results dictionary
         top_n: Number of top patterns to show
     """
-    if 'per_sample_results' not in results:
+    if "per_sample_results" not in results:
         return
 
-    per_sample_objs = [
-        SampleEvaluation(**sample) for sample in results['per_sample_results']
-    ]
+    per_sample_objs = [SampleEvaluation(**sample) for sample in results["per_sample_results"]]
     incorrect_samples = [s for s in per_sample_objs if not s.is_correct]
 
     if not incorrect_samples:
         return
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("🔍 Common Mistake Patterns")
-    print("="*80)
+    print("=" * 80)
 
     # Collect character substitution patterns
     substitutions = {}
@@ -274,63 +261,57 @@ def find_common_mistakes(results: Dict[str, Any], top_n: int = 5) -> None:
             print(f"   {i}. '{pattern}': {count} occurrences")
 
 
-def save_detailed_report(results: Dict[str, Any], output_path: str) -> None:
+def save_detailed_report(results: dict[str, Any], output_path: str) -> None:
     """Save detailed error analysis report to JSON using SampleEvaluation
 
     Args:
         results: Evaluation results dictionary
         output_path: Output JSON file path
     """
-    if 'per_sample_results' not in results:
+    if "per_sample_results" not in results:
         logging.warning("Cannot save report: no per-sample results available")
         return
 
     # Convert to SampleEvaluation objects
-    per_sample_objs = [
-        SampleEvaluation(**sample) for sample in results['per_sample_results']
-    ]
+    per_sample_objs = [SampleEvaluation(**sample) for sample in results["per_sample_results"]]
     incorrect_samples = [s for s in per_sample_objs if not s.is_correct]
 
     # Convert back to dict for JSON serialization
     report = {
-        'summary': {
-            'total_samples': results['total_samples'],
-            'evaluated_samples': results['evaluated_samples'],
-            'filtered_samples': results['filtered_samples'],
-            'skipped_samples': results['skipped_samples'],
-            'accuracy': results['accuracy'],
-            'normalized_edit_distance': results['normalized_edit_distance'],
-            'edit_distance_similarity': results['edit_distance_similarity'],
-            'error_count': len(incorrect_samples),
-            'evaluation_time': results['evaluation_time'],
-            'avg_inference_time_ms': results['avg_inference_time_ms']
+        "summary": {
+            "total_samples": results["total_samples"],
+            "evaluated_samples": results["evaluated_samples"],
+            "filtered_samples": results["filtered_samples"],
+            "skipped_samples": results["skipped_samples"],
+            "accuracy": results["accuracy"],
+            "normalized_edit_distance": results["normalized_edit_distance"],
+            "edit_distance_similarity": results["edit_distance_similarity"],
+            "error_count": len(incorrect_samples),
+            "evaluation_time": results["evaluation_time"],
+            "avg_inference_time_ms": results["avg_inference_time_ms"],
         },
-        'error_cases': [
+        "error_cases": [
             {
-                'image_path': s.image_path,
-                'ground_truth': s.ground_truth,
-                'predicted_text': s.predicted_text,
-                'confidence': s.confidence,
-                'edit_distance': s.edit_distance,
-                'normalized_edit_distance': s.normalized_edit_distance
+                "image_path": s.image_path,
+                "ground_truth": s.ground_truth,
+                "predicted_text": s.predicted_text,
+                "confidence": s.confidence,
+                "edit_distance": s.edit_distance,
+                "normalized_edit_distance": s.normalized_edit_distance,
             }
-            for s in sorted(
-                incorrect_samples,
-                key=lambda x: x.normalized_edit_distance,
-                reverse=True
-            )
+            for s in sorted(incorrect_samples, key=lambda x: x.normalized_edit_distance, reverse=True)
         ],
-        'error_types': analyze_error_types(incorrect_samples) if incorrect_samples else {}
+        "error_types": analyze_error_types(incorrect_samples) if incorrect_samples else {},
     }
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     logging.info(f"Detailed error report saved to: {output_path}")
     print(f"\n💾 Detailed error report saved to: {output_path}")
 
 
-def save_badcase_images(results: Dict[str, Any], output_dir: Path) -> None:
+def save_badcase_images(results: dict[str, Any], output_dir: Path) -> None:
     """Save original images of incorrect predictions (badcases)
 
     Args:
@@ -342,14 +323,12 @@ def save_badcase_images(results: Dict[str, Any], output_dir: Path) -> None:
         - Original images of failed predictions
         - Images named with format: {idx}_{gt_text}_pred_{pred_text}_{conf:.3f}.jpg
     """
-    if 'per_sample_results' not in results:
+    if "per_sample_results" not in results:
         logging.warning("Cannot save badcase images: no per-sample results available")
         return
 
     # Convert to SampleEvaluation objects
-    per_sample_objs = [
-        SampleEvaluation(**sample) for sample in results['per_sample_results']
-    ]
+    per_sample_objs = [SampleEvaluation(**sample) for sample in results["per_sample_results"]]
     incorrect_samples = [s for s in per_sample_objs if not s.is_correct]
 
     if not incorrect_samples:
@@ -375,8 +354,8 @@ def save_badcase_images(results: Dict[str, Any], output_dir: Path) -> None:
             continue
 
         # Create safe filename
-        gt_text = sample.ground_truth.replace('/', '_').replace('\\', '_')
-        pred_text = sample.predicted_text.replace('/', '_').replace('\\', '_')
+        gt_text = sample.ground_truth.replace("/", "_").replace("\\", "_")
+        pred_text = sample.predicted_text.replace("/", "_").replace("\\", "_")
         conf = sample.confidence
 
         # Format: {idx}_{gt_text}_pred_{pred_text}_{conf:.3f}{ext}
@@ -414,10 +393,10 @@ def load_character_dict(config_path: str) -> list:
         FileNotFoundError: If config file not found
         KeyError: If required keys missing in config
     """
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(config_path, encoding="utf-8") as f:
         plate_yaml = yaml.safe_load(f)
 
-    if 'ocr_dict' not in plate_yaml:
+    if "ocr_dict" not in plate_yaml:
         raise KeyError("'ocr_dict' not found in config file")
 
     character = ["blank"] + plate_yaml["ocr_dict"] + [" "]
@@ -428,7 +407,7 @@ def load_character_dict(config_path: str) -> list:
 def parse_args():
     """Parse command-line arguments"""
     parser = argparse.ArgumentParser(
-        description='Evaluate OCR model performance on labeled datasets',
+        description="Evaluate OCR model performance on labeled datasets",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -450,92 +429,81 @@ Examples:
   %(prog)s --label-file data/val.txt --dataset-base data/ \\
       --ocr-model models/ocr.onnx --config configs/plate.yaml \\
       --output-format json > evaluation_results.json
-        """
+        """,
     )
 
     # Required arguments
     parser.add_argument(
-        '--label-file',
+        "--label-file",
         required=True,
         type=str,
-        help='Path to label file (tab-separated format: image_path<TAB>ground_truth)'
+        help="Path to label file (tab-separated format: image_path<TAB>ground_truth)",
     )
 
     parser.add_argument(
-        '--dataset-base',
-        required=True,
-        type=str,
-        help='Dataset root directory (for resolving relative image paths)'
+        "--dataset-base", required=True, type=str, help="Dataset root directory (for resolving relative image paths)"
     )
 
-    parser.add_argument(
-        '--ocr-model',
-        required=True,
-        type=str,
-        help='Path to ONNX OCR model file'
-    )
+    parser.add_argument("--ocr-model", required=True, type=str, help="Path to ONNX OCR model file")
 
     parser.add_argument(
-        '--config',
-        default='configs/plate.yaml',
+        "--config",
+        default="configs/plate.yaml",
         type=str,
-        help='Path to configuration file (plate.yaml) containing character dictionary'
+        help="Path to configuration file (plate.yaml) containing character dictionary",
     )
 
     # Optional arguments
     parser.add_argument(
-        '--conf-threshold',
+        "--conf-threshold",
         type=float,
         default=0.5,
-        help='Confidence threshold for filtering predictions (default: 0.5)'
+        help="Confidence threshold for filtering predictions (default: 0.5)",
     )
 
     parser.add_argument(
-        '--max-images',
-        type=int,
-        default=None,
-        help='Maximum number of images to evaluate (default: all)'
+        "--max-images", type=int, default=None, help="Maximum number of images to evaluate (default: all)"
     )
 
     parser.add_argument(
-        '--min-width',
+        "--min-width",
         type=int,
         default=35,
-        help='Minimum image width for evaluation. Images with width < min_width will be filtered out (default: 35)'
+        help="Minimum image width for evaluation. Images with width < min_width will be filtered out (default: 35)",
     )
 
     parser.add_argument(
-        '--output-format',
-        choices=['table', 'json'],
-        default='table',
-        help='Output format: table (human-readable) or json (machine-readable) (default: table)'
+        "--output-format",
+        choices=["table", "json"],
+        default="table",
+        help="Output format: table (human-readable) or json (machine-readable) (default: table)",
     )
 
     parser.add_argument(
-        '--log-level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        default='INFO',
-        help='Logging level (default: INFO)'
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Logging level (default: INFO)",
     )
 
     # Output and analysis arguments
     parser.add_argument(
-        '--output-dir',
+        "--output-dir",
         type=str,
         default=None,
-        help='Output directory for saving results (default: runs/{dataset_name})'
+        help="Output directory for saving results (default: runs/{dataset_name})",
     )
 
     parser.add_argument(
-        '--save-badcase-images',
-        action='store_true',
-        help='Save original images of incorrect predictions (badcases) to output-dir/badcases/'
+        "--save-badcase-images",
+        action="store_true",
+        help="Save original images of incorrect predictions (badcases) to output-dir/badcases/",
     )
 
     parser.add_argument(
-        '--error-analysis',
-        action='store_true',
-        help='Enable deep error analysis and save detailed report to output-dir/error_report.json'
+        "--error-analysis",
+        action="store_true",
+        help="Enable deep error analysis and save detailed report to output-dir/error_report.json",
     )
 
     return parser.parse_args()
@@ -603,7 +571,7 @@ def main():
             conf_threshold=args.conf_threshold,
             max_images=args.max_images,
             output_format=args.output_format,
-            min_width=args.min_width
+            min_width=args.min_width,
         )
 
         if not results:
@@ -648,5 +616,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

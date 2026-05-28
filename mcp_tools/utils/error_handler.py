@@ -6,7 +6,6 @@ Provides unified error handling with actionable messages.
 
 import logging
 import traceback
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +28,7 @@ def handle_inference_error(e: Exception, operation: str) -> str:
 
     # File not found errors
     if isinstance(e, FileNotFoundError):
-        return (
-            f"Error: File not found - {error_msg}. "
-            "Please verify the file path exists and is accessible."
-        )
+        return f"Error: File not found - {error_msg}. Please verify the file path exists and is accessible."
 
     # GPU/CUDA errors
     if "CUDA" in error_msg or "GPU" in error_msg.upper():
@@ -74,25 +70,16 @@ def handle_inference_error(e: Exception, operation: str) -> str:
 
     # Network errors
     if "timeout" in error_msg.lower():
-        return (
-            f"Error: Timeout during {operation}. "
-            "The request took too long. Try again or check network connectivity."
-        )
+        return f"Error: Timeout during {operation}. The request took too long. Try again or check network connectivity."
 
     if "connection" in error_msg.lower() or "network" in error_msg.lower():
-        return (
-            f"Error: Network error during {operation}. "
-            "Check your internet connection and try again."
-        )
+        return f"Error: Network error during {operation}. Check your internet connection and try again."
 
     # Generic error with full details
-    return (
-        f"Error during {operation}: [{error_type}] {error_msg}. "
-        "Check the logs for more details."
-    )
+    return f"Error during {operation}: [{error_type}] {error_msg}. Check the logs for more details."
 
 
-def validate_model_path(model_path: str, model_name: str = "Model") -> Optional[str]:
+def validate_model_path(model_path: str, model_name: str = "Model") -> str | None:
     """Validate that a model path exists.
 
     Args:
@@ -118,7 +105,7 @@ def validate_model_path(model_path: str, model_name: str = "Model") -> Optional[
     return None
 
 
-def validate_image_path(image_path: str, source_type: str = "file") -> Optional[str]:
+def validate_image_path(image_path: str, source_type: str = "file") -> str | None:
     """Validate image path or source.
 
     Args:

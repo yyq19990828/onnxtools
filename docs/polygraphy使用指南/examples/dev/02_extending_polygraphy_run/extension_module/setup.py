@@ -32,7 +32,7 @@ def main():
         name="polygraphy_reshape_destroyer",
         version=polygraphy_reshape_destroyer.__version__,
         description="Polygraphy Reshape Destroyer: Destroyer Of Reshapes",
-        long_description=open("README.md", "r", encoding="utf-8").read(),
+        long_description=open("README.md", encoding="utf-8").read(),
         url="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy",
         author="NVIDIA",
         author_email="svc_tensorrt@nvidia.com",

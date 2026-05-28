@@ -9,21 +9,21 @@ Provides core classification evaluation metrics including:
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 __all__ = [
-    'compute_classification_metrics',
-    'print_cls_metrics',
-    'format_cls_results_json',
+    "compute_classification_metrics",
+    "print_cls_metrics",
+    "format_cls_results_json",
 ]
 
 
 def compute_classification_metrics(
-    y_true: List[str],
-    y_pred: List[str],
-    confidences: List[float],
-    class_names: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    y_true: list[str],
+    y_pred: list[str],
+    confidences: list[float],
+    class_names: list[str] | None = None,
+) -> dict[str, Any]:
     """Compute classification metrics without sklearn dependency.
 
     Calculates accuracy, per-class precision/recall/F1, average confidence,
@@ -52,18 +52,15 @@ def compute_classification_metrics(
         0.6666666666666666
     """
     if len(y_true) != len(y_pred) or len(y_true) != len(confidences):
-        raise ValueError(
-            f"Length mismatch: y_true={len(y_true)}, y_pred={len(y_pred)}, "
-            f"confidences={len(confidences)}"
-        )
+        raise ValueError(f"Length mismatch: y_true={len(y_true)}, y_pred={len(y_pred)}, confidences={len(confidences)}")
 
     if len(y_true) == 0:
         return {
-            'accuracy': 0.0,
-            'per_class': {},
-            'confusion_matrix': [],
-            'class_names': class_names or [],
-            'total_samples': 0,
+            "accuracy": 0.0,
+            "per_class": {},
+            "confusion_matrix": [],
+            "class_names": class_names or [],
+            "total_samples": 0,
         }
 
     # Determine class names
@@ -96,35 +93,30 @@ def compute_classification_metrics(
 
         precision = tp / predicted_as if predicted_as > 0 else 0.0
         recall = tp / support if support > 0 else 0.0
-        f1 = (2 * precision * recall / (precision + recall)
-              if (precision + recall) > 0 else 0.0)
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
 
         # Average confidence for predictions of this class
-        cls_confidences = [
-            conf for pred, conf in zip(y_pred, confidences)
-            if pred == cls_name
-        ]
-        avg_conf = (sum(cls_confidences) / len(cls_confidences)
-                    if cls_confidences else 0.0)
+        cls_confidences = [conf for pred, conf in zip(y_pred, confidences) if pred == cls_name]
+        avg_conf = sum(cls_confidences) / len(cls_confidences) if cls_confidences else 0.0
 
         per_class[cls_name] = {
-            'precision': precision,
-            'recall': recall,
-            'f1': f1,
-            'support': support,
-            'avg_confidence': avg_conf,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "support": support,
+            "avg_confidence": avg_conf,
         }
 
     return {
-        'accuracy': accuracy,
-        'per_class': per_class,
-        'confusion_matrix': confusion,
-        'class_names': class_names,
-        'total_samples': len(y_true),
+        "accuracy": accuracy,
+        "per_class": per_class,
+        "confusion_matrix": confusion,
+        "class_names": class_names,
+        "total_samples": len(y_true),
     }
 
 
-def print_cls_metrics(results: Dict[str, Any], branch_name: str = "") -> None:
+def print_cls_metrics(results: dict[str, Any], branch_name: str = "") -> None:
     """Print classification evaluation metrics with Chinese character alignment.
 
     Prints per-class metrics table and overall statistics.
@@ -139,47 +131,46 @@ def print_cls_metrics(results: Dict[str, Any], branch_name: str = "") -> None:
         ... )
         >>> print_cls_metrics(results, branch_name='test')
     """
+
     def display_width(s: str) -> int:
         width = 0
         for char in s:
-            if '\u4e00' <= char <= '\u9fff' or '\uff00' <= char <= '\uffef':
+            if "\u4e00" <= char <= "\u9fff" or "\uff00" <= char <= "\uffef":
                 width += 2
             else:
                 width += 1
         return width
 
-    def pad_string(s: str, target_width: int, align: str = 'left') -> str:
+    def pad_string(s: str, target_width: int, align: str = "left") -> str:
         current_width = display_width(s)
         padding_needed = target_width - current_width
         if padding_needed <= 0:
             return s
-        if align == 'left':
-            return s + ' ' * padding_needed
-        elif align == 'right':
-            return ' ' * padding_needed + s
+        if align == "left":
+            return s + " " * padding_needed
+        elif align == "right":
+            return " " * padding_needed + s
         else:
             left_pad = padding_needed // 2
             right_pad = padding_needed - left_pad
-            return ' ' * left_pad + s + ' ' * right_pad
+            return " " * left_pad + s + " " * right_pad
 
     title = f"分类评估 - {branch_name}" if branch_name else "分类评估"
     print(f"\n{'=' * 70}")
     print(f"  {title}")
     print(f"{'=' * 70}")
 
-    accuracy = results.get('accuracy', 0.0)
-    total = results.get('total_samples', 0)
+    accuracy = results.get("accuracy", 0.0)
+    total = results.get("total_samples", 0)
     print(f"  总体准确率: {accuracy:.4f}  ({total} 样本)")
     print(f"{'-' * 70}")
 
-    per_class = results.get('per_class', {})
+    per_class = results.get("per_class", {})
     if per_class:
         # Header
         col_widths = [18, 12, 12, 12, 10, 14]
-        headers = ['类别', 'Precision', 'Recall', 'F1', 'Support', 'Avg Conf']
-        header_line = '  '.join(
-            pad_string(h, w, 'left') for h, w in zip(headers, col_widths)
-        )
+        headers = ["类别", "Precision", "Recall", "F1", "Support", "Avg Conf"]
+        header_line = "  ".join(pad_string(h, w, "left") for h, w in zip(headers, col_widths))
         print(f"  {header_line}")
         print(f"  {'-' * (sum(col_widths) + 2 * (len(col_widths) - 1))}")
 
@@ -190,7 +181,7 @@ def print_cls_metrics(results: Dict[str, Any], branch_name: str = "") -> None:
                 pad_string(f"{metrics['precision']:.4f}", col_widths[1]),
                 pad_string(f"{metrics['recall']:.4f}", col_widths[2]),
                 pad_string(f"{metrics['f1']:.4f}", col_widths[3]),
-                pad_string(str(metrics['support']), col_widths[4]),
+                pad_string(str(metrics["support"]), col_widths[4]),
                 pad_string(f"{metrics['avg_confidence']:.4f}", col_widths[5]),
             ]
             print(f"  {'  '.join(row)}")
@@ -198,7 +189,7 @@ def print_cls_metrics(results: Dict[str, Any], branch_name: str = "") -> None:
     print(f"{'=' * 70}\n")
 
 
-def format_cls_results_json(results: Dict[str, Any]) -> str:
+def format_cls_results_json(results: dict[str, Any]) -> str:
     """Format classification evaluation results as JSON string.
 
     Args:
