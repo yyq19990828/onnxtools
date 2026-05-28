@@ -12,7 +12,7 @@ DeepSORT 式管线 = 检测器 + **独立** ReID 网络,延迟是两者之和。
 
 ```mermaid
 graph TD
-    subgraph 两段式 SDE (DeepSORT)
+    subgraph "两段式 SDE (DeepSORT)"
         I1["图像"] --> D1["检测网络"] --> B1["框"]
         B1 --> R1["独立 ReID 网络<br/>(逐框裁剪再前向)"]
         R1 --> F1["外观特征"]

@@ -103,23 +103,23 @@ nav:
           - 概念总览: guides/tracking/index.md
           - 传统方法 (IoU/SORT/DeepSORT): guides/tracking/traditional-methods.md
           - TbD · 运动主导:
-              - ByteTrack: guides/tracking/bytetrack.md
-              - OC-SORT: guides/tracking/ocsort.md
+              - ByteTrack [2022]: guides/tracking/bytetrack.md
+              - OC-SORT [2023]: guides/tracking/ocsort.md
           - TbD · 外观增强:
-              - StrongSORT: guides/tracking/strongsort.md
-              - BoT-SORT: guides/tracking/botsort.md
-              - Deep OC-SORT: guides/tracking/deep-ocsort.md
-              - Hybrid-SORT: guides/tracking/hybrid-sort.md
+              - StrongSORT [2022]: guides/tracking/strongsort.md
+              - BoT-SORT [2022]: guides/tracking/botsort.md
+              - Deep OC-SORT [2023]: guides/tracking/deep-ocsort.md
+              - Hybrid-SORT [2024]: guides/tracking/hybrid-sort.md
           - JDE · 联合检测嵌入:
               - 概览: guides/tracking/jde-family.md
-              - JDE: guides/tracking/jde.md
-              - FairMOT: guides/tracking/fairmot.md
-              - CenterTrack: guides/tracking/centertrack.md
+              - JDE [2020]: guides/tracking/jde.md
+              - FairMOT [2021]: guides/tracking/fairmot.md
+              - CenterTrack [2020]: guides/tracking/centertrack.md
           - Transformer · 端到端:
               - 概览: guides/tracking/transformer-mot.md
-              - TrackFormer: guides/tracking/trackformer.md
-              - MOTR: guides/tracking/motr.md
-              - MOTRv2: guides/tracking/motrv2.md
+              - TrackFormer [2022]: guides/tracking/trackformer.md
+              - MOTR [2022]: guides/tracking/motr.md
+              - MOTRv2 [2023]: guides/tracking/motrv2.md
           - 评测指标: guides/tracking/metrics.md
   - API 参考:
       - 总览: api/index.md
@@ -133,6 +133,9 @@ nav:
       - Eval: api/eval.md
       - Config: api/config.md
   - 模型支持: models/model_support_list.md
+
+extra_css:
+  - stylesheets/extra.css
 
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
