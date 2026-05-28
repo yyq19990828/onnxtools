@@ -77,7 +77,7 @@ class OCRDatasetEvaluator:
         ocr_model: OcrORT model instance
 
     Examples:
-        >>> from infer_onnx import OCRONNX, OCRDatasetEvaluator
+        >>> from onnxtools import OcrORT, OCRDatasetEvaluator
         >>> ocr_model = OcrORT('models/ocr.onnx', character=char_dict)
         >>> evaluator = OCRDatasetEvaluator(ocr_model)
         >>> results = evaluator.evaluate_dataset(
@@ -278,7 +278,10 @@ class OCRDatasetEvaluator:
 
                 # Confidence filtering
                 if confidence < conf_threshold:
-                    logging.debug(f"Filtered low confidence sample: {image_path} (conf={confidence:.3f} < {conf_threshold})")
+                    logging.debug(
+                        f"Filtered low confidence sample: {image_path} "
+                        f"(conf={confidence:.3f} < {conf_threshold})"
+                    )
                     filtered_count += 1
                     continue
 

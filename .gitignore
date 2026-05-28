@@ -8,6 +8,10 @@ __pycache__/
 *.eggs/
 *.log
 
+# 打包构建产物
+build/
+dist/
+
 # Jupyter Notebook 检查点
 .ipynb_checkpoints/
 

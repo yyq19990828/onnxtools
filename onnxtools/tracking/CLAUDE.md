@@ -101,8 +101,7 @@ onnxtools/tracking/
 ├── kalman.py           # KalmanFilterXYAH (8D) / KalmanFilterXYSR (7D)
 ├── matching.py         # IoU/GIoU 向量化 + 分数融合 + lap/scipy 分配器
 ├── bytetrack.py        # STrack 状态机 + ByteTrackNative (3 阶段关联)
-├── ocsort.py           # KalmanBoxTracker + OCSORT (OCM/OCR/ORU)
-└── _archive/           # 历史 BoxMOT 适配器 (PyTorch 依赖被归档)
+└── ocsort.py           # KalmanBoxTracker + OCSORT (OCM/OCR/ORU)
 ```
 
 ## 算法行为要点

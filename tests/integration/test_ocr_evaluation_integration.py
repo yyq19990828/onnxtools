@@ -8,7 +8,6 @@ End-to-end tests verifying:
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import cv2
@@ -43,7 +42,7 @@ class TestOCRDatasetEvaluatorIntegration:
                 f.write(f"images/{img_name}\t{text}\n")
 
         # Create synthetic plate images
-        for img_name, text in plates:
+        for img_name, _text in plates:
             img_path = dataset_path / img_name
             # Create a simple synthetic plate image (blue background)
             img = np.full((48, 168, 3), (255, 100, 0), dtype=np.uint8)  # Blue plate
@@ -56,7 +55,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_end_to_end_evaluation_table_format(self, sample_dataset, ocr_model_path, ocr_character):
         """End-to-end evaluation test with table format output"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
@@ -100,7 +99,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_end_to_end_evaluation_json_format(self, sample_dataset, ocr_model_path, ocr_character, capsys):
         """End-to-end evaluation test with JSON format output"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
@@ -139,7 +138,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_max_images_limit(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation with max_images parameter"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
@@ -170,7 +169,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_varying_thresholds(self, sample_dataset, ocr_model_path, ocr_character):
         """Test evaluation with different confidence thresholds"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
@@ -196,7 +195,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
         # Verify trend: higher threshold -> fewer evaluated samples (generally)
         # Note: This may not always be strictly decreasing due to model behavior
-        for i, (threshold, results) in enumerate(results_list):
+        for _i, (_threshold, results) in enumerate(results_list):
             assert results['total_samples'] == len(plates)
             # Just verify that filtering is working (some samples may be filtered)
             total_processed = (
@@ -210,7 +209,7 @@ class TestOCRDatasetEvaluatorIntegration:
         """Test evaluation performance characteristics"""
         import time
 
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         label_file, dataset_base, plates = sample_dataset
 
@@ -243,7 +242,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_missing_images(self, tmp_path, ocr_model_path, ocr_character):
         """Test evaluation handling of missing images"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         # Create label file referencing non-existent images
         label_file = tmp_path / "test_missing.txt"
@@ -275,7 +274,7 @@ class TestOCRDatasetEvaluatorIntegration:
 
     def test_evaluation_with_corrupted_images(self, tmp_path, ocr_model_path, ocr_character):
         """Test evaluation handling of corrupted/invalid images"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         # Create label file
         label_file = tmp_path / "test_corrupted.txt"
@@ -314,7 +313,7 @@ class TestOCRDatasetEvaluatorIntegration:
     )
     def test_evaluation_with_real_dataset(self, ocr_model_path, ocr_character):
         """Test evaluation with real OCR dataset (if available)"""
-        from onnxtools.infer_onnx import OCRDatasetEvaluator, OcrORT
+        from onnxtools import OCRDatasetEvaluator, OcrORT
 
         # Use real dataset if available
         label_file = "data/ocr_rec_dataset_examples/val.txt"

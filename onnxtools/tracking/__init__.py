@@ -19,9 +19,6 @@ The native back-ends (``bytetrack_native`` and ``ocsort``) are hand-written on
 top of numpy with optional ``lap.lapjv`` acceleration (``[tracking-fast]``
 extra). They share the kalman + matching primitives in :mod:`.kalman` and
 :mod:`.matching`.
-
-The earlier BoxMOT adapter was archived under ``_archive/`` because BoxMOT
-pulls in the full PyTorch stack at import time (see the archive README).
 """
 
 from __future__ import annotations
