@@ -1,23 +1,23 @@
 """改造 RF-DETR ONNX 模型
 
-每个改造步骤独立可控:
-1. --rename          输入输出重命名为 input / output
-2. --dynamic-batch   batch 维度改为动态
-3. --normalize       烧入 ImageNet 归一化 (mean/std)，外部只需 /255.0
-4. --resize          前插 Resize 节点 (input_size -> model_size)，需配合 --input-hw
-5. --concat          两个输出 concat 成一个 [batch, 300, 4+C]
-6. --fold            Polygraphy 折叠常量算子，精简计算图
+每个改造步骤独立可控 (按实际执行顺序):
+1. --fold            Polygraphy 折叠常量算子，精简计算图 (最先执行)
+2. --rename          输入输出重命名为 input / output
+3. --dynamic-batch   batch 维度改为动态
+4. --normalize       烧入 ImageNet 归一化 (mean/std)，外部只需 /255.0
+5. --resize          前插 Resize 节点 (input_size -> model_size)，需配合 --input-hw
+6. --concat          两个输出 concat 成一个 [batch, 300, 4+C]
 
 默认全部开启 (等价于生成 Unified 版本)。
 传入任意 bool 开关后切换为手动模式，只执行指定的步骤。
 
 改造后数据流 (全部开启):
+  fold_constants()                 # --fold (先于改造，精简原始计算图)
   input [batch,3,input_h,input_w] ∈ [0,1]
     → Sub(mean) → Div(std)         # --normalize
-    → Resize(input→model)          # --resize (仅尺寸不同时)
+    → Resize(input→model)          # --resize (必插，尺寸相同时 scale=1)
     → 原始 RF-DETR 主干
     → Concat(pred_boxes, pred_logits)  # --concat
-    → fold_constants()             # --fold
     → output [batch,300,4+C]
 
 用法:
@@ -46,6 +46,27 @@ import onnx
 from onnx import TensorProto, helper, numpy_helper
 
 
+def _resolve_output_shapes(model) -> dict:
+    """通过一次零输入推断解析输出真实形状 (去掉 batch 维)。
+
+    RF-DETR 的 pred_boxes 末维 (box=4) 与 query 维在计算图里是动态 dim_param，
+    无法从静态 shape 读取，必须实跑一次才能拿到准确值。
+
+    Returns:
+        {输出名: (queries, last_dim)}
+    """
+    import onnxruntime as ort
+
+    sess = ort.InferenceSession(
+        model.SerializeToString(), providers=["CPUExecutionProvider"]
+    )
+    inp = sess.get_inputs()[0]
+    shape = [d if isinstance(d, int) else 1 for d in inp.shape]
+    dummy = np.zeros(shape, dtype=np.float32)
+    outputs = sess.run(None, {inp.name: dummy})
+    return {o.name: a.shape[1:] for o, a in zip(sess.get_outputs(), outputs)}
+
+
 def modify_model(
     input_path: str,
     output_path: str,
@@ -62,7 +83,7 @@ def modify_model(
     Args:
         input_path: 输入 ONNX 模型路径
         output_path: 输出 ONNX 模型路径
-        input_hw: 外部输入尺寸 (H, W)
+        input_hw: 外部输入尺寸 (H, W)，None 表示跟随模型原生尺寸
         rename: 重命名输入输出为 input/output
         dynamic_batch: batch 维度改为动态
         normalize: 烧入 ImageNet 归一化
@@ -87,21 +108,23 @@ def modify_model(
     orig_input_name = graph.input[0].name
     orig_shape = graph.input[0].type.tensor_type.shape.dim
     model_h, model_w = orig_shape[2].dim_value, orig_shape[3].dim_value
-    input_h, input_w = input_hw
+    # 外部输入尺寸，默认 640x640 (与模型尺寸不同则由 Resize 缩放到模型尺寸)
+    input_h, input_w = input_hw if input_hw is not None else (model_h, model_w)
 
-    need_resize = resize and (input_h, input_w) != (model_h, model_w)
+    # Resize 节点必插: 只要 resize=True 就插入，尺寸相同时 scale=1 退化为恒等
+    need_resize = resize
 
     print(f"Model size: {model_h}x{model_w}, Input size: {input_h}x{input_w}")
     print(f"Options: rename={rename}, dynamic_batch={dynamic_batch}, "
           f"normalize={normalize}, resize={need_resize}, concat={concat}, fold={fold}")
 
-    # 推断输出维度
-    out_dims = {}
-    for out in graph.output:
-        last_dim = out.type.tensor_type.shape.dim[-1].dim_value
-        out_dims[out.name] = last_dim
+    # 推断输出维度 (动态维度需实跑一次解析)
+    resolved_shapes = _resolve_output_shapes(model)
+    out_dims = {name: int(shape[-1]) for name, shape in resolved_shapes.items()}
     total_out_dim = sum(out_dims.values())
-    print(f"Output dims: {out_dims}" + (f" -> concat dim: {total_out_dim}" if concat else ""))
+    num_queries = int(resolved_shapes[graph.output[0].name][0])
+    print(f"Output dims: {out_dims}, queries: {num_queries}"
+          + (f" -> concat dim: {total_out_dim}" if concat else ""))
 
     # 确定输入节点名: 如果 rename 则用 "input"，否则保留原名
     ext_input_name = "input" if rename else orig_input_name
@@ -208,7 +231,7 @@ def modify_model(
 
         out_name = "output" if rename else "concat_output"
         new_output = helper.make_tensor_value_info(
-            out_name, TensorProto.FLOAT, ["batch", 300, total_out_dim]
+            out_name, TensorProto.FLOAT, ["batch", num_queries, total_out_dim]
         )
         while len(graph.output) > 0:
             graph.output.pop()
@@ -329,7 +352,7 @@ def main():
     modify_model(
         input_path=args.input,
         output_path=args.output,
-        input_hw=tuple(args.input_hw),
+        input_hw=tuple(args.input_hw) if args.input_hw is not None else None,
         rename=args.rename,
         dynamic_batch=args.dynamic_batch,
         normalize=args.normalize,
