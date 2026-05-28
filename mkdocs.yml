@@ -98,6 +98,18 @@ nav:
       - 模型评估: guides/evaluation_guide.md
       - CLI 工具: guides/cli-tools.md
       - MCP 集成: guides/mcp.md
+      - 多目标跟踪:
+          - 概念总览: guides/tracking/index.md
+          - 传统方法 (IoU/SORT/DeepSORT): guides/tracking/traditional-methods.md
+          - ByteTrack: guides/tracking/bytetrack.md
+          - OC-SORT: guides/tracking/ocsort.md
+          - Deep OC-SORT: guides/tracking/deep-ocsort.md
+          - StrongSORT: guides/tracking/strongsort.md
+          - BoT-SORT: guides/tracking/botsort.md
+          - Hybrid-SORT: guides/tracking/hybrid-sort.md
+          - JDE / FairMOT / CenterTrack: guides/tracking/jde-family.md
+          - Transformer MOT: guides/tracking/transformer-mot.md
+          - 评测指标: guides/tracking/metrics.md
   - API 参考:
       - 总览: api/index.md
       - Detectors: api/detectors.md
