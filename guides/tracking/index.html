@@ -1,120 +1,233 @@
 
-<!DOCTYPE html>
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="ONNX-based vehicle and license plate recognition toolkit">
+      
+      
+      
+        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/">
+      
+      
+        <link rel="prev" href="../mcp/">
+      
+      
+        <link rel="next" href="traditional-methods/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>概念总览 - onnxtools</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
 
-<html class="no-js" lang="zh">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="ONNX-based vehicle and license plate recognition toolkit" name="description"/>
-<link href="https://example.com/onnxtools/guides/tracking/" rel="canonical"/>
-<link href="../mcp/" rel="prev"/>
-<link href="traditional-methods/" rel="next"/>
-<link href="../../assets/images/favicon.png" rel="icon"/>
-<meta content="mkdocs-1.6.1, mkdocs-material-9.7.6" name="generator"/>
-<title>概念总览 - onnxtools</title>
-<link href="../../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
-<link href="../../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
-<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-<link href="../../assets/_mkdocstrings.css" rel="stylesheet"/>
-<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
-</head>
-<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
-<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
-<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
-<label class="md-overlay" for="__drawer"></label>
-<div data-md-component="skip">
-<a class="md-skip" href="#2d">
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#2d" class="md-skip">
           跳转至
         </a>
-</div>
-<div data-md-component="announce">
-</div>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
 <header class="md-header" data-md-component="header">
-<nav aria-label="页眉" class="md-header__inner md-grid">
-<a aria-label="onnxtools" class="md-header__button md-logo" data-md-component="logo" href="../.." title="onnxtools">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
-</a>
-<label class="md-header__button md-icon" for="__drawer">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
-</label>
-<div class="md-header__title" data-md-component="header-title">
-<div class="md-header__ellipsis">
-<div class="md-header__topic">
-<span class="md-ellipsis">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="onnxtools" class="md-header__button md-logo" aria-label="onnxtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
             onnxtools
           </span>
-</div>
-<div class="md-header__topic" data-md-component="header-topic">
-<span class="md-ellipsis">
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
             
               概念总览
             
           </span>
-</div>
-</div>
-</div>
-<form class="md-header__option" data-md-component="palette">
-<input aria-label="切换到深色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
-<label class="md-header__button md-icon" for="__palette_1" hidden="" title="切换到深色模式">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
-</label>
-<input aria-label="切换到浅色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
-<label class="md-header__button md-icon" for="__palette_0" hidden="" title="切换到浅色模式">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
-</label>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到浅色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
 </form>
-<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-<label class="md-header__button md-icon" for="__search">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
-</label>
-<div class="md-search" data-md-component="search" role="dialog">
-<label class="md-search__overlay" for="__search"></label>
-<div class="md-search__inner" role="search">
-<form class="md-search__form" name="search">
-<input aria-label="搜索" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="搜索" required="" spellcheck="false" type="text"/>
-<label class="md-search__icon md-icon" for="__search">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
-</label>
-<nav aria-label="查找" class="md-search__options">
-<button aria-label="清空当前内容" class="md-search__icon md-icon" tabindex="-1" title="清空当前内容" type="reset">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
-</button>
-</nav>
-<div class="md-search__suggest" data-md-component="search-suggest"></div>
-</form>
-<div class="md-search__output">
-<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
-<div class="md-search-result" data-md-component="search-result">
-<div class="md-search-result__meta">
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
             正在初始化搜索引擎
           </div>
-<ol class="md-search-result__list" role="presentation"></ol>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="md-header__source">
-<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
-<div class="md-source__icon md-icon">
-<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
-</div>
-<div class="md-source__repository">
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/onnxtools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
     GitHub
   </div>
 </a>
-</div>
-</nav>
+      </div>
+    
+  </nav>
+  
 </header>
-<div class="md-container" data-md-component="container">
-<nav aria-label="标签" class="md-tabs" data-md-component="tabs">
-<div class="md-grid">
-<ul class="md-tabs__list">
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../..">
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -123,9 +236,17 @@
   首页
 
       </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../getting-started/">
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
         
   
   
@@ -134,9 +255,21 @@
   快速上手
 
       </a>
-</li>
-<li class="md-tabs__item md-tabs__item--active">
-<a class="md-tabs__link" href="../annotator_usage/">
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../annotator_usage/" class="md-tabs__link">
           
   
   
@@ -145,9 +278,20 @@
   指南
 
         </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../api/">
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/" class="md-tabs__link">
           
   
   
@@ -156,9 +300,18 @@
   API 参考
 
         </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../models/model_support_list/">
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../models/model_support_list/" class="md-tabs__link">
         
   
   
@@ -167,36 +320,67 @@
   模型支持
 
       </a>
-</li>
-</ul>
-</div>
+    </li>
+  
+
+      
+    </ul>
+  </div>
 </nav>
-<main class="md-main" data-md-component="main">
-<div class="md-main__inner md-grid">
-<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav aria-label="导航栏" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
-<label class="md-nav__title" for="__drawer">
-<a aria-label="onnxtools" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="onnxtools">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
-</a>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="onnxtools" class="md-nav__button md-logo" aria-label="onnxtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
     onnxtools
   </label>
-<div class="md-nav__source">
-<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
-<div class="md-source__icon md-icon">
-<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
-</div>
-<div class="md-source__repository">
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/onnxtools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
     GitHub
   </div>
 </a>
-</div>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../..">
-<span class="md-ellipsis">
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     首页
@@ -204,11 +388,26 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../getting-started/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     快速上手
@@ -216,12 +415,59 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-<input checked="" class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
-<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
     
   
     指南
@@ -229,21 +475,35 @@
 
     
   </span>
-<span class="md-nav__icon md-icon"></span>
-</label>
-<nav aria-expanded="true" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_3">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
             
   
     指南
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../annotator_usage/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotator_usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     可视化标注
@@ -251,11 +511,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../evaluation_guide/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     模型评估
@@ -263,11 +539,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../cli-tools/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     CLI 工具
@@ -275,11 +567,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../mcp/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     MCP 集成
@@ -287,13 +595,75 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-<input checked="" class="md-nav__toggle md-toggle" id="__nav_3_5" type="checkbox"/>
-<div class="md-nav__link md-nav__container">
-<a class="md-nav__link md-nav__link--active" href="./">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
+  
+  
+  <span class="md-ellipsis">
     
   
     多目标跟踪
@@ -301,24 +671,43 @@
 
     
   </span>
-</a>
-<label class="md-nav__link md-nav__link--active" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
-<span class="md-nav__icon md-icon"></span>
-</label>
-</div>
-<nav aria-expanded="true" aria-labelledby="__nav_3_5_label" class="md-nav" data-md-level="2">
-<label class="md-nav__title" for="__nav_3_5">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
             
   
     多目标跟踪
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="traditional-methods/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="traditional-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     传统方法 (IoU/SORT/DeepSORT)
@@ -326,11 +715,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="bytetrack/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bytetrack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     ByteTrack
@@ -338,11 +743,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="ocsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ocsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     OC-SORT
@@ -350,11 +771,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="deep-ocsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="deep-ocsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Deep OC-SORT
@@ -362,11 +799,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="strongsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="strongsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     StrongSORT
@@ -374,11 +827,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="botsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="botsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     BoT-SORT
@@ -386,11 +855,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="hybrid-sort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hybrid-sort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Hybrid-SORT
@@ -398,11 +883,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="jde-family/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="jde-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     JDE / FairMOT / CenterTrack
@@ -410,11 +911,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="transformer-mot/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="transformer-mot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Transformer MOT
@@ -422,11 +939,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="metrics/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     评测指标
@@ -434,19 +967,83 @@
 
     
   </span>
-</a>
-</li>
-</ul>
-</nav>
-</li>
-</ul>
-</nav>
-</li>
-<li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
-<div class="md-nav__link md-nav__container">
-<a class="md-nav__link" href="../../api/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
     
   
     API 参考
@@ -454,24 +1051,43 @@
 
     
   </span>
-</a>
-<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
-<span class="md-nav__icon md-icon"></span>
-</label>
-</div>
-<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_4">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
             
   
     API 参考
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/detectors/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/detectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Detectors
@@ -479,11 +1095,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/classifiers/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/classifiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Classifiers
@@ -491,11 +1123,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/ocr/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ocr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     OCR
@@ -503,11 +1151,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/result/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Result
@@ -515,11 +1179,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/pipeline/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Pipeline
@@ -527,11 +1207,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/tracking/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Tracking
@@ -539,11 +1235,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/utils/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Utils
@@ -551,11 +1263,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/eval/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/eval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Eval
@@ -563,11 +1291,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../api/config/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Config
@@ -575,14 +1319,34 @@
 
     
   </span>
-</a>
-</li>
-</ul>
-</nav>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../models/model_support_list/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/model_support_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     模型支持
@@ -590,209 +1354,282 @@
 
     
   </span>
-</a>
-</li>
-</ul>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
 </nav>
-</div>
-</div>
-</div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav aria-label="目录" class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">
-<span class="md-nav__icon md-icon"></span>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
       目录
     </label>
-<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_1">
-<span class="md-ellipsis">
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         阅读地图
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#1">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         1. 什么是多目标跟踪
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#2">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2. 范式分类:本系列的"地图"
       
     </span>
-</a>
-<nav aria-label='2. 范式分类:本系列的"地图"' class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#tracking-by-detection">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 范式分类:本系列的&#34;地图&#34;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracking-by-detection" class="md-nav__link">
+    <span class="md-ellipsis">
       
         范式一:Tracking-by-Detection(检测后关联)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#joint-detection-embedding-jde">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#joint-detection-embedding-jde" class="md-nav__link">
+    <span class="md-ellipsis">
       
         范式二:Joint Detection &amp; Embedding(一阶段 / JDE)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#transformerquery">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#transformerquery" class="md-nav__link">
+    <span class="md-ellipsis">
       
         范式三:端到端 Transformer(query 派)
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#3">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
       
         3. 关联的两大数学基石
       
     </span>
-</a>
-<nav aria-label="3. 关联的两大数学基石" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#31">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 关联的两大数学基石">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
       
         3.1 卡尔曼滤波:恒速运动模型
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#32">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
       
         3.2 匈牙利算法:最优二分匹配
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#4">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
       
         4. 跟踪流程的通用骨架
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#5">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5. 评测指标:怎么判断一个跟踪器好不好
       
     </span>
-</a>
-<nav aria-label="5. 评测指标:怎么判断一个跟踪器好不好" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#51-clear-mot">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 评测指标:怎么判断一个跟踪器好不好">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-clear-mot" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5.1 CLEAR-MOT 族
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#52-idf1">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#52-idf1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5.2 IDF1 族(身份导向)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#53-hota">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#53-hota" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5.3 HOTA(高阶指标,当前事实标准)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#54">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#54" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5.4 轨迹质量
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#6">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
       
         6. 标准数据集
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#7">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
       
         7. 在本仓库里跑起来
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_2">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
       
         参考文献
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
+      
+    </ul>
+  
 </nav>
-</div>
-</div>
-</div>
-<div class="md-content" data-md-component="content">
-<article class="md-content__inner md-typeset">
-<h1 id="2d">2D 多目标跟踪学习手册 · 概念总览<a class="headerlink" href="#2d" title="Permanent link">¶</a></h1>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="2d">2D 多目标跟踪学习手册 · 概念总览<a class="headerlink" href="#2d" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>本系列文档系统梳理 <strong>2D 多目标跟踪 (Multi-Object Tracking, MOT)</strong> 的核心概念、传统方法与近五年的主流方法。每篇方法文档都尽量与本仓库 <a href="https://github.com/yyq19990828/onnxtools/tree/main/onnxtools/tracking"><code>onnxtools/tracking/</code></a> 的实际实现对照,便于"边读论文边读代码"。</p>
 <p>这是<strong>学习文档</strong>,不是 API 参考。API 用法请看 <a href="../../api/tracking/"><code>docs/api/tracking.md</code></a>;工程实现约定请看 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/CLAUDE.md"><code>onnxtools/tracking/CLAUDE.md</code></a>。</p>
 </blockquote>
-<h2 id="_1">阅读地图<a class="headerlink" href="#_1" title="Permanent link">¶</a></h2>
+<h2 id="_1">阅读地图<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -859,14 +1696,14 @@
 </tr>
 </tbody>
 </table>
-<hr/>
-<h2 id="1">1. 什么是多目标跟踪<a class="headerlink" href="#1" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="1">1. 什么是多目标跟踪<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p><strong>单目标跟踪 (SOT)</strong> 给定第一帧的一个框,后续逐帧定位同一目标。<strong>多目标跟踪 (MOT)</strong> 则要在视频流中<strong>同时</strong>维护<strong>多个</strong>目标的轨迹,核心产物是给每个目标分配一个<strong>时间上一致的身份 ID (tracker_id)</strong>:同一辆车/同一个行人在连续帧里必须是同一个 ID,新目标进入要发新 ID,目标离开要回收。</p>
-<p>形式化:第 $t$ 帧给定检测集合 $D_t = {d_1, \dots, d_n}$(每个 $d_i$ 含 bbox、置信度、类别),跟踪器要输出轨迹集合 $T = {\tau_1, \dots, \tau_m}$,每条轨迹 $\tau_k$ 是跨帧的、带同一 ID 的框序列。</p>
+<p>形式化:第 <span class="arithmatex">\(t\)</span> 帧给定检测集合 <span class="arithmatex">\(D_t = \{d_1, \dots, d_n\}\)</span>(每个 <span class="arithmatex">\(d_i\)</span> 含 bbox、置信度、类别),跟踪器要输出轨迹集合 <span class="arithmatex">\(T = \{\tau_1, \dots, \tau_m\}\)</span>,每条轨迹 <span class="arithmatex">\(\tau_k\)</span> 是跨帧的、带同一 ID 的框序列。</p>
 <pre class="mermaid"><code>graph LR
     subgraph 第t-1帧
-        A1["#quot;ID=1#quot; 行人"]
-        A2["#quot;ID=2#quot; 行人"]
+        A1["'ID=1' 行人"]
+        A2["'ID=2' 行人"]
     end
     subgraph 第t帧
         B1["检测框 a"]
@@ -875,10 +1712,9 @@
     end
     A1 -.关联.-&gt; B2
     A2 -.关联.-&gt; B1
-    B3 -.新建.-&gt; C["#quot;ID=3#quot;"]
-    style B3 fill:#ffe0b2
-    style C fill:#c8e6c9
-</code></pre>
+    B3 -.新建.-&gt; C["'ID=3'"]
+    style B3 fill:#fb8c00,color:#fff
+    style C fill:#66bb6a,color:#fff</code></pre>
 <p>跟踪的本质难点不在"看到目标",而在<strong>跨帧维持身份</strong>。三大经典挑战:</p>
 <table>
 <thead>
@@ -916,17 +1752,17 @@
 </tr>
 </tbody>
 </table>
-<hr/>
-<h2 id="2">2. 范式分类:本系列的"地图"<a class="headerlink" href="#2" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="2">2. 范式分类:本系列的"地图"<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
 <p>近十年的 MOT 方法可按"检测与关联如何耦合"分为四大范式。本系列文档即按此分类组织。</p>
 <pre class="mermaid"><code>graph TD
     ROOT["2D MOT 方法"]
-    ROOT --&gt; TBD["范式一: Tracking-by-Detection<br/>先检测,后关联"]
-    ROOT --&gt; JDE["范式二: Joint Detection &amp; Embedding<br/>单网络同时出检测+外观"]
-    ROOT --&gt; E2E["范式三: 端到端 Transformer<br/>query 隐式关联"]
+    ROOT --&gt; TBD["范式一: Tracking-by-Detection&lt;br/&gt;先检测,后关联"]
+    ROOT --&gt; JDE["范式二: Joint Detection &amp; Embedding&lt;br/&gt;单网络同时出检测+外观"]
+    ROOT --&gt; E2E["范式三: 端到端 Transformer&lt;br/&gt;query 隐式关联"]
 
-    TBD --&gt; MOTION["运动主导<br/>仅卡尔曼+IoU"]
-    TBD --&gt; APPEAR["外观增强<br/>+ReID 特征"]
+    TBD --&gt; MOTION["运动主导&lt;br/&gt;仅卡尔曼+IoU"]
+    TBD --&gt; APPEAR["外观增强&lt;br/&gt;+ReID 特征"]
 
     MOTION --&gt; M1["SORT 2016 · 传统"]
     MOTION --&gt; M2["ByteTrack 2022"]
@@ -944,52 +1780,49 @@
 
     E2E --&gt; T1["TrackFormer 2022"]
     E2E --&gt; T2["MOTR / MOTRv2 2022/23"]
-    E2E --&gt; T3["前沿 2024-25<br/>MATR / PuTR ..."]
+    E2E --&gt; T3["前沿 2024-25&lt;br/&gt;MATR / PuTR ..."]
 
-    style M2 fill:#c8e6c9
-    style M3 fill:#c8e6c9
-</code></pre>
+    style M2 fill:#66bb6a,color:#fff
+    style M3 fill:#66bb6a,color:#fff</code></pre>
 <blockquote>
 <p>🟢 绿色为本仓库已原生实现的两个方法(ByteTrack、OC-SORT)。</p>
 </blockquote>
-<h3 id="tracking-by-detection">范式一:Tracking-by-Detection(检测后关联)<a class="headerlink" href="#tracking-by-detection" title="Permanent link">¶</a></h3>
+<h3 id="tracking-by-detection">范式一:Tracking-by-Detection(检测后关联)<a class="headerlink" href="#tracking-by-detection" title="Permanent link">&para;</a></h3>
 <p>最主流、最实用的范式。流程严格分两步:<strong>(1) 用一个独立检测器逐帧出框 → (2) 用一个关联器把当前帧的框接到已有轨迹上</strong>。本仓库 <code>bytetrack</code> / <code>ocsort</code> 即属此类——它们只吃 <code>supervision.Detections</code>,完全不关心检测器是 YOLO 还是 RT-DETR。</p>
 <pre class="mermaid"><code>graph LR
-    V[视频帧] --&gt; DET["检测器<br/>(YOLO/RT-DETR/RF-DETR)"]
-    DET --&gt; BOX["Detections<br/>boxes+scores+class_ids"]
-    BOX --&gt; TRK["关联器<br/>(ByteTrack/OC-SORT)"]
+    V[视频帧] --&gt; DET["检测器&lt;br/&gt;(YOLO/RT-DETR/RF-DETR)"]
+    DET --&gt; BOX["Detections&lt;br/&gt;boxes+scores+class_ids"]
+    BOX --&gt; TRK["关联器&lt;br/&gt;(ByteTrack/OC-SORT)"]
     PREV["上一帧轨迹池"] --&gt; TRK
     TRK --&gt; OUT["带 tracker_id 的 Detections"]
     OUT -.更新.-&gt; PREV
-    style TRK fill:#e1f5fe
-</code></pre>
+    style TRK fill:#29b6f6</code></pre>
 <p>优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 <code>InferencePipeline</code> 正是这种解耦设计(<code>enable_tracking=True</code>)。</p>
-<h3 id="joint-detection-embedding-jde">范式二:Joint Detection &amp; Embedding(一阶段 / JDE)<a class="headerlink" href="#joint-detection-embedding-jde" title="Permanent link">¶</a></h3>
+<h3 id="joint-detection-embedding-jde">范式二:Joint Detection &amp; Embedding(一阶段 / JDE)<a class="headerlink" href="#joint-detection-embedding-jde" title="Permanent link">&para;</a></h3>
 <p>把"出框"和"出外观特征"塞进<strong>同一个网络</strong>一次前向完成(JDE、FairMOT)。省掉独立 ReID 模型的延迟,但检测与 ReID 两个任务会在共享网络里"打架"。详见 <a href="jde-family/">JDE 派文档</a>。</p>
-<h3 id="transformerquery">范式三:端到端 Transformer(query 派)<a class="headerlink" href="#transformerquery" title="Permanent link">¶</a></h3>
+<h3 id="transformerquery">范式三:端到端 Transformer(query 派)<a class="headerlink" href="#transformerquery" title="Permanent link">&para;</a></h3>
 <p>用 DETR 式的 query 表示目标,"track query"跨帧自回归传递,关联在注意力里<strong>隐式</strong>完成,不再需要手写卡尔曼/匈牙利(TrackFormer、MOTR)。详见 <a href="transformer-mot/">Transformer 文档</a>。</p>
-<hr/>
-<h2 id="3">3. 关联的两大数学基石<a class="headerlink" href="#3" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="3">3. 关联的两大数学基石<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
 <p>无论哪种 tracking-by-detection 方法,关联都建立在两个基石上:<strong>用卡尔曼滤波预测目标下一帧在哪</strong>,再<strong>用匈牙利算法在"预测"和"新检测"之间做最优配对</strong>。这两个基元在本仓库被向量化实现于 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>kalman.py</code></a> 与 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/matching.py"><code>matching.py</code></a>。</p>
-<h3 id="31">3.1 卡尔曼滤波:恒速运动模型<a class="headerlink" href="#31" title="Permanent link">¶</a></h3>
+<h3 id="31">3.1 卡尔曼滤波:恒速运动模型<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
 <p>跟踪里几乎都用<strong>恒速 (constant-velocity) 线性模型</strong>:假设帧间位移近似匀速。卡尔曼滤波交替执行<strong>预测</strong>和<strong>更新</strong>两步:</p>
 <pre class="mermaid"><code>graph LR
     subgraph 预测 Predict
-        P1["x̂⁻ = F·x̂<br/>状态外推"]
-        P2["P⁻ = F·P·Fᵀ + Q<br/>不确定度增长"]
+        P1["x̂⁻ = F·x̂&lt;br/&gt;状态外推"]
+        P2["P⁻ = F·P·Fᵀ + Q&lt;br/&gt;不确定度增长"]
     end
     subgraph 更新 Update
-        U1["K = P⁻Hᵀ(HP⁻Hᵀ+R)⁻¹<br/>卡尔曼增益"]
-        U2["x̂ = x̂⁻ + K(z − Hx̂⁻)<br/>用观测校正"]
-        U3["P = (I − KH)P⁻<br/>不确定度收缩"]
+        U1["K = P⁻Hᵀ(HP⁻Hᵀ+R)⁻¹&lt;br/&gt;卡尔曼增益"]
+        U2["x̂ = x̂⁻ + K(z − Hx̂⁻)&lt;br/&gt;用观测校正"]
+        U3["P = (I − KH)P⁻&lt;br/&gt;不确定度收缩"]
     end
     NEWOBS["新检测 z"] --&gt; U2
     P2 --&gt; U1
-    U3 -.下一帧.-&gt; P1
-</code></pre>
+    U3 -.下一帧.-&gt; P1</code></pre>
 <ul>
-<li><strong>预测</strong>:$\hat{x}^- = F\hat{x}$,$P^- = FPF^\top + Q$。$F$ 是状态转移矩阵(位置 += 速度·dt),$Q$ 是过程噪声。</li>
-<li><strong>更新</strong>:用新观测 $z$ 校正,卡尔曼增益 $K$ 平衡"信预测"还是"信观测"。</li>
+<li><strong>预测</strong>:<span class="arithmatex">\(\hat{x}^- = F\hat{x}\)</span>,<span class="arithmatex">\(P^- = FPF^\top + Q\)</span>。<span class="arithmatex">\(F\)</span> 是状态转移矩阵(位置 += 速度·dt),<span class="arithmatex">\(Q\)</span> 是过程噪声。</li>
+<li><strong>更新</strong>:用新观测 <span class="arithmatex">\(z\)</span> 校正,卡尔曼增益 <span class="arithmatex">\(K\)</span> 平衡"信预测"还是"信观测"。</li>
 </ul>
 <p><strong>状态向量在 SORT 家族里有两种参数化</strong>,本仓库两种都实现了:</p>
 <table>
@@ -1005,14 +1838,14 @@
 <tbody>
 <tr>
 <td>面积-纵横比</td>
-<td>$[x, y, s, r, \dot x, \dot y, \dot s]$ ($s$=面积, $r$=纵横比恒定)</td>
+<td><span class="arithmatex">\([x, y, s, r, \dot x, \dot y, \dot s]\)</span> (<span class="arithmatex">\(s\)</span>=面积, <span class="arithmatex">\(r\)</span>=纵横比恒定)</td>
 <td>7D</td>
 <td>SORT / OC-SORT</td>
 <td><a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYSR</code></a></td>
 </tr>
 <tr>
 <td>中心-纵横比-高</td>
-<td>$[c_x, c_y, a, h, \dot c_x, \dot c_y, \dot a, \dot h]$</td>
+<td><span class="arithmatex">\([c_x, c_y, a, h, \dot c_x, \dot c_y, \dot a, \dot h]\)</span></td>
 <td>8D</td>
 <td>DeepSORT / ByteTrack</td>
 <td><a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYAH</code></a></td>
@@ -1021,11 +1854,11 @@
 </table>
 <div class="admonition note">
 <p class="admonition-title">工程要点:批量预测 multi_predict</p>
-<p>每帧要对池中 N 条轨迹各做一次预测。逐条 Python 循环会很慢。本仓库 <code>KalmanFilterXYAH.multi_predict(means, covs)</code> 用单条 <code>np.einsum("ij,njk,lk-&gt;nil", ...)</code> 一次性算完 N 个 $FPF^\top$,这是 100+ FPS 的关键热点优化。XYAH 的观测噪声随目标<strong>高度</strong>缩放(框越大,噪声容忍越大),沿用 SORT/DeepSORT 配方。</p>
+<p>每帧要对池中 N 条轨迹各做一次预测。逐条 Python 循环会很慢。本仓库 <code>KalmanFilterXYAH.multi_predict(means, covs)</code> 用单条 <code>np.einsum("ij,njk,lk-&gt;nil", ...)</code> 一次性算完 N 个 <span class="arithmatex">\(FPF^\top\)</span>,这是 100+ FPS 的关键热点优化。XYAH 的观测噪声随目标<strong>高度</strong>缩放(框越大,噪声容忍越大),沿用 SORT/DeepSORT 配方。</p>
 </div>
-<h3 id="32">3.2 匈牙利算法:最优二分匹配<a class="headerlink" href="#32" title="Permanent link">¶</a></h3>
-<p>有了 N 条轨迹的预测框和 M 个新检测框,关联 = 在 N×M 的<strong>代价矩阵</strong>上求<strong>最小代价二分匹配</strong>。匈牙利算法 (Kuhn-Munkres) 在 $O(n^3)$ 内给出全局最优解。</p>
-<pre class="mermaid"><code>graph TD
+<h3 id="32">3.2 匈牙利算法:最优二分匹配<a class="headerlink" href="#32" title="Permanent link">&para;</a></h3>
+<p>有了 N 条轨迹的预测框和 M 个新检测框,关联 = 在 N×M 的<strong>代价矩阵</strong>上求<strong>最小代价二分匹配</strong>。匈牙利算法 (Kuhn-Munkres) 在 <span class="arithmatex">\(O(n^3)\)</span> 内给出全局最优解。</p>
+<pre class="mermaid"><code>flowchart TD
     subgraph 代价矩阵 N×M
         direction LR
         C["cost[i,j] = 轨迹i 与 检测j 的不相似度"]
@@ -1033,8 +1866,7 @@
     C --&gt; SOLVE["linear_assignment(cost, thresh)"]
     SOLVE --&gt; M1["matches 匹配对 (i,j)"]
     SOLVE --&gt; M2["unmatched_tracks 未匹配轨迹"]
-    SOLVE --&gt; M3["unmatched_dets 未匹配检测 → 可能新建"]
-</code></pre>
+    SOLVE --&gt; M3["unmatched_dets 未匹配检测 → 可能新建"]</code></pre>
 <p>代价矩阵的"不相似度"用什么度量,正是各方法的分水岭:</p>
 <table>
 <thead>
@@ -1047,27 +1879,27 @@
 <tbody>
 <tr>
 <td><strong>IoU 距离</strong></td>
-<td>$1 - \text{IoU}$</td>
+<td><span class="arithmatex">\(1 - \text{IoU}\)</span></td>
 <td>SORT / ByteTrack 一阶段 / OC-SORT</td>
 </tr>
 <tr>
 <td><strong>马氏距离</strong></td>
-<td>$(z-\hat z)^\top S^{-1}(z-\hat z)$</td>
+<td><span class="arithmatex">\((z-\hat z)^\top S^{-1}(z-\hat z)\)</span></td>
 <td>DeepSORT 运动门控</td>
 </tr>
 <tr>
 <td><strong>余弦外观距离</strong></td>
-<td>$1 - \cos(f_{\text{track}}, f_{\text{det}})$</td>
+<td><span class="arithmatex">\(1 - \cos(f_{\text{track}}, f_{\text{det}})\)</span></td>
 <td>DeepSORT / BoT-SORT-ReID / StrongSORT</td>
 </tr>
 <tr>
 <td><strong>分数融合 fuse_score</strong></td>
-<td>$1 - (1-\text{cost})\cdot \text{score}$</td>
+<td><span class="arithmatex">\(1 - (1-\text{cost})\cdot \text{score}\)</span></td>
 <td>ByteTrack 一阶段</td>
 </tr>
 <tr>
 <td><strong>运动方向余弦 (OCM)</strong></td>
-<td>$-\text{inertia}\cdot\cos(\vec v_{\text{track}}, \vec v_{\text{det}})$</td>
+<td><span class="arithmatex">\(-\text{inertia}\cdot\cos(\vec v_{\text{track}}, \vec v_{\text{det}})\)</span></td>
 <td>OC-SORT</td>
 </tr>
 </tbody>
@@ -1076,26 +1908,25 @@
 <p class="admonition-title">工程要点:lap vs scipy</p>
 <p>本仓库 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/matching.py"><code>linear_assignment</code></a> 优先用 <code>lap.lapjv</code>(带 <code>cost_limit</code> 稀疏化,边缘设备上快 3-5×),未安装时透明回落到 <code>scipy.optimize.linear_sum_assignment</code>。<code>thresh</code> 之上的代价被视为"禁止匹配"。</p>
 </div>
-<hr/>
-<h2 id="4">4. 跟踪流程的通用骨架<a class="headerlink" href="#4" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="4">4. 跟踪流程的通用骨架<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
 <p>几乎所有 tracking-by-detection 方法都可归纳为下面这个"预测 → 关联 → 更新 → 生命周期管理"的循环。理解了它,再读任何一篇方法论文都只是在某一步上做文章。</p>
 <pre class="mermaid"><code>flowchart TD
-    START([每帧到来]) --&gt; PRED["1. 批量卡尔曼预测<br/>所有活跃轨迹外推到当前帧"]
-    PRED --&gt; ASSOC["2. 关联<br/>代价矩阵 + 匈牙利匹配"]
+    START([每帧到来]) --&gt; PRED["1. 批量卡尔曼预测&lt;br/&gt;所有活跃轨迹外推到当前帧"]
+    PRED --&gt; ASSOC["2. 关联&lt;br/&gt;代价矩阵 + 匈牙利匹配"]
     ASSOC --&gt; MATCHED["匹配成功"]
     ASSOC --&gt; UNTRK["轨迹未匹配"]
     ASSOC --&gt; UNDET["检测未匹配"]
-    MATCHED --&gt; UPDATE["3a. 卡尔曼更新<br/>用观测校正状态"]
-    UNTRK --&gt; LOST["3b. 标记 Lost<br/>进入缓冲区"]
-    UNDET --&gt; NEW["3c. 新建轨迹<br/>(常需连续命中确认)"]
+    MATCHED --&gt; UPDATE["3a. 卡尔曼更新&lt;br/&gt;用观测校正状态"]
+    UNTRK --&gt; LOST["3b. 标记 Lost&lt;br/&gt;进入缓冲区"]
+    UNDET --&gt; NEW["3c. 新建轨迹&lt;br/&gt;(常需连续命中确认)"]
     LOST --&gt; EXPIRE{"超过 buffer/max_age?"}
     EXPIRE --&gt;|是| REMOVE["删除轨迹"]
     EXPIRE --&gt;|否| KEEP["保留待恢复"]
     UPDATE --&gt; EMIT["4. 输出带 ID 的检测"]
     NEW --&gt; EMIT
     KEEP --&gt; EMIT
-    EMIT --&gt; START
-</code></pre>
+    EMIT --&gt; START</code></pre>
 <p><strong>轨迹生命周期状态机</strong>(本仓库 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/base.py"><code>base.py</code></a> 的 <code>TrackState</code> 枚举):</p>
 <pre class="mermaid"><code>stateDiagram-v2
     [*] --&gt; New: 检测到未关联的框
@@ -1105,14 +1936,13 @@
     Tracked --&gt; Lost: 关联失败
     Lost --&gt; Tracked: buffer 内重新命中(ID 不变)
     Lost --&gt; Removed: 超过 max_time_lost
-    Removed --&gt; [*]
-</code></pre>
+    Removed --&gt; [*]</code></pre>
 <div class="admonition warning">
 <p class="admonition-title">为什么新轨迹要"双帧确认"?</p>
 <p>如果每个未匹配的高分检测都立刻发 ID,检测器的偶发误检会制造大量"一帧就消失"的鬼影轨迹。ByteTrack 的做法是:新建的 <code>STrack</code> 初始 <code>is_activated=False</code>(<code>New</code> 态),<strong>必须下一帧再被命中</strong>才正式 emit(除了视频第一帧)。OC-SORT 用 <code>min_hits</code>(默认 3)达到同样目的。</p>
 </div>
-<hr/>
-<h2 id="5">5. 评测指标:怎么判断一个跟踪器好不好<a class="headerlink" href="#5" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="5">5. 评测指标:怎么判断一个跟踪器好不好<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
 <p>跟踪指标比检测复杂,因为既要"框准"又要"ID 稳"。务必理解三大族:<strong>MOTA 族(检测主导)</strong>、<strong>IDF1(身份主导)</strong>、<strong>HOTA(平衡且现已成主流)</strong>。</p>
 <pre class="mermaid"><code>graph TD
     METRICS["MOT 评测指标"]
@@ -1121,40 +1951,39 @@
     METRICS --&gt; HOTA["HOTA 族 (2021+主流)"]
     METRICS --&gt; QUAL["轨迹质量"]
 
-    CLEAR --&gt; MOTA["MOTA<br/>= 1 − (FP+FN+IDSW)/GT"]
-    CLEAR --&gt; MOTP["MOTP<br/>定位精度"]
-    ID --&gt; IDF1["IDF1<br/>身份 F1 分数"]
+    CLEAR --&gt; MOTA["MOTA&lt;br/&gt;= 1 − (FP+FN+IDSW)/GT"]
+    CLEAR --&gt; MOTP["MOTP&lt;br/&gt;定位精度"]
+    ID --&gt; IDF1["IDF1&lt;br/&gt;身份 F1 分数"]
     HOTA --&gt; H1["HOTA = √(DetA·AssA)"]
-    QUAL --&gt; Q1["MT / ML / Frag"]
-</code></pre>
-<h3 id="51-clear-mot">5.1 CLEAR-MOT 族<a class="headerlink" href="#51-clear-mot" title="Permanent link">¶</a></h3>
+    QUAL --&gt; Q1["MT / ML / Frag"]</code></pre>
+<h3 id="51-clear-mot">5.1 CLEAR-MOT 族<a class="headerlink" href="#51-clear-mot" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>MOTA (Multi-Object Tracking Accuracy)</strong> $= 1 - \dfrac{\sum_t (\text{FN}_t + \text{FP}_t + \text{IDSW}_t)}{\sum_t \text{GT}_t}$。范围 $(-\infty, 1]$。<strong>注意:由检测错误(FP/FN)主导</strong>,ID 切换权重很小——所以 MOTA 高不代表 ID 稳。</li>
+<li><strong>MOTA (Multi-Object Tracking Accuracy)</strong> <span class="arithmatex">\(= 1 - \dfrac{\sum_t (\text{FN}_t + \text{FP}_t + \text{IDSW}_t)}{\sum_t \text{GT}_t}\)</span>。范围 <span class="arithmatex">\((-\infty, 1]\)</span>。<strong>注意:由检测错误(FP/FN)主导</strong>,ID 切换权重很小——所以 MOTA 高不代表 ID 稳。</li>
 <li><strong>MOTP (Precision)</strong>:匹配上的真正例的平均定位重叠(IoU 平均),只衡量"框得准不准",不衡量"跟得对不对"。</li>
 </ul>
-<h3 id="52-idf1">5.2 IDF1 族(身份导向)<a class="headerlink" href="#52-idf1" title="Permanent link">¶</a></h3>
+<h3 id="52-idf1">5.2 IDF1 族(身份导向)<a class="headerlink" href="#52-idf1" title="Permanent link">&para;</a></h3>
 <p>通过全局轨迹匹配统计 IDTP/IDFP/IDFN:</p>
-<p>$$\text{IDF1} = \frac{2\,\text{IDTP}}{2\,\text{IDTP} + \text{IDFP} + \text{IDFN}}$$</p>
+<div class="arithmatex">\[\text{IDF1} = \frac{2\,\text{IDTP}}{2\,\text{IDTP} + \text{IDFP} + \text{IDFN}}\]</div>
 <p>即身份精确率 IDP 与召回率 IDR 的调和平均。<strong>IDF1 更看重"全程是否保持同一个 ID"</strong>,是衡量身份一致性的关键指标。</p>
-<h3 id="53-hota">5.3 HOTA(高阶指标,当前事实标准)<a class="headerlink" href="#53-hota" title="Permanent link">¶</a></h3>
+<h3 id="53-hota">5.3 HOTA(高阶指标,当前事实标准)<a class="headerlink" href="#53-hota" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Luiten et al., <em>HOTA: A Higher Order Metric for Evaluating Multi-Object Tracking</em>, IJCV 2021. arXiv:<a href="https://arxiv.org/abs/2009.07736">2009.07736</a> · 评测工具 <a href="https://github.com/JonathonLuiten/TrackEval">TrackEval</a></p>
 </blockquote>
-<p>MOTA 偏检测、IDF1 偏身份,HOTA 把两者<strong>显式拆开再几何平均</strong>,并在多个定位阈值 $\alpha$ 上积分:</p>
-<p>$$\text{HOTA}(\alpha) = \sqrt{\text{DetA}(\alpha)\cdot\text{AssA}(\alpha)}, \qquad \text{HOTA} = \int_0^1 \text{HOTA}(\alpha)\, d\alpha$$</p>
+<p>MOTA 偏检测、IDF1 偏身份,HOTA 把两者<strong>显式拆开再几何平均</strong>,并在多个定位阈值 <span class="arithmatex">\(\alpha\)</span> 上积分:</p>
+<div class="arithmatex">\[\text{HOTA}(\alpha) = \sqrt{\text{DetA}(\alpha)\cdot\text{AssA}(\alpha)}, \qquad \text{HOTA} = \int_0^1 \text{HOTA}(\alpha)\, d\alpha\]</div>
 <ul>
-<li><strong>DetA(检测准确度)</strong> $= \dfrac{|\text{TP}|}{|\text{TP}|+|\text{FN}|+|\text{FP}|}$ —— 框检测得好不好。</li>
+<li><strong>DetA(检测准确度)</strong> <span class="arithmatex">\(= \dfrac{|\text{TP}|}{|\text{TP}|+|\text{FN}|+|\text{FP}|}\)</span> —— 框检测得好不好。</li>
 <li><strong>AssA(关联准确度)</strong> —— 匹配上的轨迹对的关联 IoU 平均,衡量 ID 跟得稳不稳。</li>
 </ul>
 <p><strong>为什么现在论文都报 HOTA</strong>:它能一眼看出一个跟踪器是"检测强但 ID 乱"(DetA 高 AssA 低)还是"ID 稳但漏检多"。DanceTrack 这类外观相似、运动剧烈的数据集,正是用 HOTA 拉开了 ByteTrack 与 OC-SORT 的差距。</p>
-<h3 id="54">5.4 轨迹质量<a class="headerlink" href="#54" title="Permanent link">¶</a></h3>
+<h3 id="54">5.4 轨迹质量<a class="headerlink" href="#54" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>MT (Mostly Tracked)</strong>:被覆盖 ≥80% 生命周期的 GT 轨迹数。</li>
 <li><strong>ML (Mostly Lost)</strong>:被覆盖 ≤20% 的 GT 轨迹数。</li>
 <li><strong>Frag (Fragmentation)</strong>:轨迹"跟丢→恢复"的断裂次数。</li>
 </ul>
-<hr/>
-<h2 id="6">6. 标准数据集<a class="headerlink" href="#6" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="6">6. 标准数据集<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1195,18 +2024,18 @@
 <p class="admonition-title">DanceTrack 的意义</p>
 <p>DanceTrack 故意让所有舞者<strong>穿一样、长得像</strong>,逼跟踪器<strong>不能靠外观</strong>只能靠运动建模。这就是为什么 OC-SORT(强运动建模)在 DanceTrack 上大幅超过 ByteTrack,也催生了 Deep OC-SORT、Hybrid-SORT 等一批新方法。</p>
 </div>
-<hr/>
-<h2 id="7">7. 在本仓库里跑起来<a class="headerlink" href="#7" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="7">7. 在本仓库里跑起来<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
 <p>三种后端共用同一工厂,可即插即用到 <code>InferencePipeline</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
-</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">"bytetrack"</span><span class="p">)</span>          <span class="c1"># supervision 封装(默认,零依赖)</span>
-</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">"bytetrack_native"</span><span class="p">)</span>   <span class="c1"># 原生向量化 ByteTrack(本系列重点)</span>
-</span><span id="__span-0-5"><a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">"ocsort"</span><span class="p">)</span>             <span class="c1"># 原生 OC-SORT(本系列重点)</span>
-</span><span id="__span-0-6"><a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="k">for</span> <span class="n">frame</span><span class="p">,</span> <span class="n">raw_dets</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-</span><span id="__span-0-8"><a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">raw_dets</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>  <span class="c1"># tracked.tracker_id 已就位</span>
-</span><span id="__span-0-9"><a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="n">tracker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>                                <span class="c1"># 换视频时重置,ID 从 1 重新发号</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;bytetrack&quot;</span><span class="p">)</span>          <span class="c1"># supervision 封装(默认,零依赖)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;bytetrack_native&quot;</span><span class="p">)</span>   <span class="c1"># 原生向量化 ByteTrack(本系列重点)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;ocsort&quot;</span><span class="p">)</span>             <span class="c1"># 原生 OC-SORT(本系列重点)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">for</span> <span class="n">frame</span><span class="p">,</span> <span class="n">raw_dets</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">raw_dets</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>  <span class="c1"># tracked.tracker_id 已就位</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">tracker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>                                <span class="c1"># 换视频时重置,ID 从 1 重新发号</span>
 </span></code></pre></div>
 <pre class="mermaid"><code>graph LR
     A[图像] --&gt; B[BaseORT.__call__]
@@ -1215,11 +2044,10 @@
     D --&gt; E["create_tracker(...).update()"]
     E --&gt; F["带 tracker_id 的 Detections"]
     F --&gt; G[Annotator 渲染]
-    style E fill:#e1f5fe
-</code></pre>
+    style E fill:#29b6f6</code></pre>
 <p>完整 API、kwargs 标准化映射、与 pipeline 的集成见 <a href="../../api/tracking/">API · Tracking</a>。</p>
-<hr/>
-<h2 id="_2">参考文献<a class="headerlink" href="#_2" title="Permanent link">¶</a></h2>
+<hr />
+<h2 id="_2">参考文献<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Luiten et al. <em>HOTA: A Higher Order Metric for Evaluating Multi-Object Tracking</em>. IJCV 2021. arXiv:<a href="https://arxiv.org/abs/2009.07736">2009.07736</a></li>
 <li>Bernardin &amp; Stiefelhagen. <em>Evaluating Multiple Object Tracking Performance: The CLEAR MOT Metrics</em>. 2008.</li>
@@ -1228,37 +2056,70 @@
 <li>Sun et al. <em>DanceTrack</em>. CVPR 2022. arXiv:<a href="https://arxiv.org/abs/2111.14690">2111.14690</a></li>
 </ul>
 <p>→ 下一篇:<a href="traditional-methods/">传统方法总结(IoU-Tracker / SORT / DeepSORT)</a></p>
-</article>
-</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
-</div>
-<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
   回到页面顶部
 </button>
-</main>
-<footer class="md-footer">
-<div class="md-footer-meta md-typeset">
-<div class="md-footer-meta__inner md-grid">
-<div class="md-copyright">
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
   
   
     Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
     </a>
+  
 </div>
-</div>
-</div>
+      
+    </div>
+  </div>
 </footer>
-</div>
-<div class="md-dialog" data-md-component="dialog">
-<div class="md-dialog__inner md-typeset"></div>
-</div>
-<script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
-<script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
-<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
-window.mermaidConfig = {default: {
-    startOnLoad: false
-}};</script></body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
 </html>

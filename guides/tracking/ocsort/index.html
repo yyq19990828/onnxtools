@@ -1,120 +1,233 @@
 
-<!DOCTYPE html>
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="ONNX-based vehicle and license plate recognition toolkit">
+      
+      
+      
+        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/ocsort/">
+      
+      
+        <link rel="prev" href="../bytetrack/">
+      
+      
+        <link rel="next" href="../deep-ocsort/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>OC-SORT - onnxtools</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
 
-<html class="no-js" lang="zh">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="ONNX-based vehicle and license plate recognition toolkit" name="description"/>
-<link href="https://example.com/onnxtools/guides/tracking/ocsort/" rel="canonical"/>
-<link href="../bytetrack/" rel="prev"/>
-<link href="../deep-ocsort/" rel="next"/>
-<link href="../../../assets/images/favicon.png" rel="icon"/>
-<meta content="mkdocs-1.6.1, mkdocs-material-9.7.6" name="generator"/>
-<title>OC-SORT - onnxtools</title>
-<link href="../../../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
-<link href="../../../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
-<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-<link href="../../../assets/_mkdocstrings.css" rel="stylesheet"/>
-<script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
-</head>
-<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
-<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
-<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
-<label class="md-overlay" for="__drawer"></label>
-<div data-md-component="skip">
-<a class="md-skip" href="#oc-sort-sort">
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#oc-sort-sort" class="md-skip">
           跳转至
         </a>
-</div>
-<div data-md-component="announce">
-</div>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
 <header class="md-header" data-md-component="header">
-<nav aria-label="页眉" class="md-header__inner md-grid">
-<a aria-label="onnxtools" class="md-header__button md-logo" data-md-component="logo" href="../../.." title="onnxtools">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
-</a>
-<label class="md-header__button md-icon" for="__drawer">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
-</label>
-<div class="md-header__title" data-md-component="header-title">
-<div class="md-header__ellipsis">
-<div class="md-header__topic">
-<span class="md-ellipsis">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../../.." title="onnxtools" class="md-header__button md-logo" aria-label="onnxtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
             onnxtools
           </span>
-</div>
-<div class="md-header__topic" data-md-component="header-topic">
-<span class="md-ellipsis">
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
             
               OC-SORT
             
           </span>
-</div>
-</div>
-</div>
-<form class="md-header__option" data-md-component="palette">
-<input aria-label="切换到深色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
-<label class="md-header__button md-icon" for="__palette_1" hidden="" title="切换到深色模式">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
-</label>
-<input aria-label="切换到浅色模式" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
-<label class="md-header__button md-icon" for="__palette_0" hidden="" title="切换到浅色模式">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
-</label>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到浅色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
 </form>
-<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-<label class="md-header__button md-icon" for="__search">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
-</label>
-<div class="md-search" data-md-component="search" role="dialog">
-<label class="md-search__overlay" for="__search"></label>
-<div class="md-search__inner" role="search">
-<form class="md-search__form" name="search">
-<input aria-label="搜索" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="搜索" required="" spellcheck="false" type="text"/>
-<label class="md-search__icon md-icon" for="__search">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
-</label>
-<nav aria-label="查找" class="md-search__options">
-<button aria-label="清空当前内容" class="md-search__icon md-icon" tabindex="-1" title="清空当前内容" type="reset">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
-</button>
-</nav>
-<div class="md-search__suggest" data-md-component="search-suggest"></div>
-</form>
-<div class="md-search__output">
-<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
-<div class="md-search-result" data-md-component="search-result">
-<div class="md-search-result__meta">
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
             正在初始化搜索引擎
           </div>
-<ol class="md-search-result__list" role="presentation"></ol>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="md-header__source">
-<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
-<div class="md-source__icon md-icon">
-<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
-</div>
-<div class="md-source__repository">
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/onnxtools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
     GitHub
   </div>
 </a>
-</div>
-</nav>
+      </div>
+    
+  </nav>
+  
 </header>
-<div class="md-container" data-md-component="container">
-<nav aria-label="标签" class="md-tabs" data-md-component="tabs">
-<div class="md-grid">
-<ul class="md-tabs__list">
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../..">
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -123,9 +236,17 @@
   首页
 
       </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../../getting-started/">
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
         
   
   
@@ -134,9 +255,21 @@
   快速上手
 
       </a>
-</li>
-<li class="md-tabs__item md-tabs__item--active">
-<a class="md-tabs__link" href="../../annotator_usage/">
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../annotator_usage/" class="md-tabs__link">
           
   
   
@@ -145,9 +278,20 @@
   指南
 
         </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../../api/">
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../api/" class="md-tabs__link">
           
   
   
@@ -156,9 +300,18 @@
   API 参考
 
         </a>
-</li>
-<li class="md-tabs__item">
-<a class="md-tabs__link" href="../../../models/model_support_list/">
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../models/model_support_list/" class="md-tabs__link">
         
   
   
@@ -167,36 +320,67 @@
   模型支持
 
       </a>
-</li>
-</ul>
-</div>
+    </li>
+  
+
+      
+    </ul>
+  </div>
 </nav>
-<main class="md-main" data-md-component="main">
-<div class="md-main__inner md-grid">
-<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav aria-label="导航栏" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
-<label class="md-nav__title" for="__drawer">
-<a aria-label="onnxtools" class="md-nav__button md-logo" data-md-component="logo" href="../../.." title="onnxtools">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
-</a>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="onnxtools" class="md-nav__button md-logo" aria-label="onnxtools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
     onnxtools
   </label>
-<div class="md-nav__source">
-<a class="md-source" data-md-component="source" href="https://github.com/your-org/onnxtools" title="前往仓库">
-<div class="md-source__icon md-icon">
-<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
-</div>
-<div class="md-source__repository">
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/onnxtools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
     GitHub
   </div>
 </a>
-</div>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../..">
-<span class="md-ellipsis">
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     首页
@@ -204,11 +388,26 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../getting-started/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     快速上手
@@ -216,12 +415,59 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-<input checked="" class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
-<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
     
   
     指南
@@ -229,21 +475,35 @@
 
     
   </span>
-<span class="md-nav__icon md-icon"></span>
-</label>
-<nav aria-expanded="true" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_3">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
             
   
     指南
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../annotator_usage/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../annotator_usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     可视化标注
@@ -251,11 +511,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../evaluation_guide/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     模型评估
@@ -263,11 +539,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../cli-tools/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     CLI 工具
@@ -275,11 +567,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../mcp/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     MCP 集成
@@ -287,13 +595,75 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-<input checked="" class="md-nav__toggle md-toggle" id="__nav_3_5" type="checkbox"/>
-<div class="md-nav__link md-nav__container">
-<a class="md-nav__link" href="../">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
     
   
     多目标跟踪
@@ -301,24 +671,43 @@
 
     
   </span>
-</a>
-<label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
-<span class="md-nav__icon md-icon"></span>
-</label>
-</div>
-<nav aria-expanded="true" aria-labelledby="__nav_3_5_label" class="md-nav" data-md-level="2">
-<label class="md-nav__title" for="__nav_3_5">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_5" id="__nav_3_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
             
   
     多目标跟踪
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../traditional-methods/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../traditional-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     传统方法 (IoU/SORT/DeepSORT)
@@ -326,11 +715,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../bytetrack/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bytetrack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     ByteTrack
@@ -338,12 +743,36 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item md-nav__item--active">
-<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
-<label class="md-nav__link md-nav__link--active" for="__toc">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
     
   
     OC-SORT
@@ -351,10 +780,17 @@
 
     
   </span>
-<span class="md-nav__icon md-icon"></span>
-</label>
-<a class="md-nav__link md-nav__link--active" href="./">
-<span class="md-ellipsis">
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     OC-SORT
@@ -362,135 +798,191 @@
 
     
   </span>
-</a>
-<nav aria-label="目录" class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
       目录
     </label>
-<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#1">
-<span class="md-ellipsis">
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         1. 一句话核心:别太信卡尔曼,要回到观测
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#2-ocm-ocr-oru">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#2-ocm-ocr-oru" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2. 三件套:OCM / OCR / ORU
       
     </span>
-</a>
-<nav aria-label="2. 三件套:OCM / OCR / ORU" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#21-ocm">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 三件套:OCM / OCR / ORU">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-ocm" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.1 OCM:运动方向动量
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#22-ocr">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#22-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.2 OCR:用"最后一次真实观测"做恢复
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#23-oru">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#23-oru" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.3 ORU:重新找回时回溯重修速度
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#3-update">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#3-update" class="md-nav__link">
+    <span class="md-ellipsis">
       
         3. 完整 update 流程(仓库实现)
       
     </span>
-</a>
-<nav aria-label="3. 完整 update 流程(仓库实现)" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#7-xysr-sort">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 完整 update 流程(仓库实现)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-xysr-sort" class="md-nav__link">
+    <span class="md-ellipsis">
       
         状态参数化:7 维 XYSR(继承 SORT)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_1">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         输出与新轨迹确认
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#4">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
       
         4. 关键超参数
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#5">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5. 性能与局限
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#bytetrack-vs-oc-sort">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#bytetrack-vs-oc-sort" class="md-nav__link">
+    <span class="md-ellipsis">
       
         ByteTrack vs OC-SORT 怎么选
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_2">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
       
         参考文献
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
+      
+    </ul>
+  
 </nav>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../deep-ocsort/">
-<span class="md-ellipsis">
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-ocsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Deep OC-SORT
@@ -498,11 +990,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../strongsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strongsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     StrongSORT
@@ -510,11 +1018,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../botsort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../botsort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     BoT-SORT
@@ -522,11 +1046,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../hybrid-sort/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hybrid-sort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Hybrid-SORT
@@ -534,11 +1074,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../jde-family/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../jde-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     JDE / FairMOT / CenterTrack
@@ -546,11 +1102,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../transformer-mot/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transformer-mot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Transformer MOT
@@ -558,11 +1130,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../metrics/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     评测指标
@@ -570,19 +1158,83 @@
 
     
   </span>
-</a>
-</li>
-</ul>
-</nav>
-</li>
-</ul>
-</nav>
-</li>
-<li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
-<div class="md-nav__link md-nav__container">
-<a class="md-nav__link" href="../../../api/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
     
   
     API 参考
@@ -590,24 +1242,43 @@
 
     
   </span>
-</a>
-<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
-<span class="md-nav__icon md-icon"></span>
-</label>
-</div>
-<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_4">
-<span class="md-nav__icon md-icon"></span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
             
   
     API 参考
   
 
           </label>
-<ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/detectors/">
-<span class="md-ellipsis">
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/detectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Detectors
@@ -615,11 +1286,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/classifiers/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/classifiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Classifiers
@@ -627,11 +1314,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/ocr/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/ocr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     OCR
@@ -639,11 +1342,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/result/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Result
@@ -651,11 +1370,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/pipeline/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Pipeline
@@ -663,11 +1398,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/tracking/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/tracking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Tracking
@@ -675,11 +1426,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/utils/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Utils
@@ -687,11 +1454,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/eval/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/eval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Eval
@@ -699,11 +1482,27 @@
 
     
   </span>
-</a>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../api/config/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     Config
@@ -711,14 +1510,34 @@
 
     
   </span>
-</a>
-</li>
-</ul>
-</nav>
-</li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../../models/model_support_list/">
-<span class="md-ellipsis">
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../models/model_support_list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
     模型支持
@@ -726,151 +1545,210 @@
 
     
   </span>
-</a>
-</li>
-</ul>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
 </nav>
-</div>
-</div>
-</div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav aria-label="目录" class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">
-<span class="md-nav__icon md-icon"></span>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
       目录
     </label>
-<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#1">
-<span class="md-ellipsis">
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         1. 一句话核心:别太信卡尔曼,要回到观测
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#2-ocm-ocr-oru">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#2-ocm-ocr-oru" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2. 三件套:OCM / OCR / ORU
       
     </span>
-</a>
-<nav aria-label="2. 三件套:OCM / OCR / ORU" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#21-ocm">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 三件套:OCM / OCR / ORU">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-ocm" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.1 OCM:运动方向动量
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#22-ocr">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#22-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.2 OCR:用"最后一次真实观测"做恢复
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#23-oru">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#23-oru" class="md-nav__link">
+    <span class="md-ellipsis">
       
         2.3 ORU:重新找回时回溯重修速度
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#3-update">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#3-update" class="md-nav__link">
+    <span class="md-ellipsis">
       
         3. 完整 update 流程(仓库实现)
       
     </span>
-</a>
-<nav aria-label="3. 完整 update 流程(仓库实现)" class="md-nav">
-<ul class="md-nav__list">
-<li class="md-nav__item">
-<a class="md-nav__link" href="#7-xysr-sort">
-<span class="md-ellipsis">
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 完整 update 流程(仓库实现)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-xysr-sort" class="md-nav__link">
+    <span class="md-ellipsis">
       
         状态参数化:7 维 XYSR(继承 SORT)
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_1">
-<span class="md-ellipsis">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
       
         输出与新轨迹确认
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
-</nav>
+        
+      </ul>
+    </nav>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#4">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
       
         4. 关键超参数
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#5">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
       
         5. 性能与局限
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#bytetrack-vs-oc-sort">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#bytetrack-vs-oc-sort" class="md-nav__link">
+    <span class="md-ellipsis">
       
         ByteTrack vs OC-SORT 怎么选
       
     </span>
-</a>
+  </a>
+  
 </li>
-<li class="md-nav__item">
-<a class="md-nav__link" href="#_2">
-<span class="md-ellipsis">
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
       
         参考文献
       
     </span>
-</a>
+  </a>
+  
 </li>
-</ul>
+      
+    </ul>
+  
 </nav>
-</div>
-</div>
-</div>
-<div class="md-content" data-md-component="content">
-<article class="md-content__inner md-typeset">
-<h1 id="oc-sort-sort">OC-SORT:观测中心化的 SORT<a class="headerlink" href="#oc-sort-sort" title="Permanent link">¶</a></h1>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="oc-sort-sort">OC-SORT:观测中心化的 SORT<a class="headerlink" href="#oc-sort-sort" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>Cao et al. <em>Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2203.14360">2203.14360</a> · 代码 <a href="https://github.com/noahcao/OC_SORT">noahcao/OC_SORT</a></p>
 <p>✅ <strong>本仓库原生实现</strong>:<a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/ocsort.py"><code>onnxtools/tracking/ocsort.py</code></a> 的 <code>OCSORT</code> + <code>KalmanBoxTracker</code>,含 OCM/OCR/ORU 三件套。</p>
 </blockquote>
-<h2 id="1">1. 一句话核心:别太信卡尔曼,要回到观测<a class="headerlink" href="#1" title="Permanent link">¶</a></h2>
+<h2 id="1">1. 一句话核心:别太信卡尔曼,要回到观测<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p>经典 SORT 是 <strong>"估计中心 (estimation-centric)"</strong> 的——它高度信任线性卡尔曼滤波的预测。问题有二:</p>
 <ol>
 <li><strong>遮挡期误差累积</strong>:目标被挡住、连续多帧无观测时,卡尔曼只能空转外推,误差越滚越大,等目标重现已经偏到别处。</li>
@@ -884,12 +1762,11 @@
     end
     subgraph 观测中心 OC-SORT
         O1["遮挡期"] --&gt; O2["记住 last_observation"]
-        O2 --&gt; O3["重现时用真实观测关联(OCR)<br/>并回溯重修轨迹(ORU)"]
+        O2 --&gt; O3["重现时用真实观测关联(OCR)&lt;br/&gt;并回溯重修轨迹(ORU)"]
     end
-    style E3 fill:#ffcdd2
-    style O3 fill:#c8e6c9
-</code></pre>
-<h2 id="2-ocm-ocr-oru">2. 三件套:OCM / OCR / ORU<a class="headerlink" href="#2-ocm-ocr-oru" title="Permanent link">¶</a></h2>
+    style E3 fill:#ef5350,color:#fff
+    style O3 fill:#66bb6a,color:#fff</code></pre>
+<h2 id="2-ocm-ocr-oru">2. 三件套:OCM / OCR / ORU<a class="headerlink" href="#2-ocm-ocr-oru" title="Permanent link">&para;</a></h2>
 <p>OC-SORT 在经典 SORT 之上加三个"观测中心"改进。下表给出<strong>论文含义</strong>与<strong>仓库实现位置</strong>:</p>
 <table>
 <thead>
@@ -921,71 +1798,69 @@
 </tr>
 </tbody>
 </table>
-<h3 id="21-ocm">2.1 OCM:运动方向动量<a class="headerlink" href="#21-ocm" title="Permanent link">¶</a></h3>
+<h3 id="21-ocm">2.1 OCM:运动方向动量<a class="headerlink" href="#21-ocm" title="Permanent link">&para;</a></h3>
 <p>只看 IoU 在拥挤/相似场景会歧义。OCM 额外比较<strong>轨迹的运动方向</strong>与<strong>"轨迹历史观测→候选检测"方向</strong>的夹角余弦——方向越一致,代价越低。关键是方向用<strong>真实观测</strong>估计(抗卡尔曼漂移)。</p>
 <pre class="mermaid"><code>graph TD
-    HIST["轨迹历史观测<br/>(delta_t 帧前的真实框)"] --&gt; VEL["速度方向 v_track"]
+    HIST["轨迹历史观测&lt;br/&gt;(delta_t 帧前的真实框)"] --&gt; VEL["速度方向 v_track"]
     CAND["候选检测中心"] --&gt; DIR["方向 (历史观测 → 候选)"]
     VEL --&gt; COS["cos 夹角一致性"]
     DIR --&gt; COS
     COS --&gt; COST["代价 = −(IoU + inertia × 方向一致性)"]
-    style COST fill:#e1f5fe
-</code></pre>
+    style COST fill:#29b6f6</code></pre>
 <p>对应仓库 <code>_associate</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">iou</span> <span class="o">=</span> <span class="n">box_iou_batch</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">trackers</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>          <span class="c1"># [T, D]</span>
-</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="n">angle_cost</span> <span class="o">=</span> <span class="n">_angle_cost</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">trackers</span><span class="p">,</span> <span class="n">velocities</span><span class="p">,</span> <span class="n">previous_obs</span><span class="p">,</span> <span class="n">vdc_weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inertia</span><span class="p">)</span>
-</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="n">cost</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">iou</span> <span class="o">+</span> <span class="n">angle_cost</span><span class="p">)</span>                            <span class="c1"># 越像越负(代价越低)</span>
-</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="n">forbidden</span> <span class="o">=</span> <span class="n">iou</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span>                 <span class="c1"># 仍用裸 IoU 门控</span>
-</span><span id="__span-0-5"><a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">forbidden</span><span class="p">,</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">iou</span> <span class="o">=</span> <span class="n">box_iou_batch</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">trackers</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>          <span class="c1"># [T, D]</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">angle_cost</span> <span class="o">=</span> <span class="n">_angle_cost</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">trackers</span><span class="p">,</span> <span class="n">velocities</span><span class="p">,</span> <span class="n">previous_obs</span><span class="p">,</span> <span class="n">vdc_weight</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inertia</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cost</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">iou</span> <span class="o">+</span> <span class="n">angle_cost</span><span class="p">)</span>                            <span class="c1"># 越像越负(代价越低)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">forbidden</span> <span class="o">=</span> <span class="n">iou</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span>                 <span class="c1"># 仍用裸 IoU 门控</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">forbidden</span><span class="p">,</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>velocities</code> 是每条轨迹的单位方向向量(由 ORU 维护),<code>previous_obs</code> 是 <code>delta_t</code>(默认 3)帧前的历史观测。</p>
-<h3 id="22-ocr">2.2 OCR:用"最后一次真实观测"做恢复<a class="headerlink" href="#22-ocr" title="Permanent link">¶</a></h3>
+<h3 id="22-ocr">2.2 OCR:用"最后一次真实观测"做恢复<a class="headerlink" href="#22-ocr" title="Permanent link">&para;</a></h3>
 <p>一阶段(IoU+OCM)没匹配上的轨迹,往往是刚遮挡完、卡尔曼预测已漂的目标。OCR 不信漂掉的预测,改用轨迹的 <strong><code>last_observation</code>(最后一次真实看到的框)</strong> 和剩余检测再做一次 IoU 关联:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="c1"># Stage 2: OCR —— 对未匹配轨迹改用 last_observation</span>
-</span><span id="__span-1-2"><a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">last_boxes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">last_observation</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">u_trk</span><span class="p">])</span>
-</span><span id="__span-1-3"><a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">left_dets</span>  <span class="o">=</span> <span class="n">xyxy</span><span class="p">[</span><span class="n">u_det</span><span class="p">]</span>
-</span><span id="__span-1-4"><a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">iou_ocr</span> <span class="o">=</span> <span class="n">box_iou_batch</span><span class="p">(</span><span class="n">left_dets</span><span class="p">,</span> <span class="n">last_boxes</span><span class="p">)</span>
-</span><span id="__span-1-5"><a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">cost</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">iou_ocr</span>
-</span><span id="__span-1-6"><a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="n">m2</span><span class="p">,</span> <span class="n">u_t2</span><span class="p">,</span> <span class="n">u_d2</span> <span class="o">=</span> <span class="n">linear_assignment</span><span class="p">(</span><span class="n">cost</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Stage 2: OCR —— 对未匹配轨迹改用 last_observation</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">last_boxes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">last_observation</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">u_trk</span><span class="p">])</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">left_dets</span>  <span class="o">=</span> <span class="n">xyxy</span><span class="p">[</span><span class="n">u_det</span><span class="p">]</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">iou_ocr</span> <span class="o">=</span> <span class="n">box_iou_batch</span><span class="p">(</span><span class="n">left_dets</span><span class="p">,</span> <span class="n">last_boxes</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">cost</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">iou_ocr</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">m2</span><span class="p">,</span> <span class="n">u_t2</span><span class="p">,</span> <span class="n">u_d2</span> <span class="o">=</span> <span class="n">linear_assignment</span><span class="p">(</span><span class="n">cost</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="23-oru">2.3 ORU:重新找回时回溯重修速度<a class="headerlink" href="#23-oru" title="Permanent link">¶</a></h3>
+<h3 id="23-oru">2.3 ORU:重新找回时回溯重修速度<a class="headerlink" href="#23-oru" title="Permanent link">&para;</a></h3>
 <p>轨迹失踪一段时间后被重新匹配,这期间卡尔曼状态(尤其速度)已不可信。ORU 在 <code>update</code> 时<strong>用历史观测重新计算速度方向</strong>,而不是沿用遮挡期空转出来的速度:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
-</span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-2-3"><a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a>        <span class="n">previous_box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_obs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>   <span class="c1"># delta_t 帧内最近的真实观测</span>
-</span><span id="__span-2-4"><a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">_speed_direction</span><span class="p">(</span><span class="n">previous_box</span><span class="p">,</span> <span class="n">bbox</span><span class="p">)</span>   <span class="c1"># 用真实观测对重算方向</span>
-</span><span id="__span-2-5"><a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">*</span><span class="n">bbox</span><span class="p">,</span> <span class="n">score</span><span class="p">])</span>
-</span><span id="__span-2-6"><a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span>
-</span><span id="__span-2-7"><a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a>    <span class="o">...</span>
-</span><span id="__span-2-8"><a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="p">,</span> <span class="n">_xyxy_to_z</span><span class="p">(</span><span class="n">bbox</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="n">previous_box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_obs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>   <span class="c1"># delta_t 帧内最近的真实观测</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">_speed_direction</span><span class="p">(</span><span class="n">previous_box</span><span class="p">,</span> <span class="n">bbox</span><span class="p">)</span>   <span class="c1"># 用真实观测对重算方向</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">*</span><span class="n">bbox</span><span class="p">,</span> <span class="n">score</span><span class="p">])</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_observation</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="o">...</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="p">,</span> <span class="n">_xyxy_to_z</span><span class="p">(</span><span class="n">bbox</span><span class="p">))</span>
 </span></code></pre></div>
 <p>论文里 ORU 会沿"失踪前最后观测 ↔ 重现观测"构造虚拟轨迹并重跑卡尔曼更新,消解累积误差;消融实验显示 <strong>ORU 贡献最大增益</strong>。</p>
-<h2 id="3-update">3. 完整 update 流程(仓库实现)<a class="headerlink" href="#3-update" title="Permanent link">¶</a></h2>
+<h2 id="3-update">3. 完整 update 流程(仓库实现)<a class="headerlink" href="#3-update" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart TD
     START([新帧]) --&gt; FILTER["按 det_thresh 过滤检测"]
-    FILTER --&gt; PRED["逐轨迹 predict()<br/>(防负面积; NaN 丢弃)"]
-    PRED --&gt; S1["① IoU + OCM 关联<br/>cost = −(IoU + inertia·方向)<br/>裸 IoU &lt; iou_threshold 禁止"]
+    FILTER --&gt; PRED["逐轨迹 predict()&lt;br/&gt;(防负面积; NaN 丢弃)"]
+    PRED --&gt; S1["① IoU + OCM 关联&lt;br/&gt;cost = −(IoU + inertia·方向)&lt;br/&gt;裸 IoU &lt; iou_threshold 禁止"]
     S1 --&gt;|匹配| U1["update() → 触发 ORU 重算速度"]
-    S1 --&gt;|轨迹/检测未匹配| S2["② OCR 关联<br/>未匹配轨迹用 last_observation<br/>× 剩余检测做 IoU"]
+    S1 --&gt;|轨迹/检测未匹配| S2["② OCR 关联&lt;br/&gt;未匹配轨迹用 last_observation&lt;br/&gt;× 剩余检测做 IoU"]
     S2 --&gt;|匹配| U2["update()"]
     S2 --&gt;|检测仍未匹配| NEW["新建 KalmanBoxTracker"]
     U1 --&gt; EMIT
     U2 --&gt; EMIT
-    NEW --&gt; EMIT["③ 输出 + 老化<br/>time_since_update&lt;1 且 hit_streak≥min_hits<br/>超 max_age 删除"]
-    EMIT --&gt; START
-</code></pre>
-<h3 id="7-xysr-sort">状态参数化:7 维 XYSR(继承 SORT)<a class="headerlink" href="#7-xysr-sort" title="Permanent link">¶</a></h3>
-<p>OC-SORT 用 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYSR</code></a>,状态 $[c_x, c_y, s, r, \dot c_x, \dot c_y, \dot s]$($s$=面积,$r$=纵横比恒定),与 SORT 完全一致。<code>predict</code> 里有 SORT 经典的负面积保护:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>   <span class="c1"># 预测面积将 ≤0</span>
-</span><span id="__span-3-2"><a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>                  <span class="c1"># 速度归零</span>
+    NEW --&gt; EMIT["③ 输出 + 老化&lt;br/&gt;time_since_update&lt;1 且 hit_streak≥min_hits&lt;br/&gt;超 max_age 删除"]
+    EMIT --&gt; START</code></pre>
+<h3 id="7-xysr-sort">状态参数化:7 维 XYSR(继承 SORT)<a class="headerlink" href="#7-xysr-sort" title="Permanent link">&para;</a></h3>
+<p>OC-SORT 用 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/kalman.py"><code>KalmanFilterXYSR</code></a>,状态 <span class="arithmatex">\([c_x, c_y, s, r, \dot c_x, \dot c_y, \dot s]\)</span>(<span class="arithmatex">\(s\)</span>=面积,<span class="arithmatex">\(r\)</span>=纵横比恒定),与 SORT 完全一致。<code>predict</code> 里有 SORT 经典的负面积保护:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>   <span class="c1"># 预测面积将 ≤0</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>                  <span class="c1"># 速度归零</span>
 </span></code></pre></div>
-<h3 id="_1">输出与新轨迹确认<a class="headerlink" href="#_1" title="Permanent link">¶</a></h3>
+<h3 id="_1">输出与新轨迹确认<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>用 <code>min_hits</code>(默认 3)做延迟确认:<code>hit_streak &gt;= min_hits</code> 或前 <code>min_hits</code> 帧内才 emit,抑制误检鬼影(等价 ByteTrack 的双帧确认)。</li>
 <li>输出框优先用 <code>last_observation</code>(真实框)而非卡尔曼平滑值——便于 <code>InferencePipeline._align_tracker_ids</code> 通过 xyxy 精确回填。</li>
 <li>ID:内部 <code>KalmanBoxTracker.id</code> 从 0 计数,emit 时 <code>+1</code>,与 supervision 的 1-based 约定一致。</li>
 </ul>
-<h2 id="4">4. 关键超参数<a class="headerlink" href="#4" title="Permanent link">¶</a></h2>
+<h2 id="4">4. 关键超参数<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1034,60 +1909,92 @@
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
-</span><span id="__span-4-2"><a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">min_hits</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">inertia</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">delta_t</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">min_hits</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">inertia</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">delta_t</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="5">5. 性能与局限<a class="headerlink" href="#5" title="Permanent link">¶</a></h2>
+<h2 id="5">5. 性能与局限<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>指标</strong>:MOT17 test HOTA 63.2 / MOTA 78.0 / IDF1 77.5;<strong>DanceTrack HOTA 55.1</strong>(线性插值后),在非线性运动上显著超过 ByteTrack。</li>
 <li><strong>本仓库性能</strong>:200 目标 / 1080p,~8-10 ms/帧。</li>
 <li><strong>局限</strong>:仍是纯运动、无外观——<strong>密集且外观相似</strong>的目标难区分;ORU 是<strong>事后回溯</strong>(重检测后才修正),遮挡期内不实时;依赖检测质量。这些正是 <a href="../deep-ocsort/">Deep OC-SORT</a>、<a href="../hybrid-sort/">Hybrid-SORT</a> 的改进切入点。</li>
 </ul>
-<h2 id="bytetrack-vs-oc-sort">ByteTrack vs OC-SORT 怎么选<a class="headerlink" href="#bytetrack-vs-oc-sort" title="Permanent link">¶</a></h2>
+<h2 id="bytetrack-vs-oc-sort">ByteTrack vs OC-SORT 怎么选<a class="headerlink" href="#bytetrack-vs-oc-sort" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>graph TD
     Q{"场景特点?"}
-    Q --&gt;|"行人/街景/拥挤<br/>近线性运动"| BT["ByteTrack<br/>(关联低分框,救遮挡)"]
-    Q --&gt;|"快速/非线性运动<br/>急转/舞蹈/赛事"| OC["OC-SORT<br/>(运动方向一致性 + 观测恢复)"]
-    Q --&gt;|"外观可辨且想更稳"| MORE["→ BoT-SORT / StrongSORT<br/>(加 ReID)"]
-    style BT fill:#bbdefb
-    style OC fill:#c8e6c9
-</code></pre>
-<h2 id="_2">参考文献<a class="headerlink" href="#_2" title="Permanent link">¶</a></h2>
+    Q --&gt;|"行人/街景/拥挤&lt;br/&gt;近线性运动"| BT["ByteTrack&lt;br/&gt;(关联低分框,救遮挡)"]
+    Q --&gt;|"快速/非线性运动&lt;br/&gt;急转/舞蹈/赛事"| OC["OC-SORT&lt;br/&gt;(运动方向一致性 + 观测恢复)"]
+    Q --&gt;|"外观可辨且想更稳"| MORE["→ BoT-SORT / StrongSORT&lt;br/&gt;(加 ReID)"]
+    style BT fill:#42a5f5
+    style OC fill:#66bb6a,color:#fff</code></pre>
+<h2 id="_2">参考文献<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Cao et al. <em>Observation-Centric SORT</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2203.14360">2203.14360</a> · <a href="https://github.com/noahcao/OC_SORT">代码</a></li>
 </ul>
 <p>→ 上一篇:<a href="../bytetrack/">ByteTrack</a> · 下一篇:<a href="../botsort/">BoT-SORT:相机运动补偿 + ReID</a></p>
-</article>
-</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
-</div>
-<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
-<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
   回到页面顶部
 </button>
-</main>
-<footer class="md-footer">
-<div class="md-footer-meta md-typeset">
-<div class="md-footer-meta__inner md-grid">
-<div class="md-copyright">
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
   
   
     Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
     </a>
+  
 </div>
-</div>
-</div>
+      
+    </div>
+  </div>
 </footer>
-</div>
-<div class="md-dialog" data-md-component="dialog">
-<div class="md-dialog__inner md-typeset"></div>
-</div>
-<script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
-<script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
-<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
-window.mermaidConfig = {default: {
-    startOnLoad: false
-}};</script></body>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
 </html>
