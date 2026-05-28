@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/metrics/">
+        <link rel="canonical" href="https://example.com/onnxtools/guides/tracking/motrv2/">
       
       
-        <link rel="prev" href="../motrv2/">
+        <link rel="prev" href="../motr/">
       
       
-        <link rel="next" href="../../../api/">
+        <link rel="next" href="../metrics/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>评测指标 - onnxtools</title>
+        <title>MOTRv2 - onnxtools</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#clear-mot-hota" class="md-skip">
+        <a href="#motrv2" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              评测指标
+              MOTRv2
             
           </span>
         </div>
@@ -1206,8 +1206,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1228,11 +1230,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_6" checked>
         
           
           <label class="md-nav__link" for="__nav_3_5_6" id="__nav_3_5_6_label" tabindex="0">
@@ -1253,7 +1255,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1352,42 +1354,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../motrv2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MOTRv2
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1407,7 +1373,7 @@
   <span class="md-ellipsis">
     
   
-    评测指标
+    MOTRv2
   
 
     
@@ -1425,7 +1391,7 @@
   <span class="md-ellipsis">
     
   
-    评测指标
+    MOTRv2
   
 
     
@@ -1454,7 +1420,7 @@
   <a href="#1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 指标全景:三族 + 轨迹质量
+        1. 一句话核心
       
     </span>
   </a>
@@ -1462,10 +1428,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+  <a href="#2-motr-" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 三类基础错误
+        2. 问题回顾:MOTR 的检测-关联冲突
       
     </span>
   </a>
@@ -1473,22 +1439,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-clear-mot-2008" class="md-nav__link">
+  <a href="#3-yolox-anchor-query-motr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. CLEAR-MOT 族(2008,传统)
+        3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. CLEAR-MOT 族(2008,传统)">
+    <nav class="md-nav" aria-label="3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-mota" class="md-nav__link">
+  <a href="#31-proposal-query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 MOTA —— 最常被引用,也最容易误读
+        3.1 Proposal Query 生成
       
     </span>
   </a>
@@ -1496,10 +1462,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-motp" class="md-nav__link">
+  <a href="#32-track-query-motr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 MOTP —— 只管定位精度
+        3.2 Track Query:延续 MOTR 的自回归机制
       
     </span>
   </a>
@@ -1512,10 +1478,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-id-2016" class="md-nav__link">
+  <a href="#4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. ID 族(2016,身份导向)
+        4. 训练策略
       
     </span>
   </a>
@@ -1523,10 +1489,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-hota-2021" class="md-nav__link">
+  <a href="#5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. HOTA 族(2021,当前事实标准)
+        5. 关键配置
       
     </span>
   </a>
@@ -1534,13 +1500,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6" class="md-nav__link">
+  <a href="#6-dancetrack-challenge" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 轨迹质量指标
+        6. 性能:DanceTrack Challenge 冠军
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. 性能:DanceTrack Challenge 冠军">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基准结果
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三代方法对比
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1548,7 +1542,7 @@
   <a href="#7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. 速查表:该看哪个指标
+        7. 范式反思:"半端到端"与钟摆效应
       
     </span>
   </a>
@@ -1556,18 +1550,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. 在本仓库里如何评测
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         参考文献
@@ -1581,6 +1564,42 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    评测指标
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2002,7 +2021,7 @@
   <a href="#1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 指标全景:三族 + 轨迹质量
+        1. 一句话核心
       
     </span>
   </a>
@@ -2010,10 +2029,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+  <a href="#2-motr-" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 三类基础错误
+        2. 问题回顾:MOTR 的检测-关联冲突
       
     </span>
   </a>
@@ -2021,22 +2040,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-clear-mot-2008" class="md-nav__link">
+  <a href="#3-yolox-anchor-query-motr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. CLEAR-MOT 族(2008,传统)
+        3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. CLEAR-MOT 族(2008,传统)">
+    <nav class="md-nav" aria-label="3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-mota" class="md-nav__link">
+  <a href="#31-proposal-query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 MOTA —— 最常被引用,也最容易误读
+        3.1 Proposal Query 生成
       
     </span>
   </a>
@@ -2044,10 +2063,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-motp" class="md-nav__link">
+  <a href="#32-track-query-motr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 MOTP —— 只管定位精度
+        3.2 Track Query:延续 MOTR 的自回归机制
       
     </span>
   </a>
@@ -2060,10 +2079,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-id-2016" class="md-nav__link">
+  <a href="#4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. ID 族(2016,身份导向)
+        4. 训练策略
       
     </span>
   </a>
@@ -2071,10 +2090,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-hota-2021" class="md-nav__link">
+  <a href="#5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. HOTA 族(2021,当前事实标准)
+        5. 关键配置
       
     </span>
   </a>
@@ -2082,13 +2101,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6" class="md-nav__link">
+  <a href="#6-dancetrack-challenge" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 轨迹质量指标
+        6. 性能:DanceTrack Challenge 冠军
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. 性能:DanceTrack Challenge 冠军">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基准结果
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三代方法对比
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2096,7 +2143,7 @@
   <a href="#7" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. 速查表:该看哪个指标
+        7. 范式反思:"半端到端"与钟摆效应
       
     </span>
   </a>
@@ -2104,18 +2151,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. 在本仓库里如何评测
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         参考文献
@@ -2145,208 +2181,278 @@
   
 
 
-<h1 id="clear-mot-hota">评测指标详解:从 CLEAR-MOT 到 HOTA<a class="headerlink" href="#clear-mot-hota" title="Permanent link">&para;</a></h1>
+<h1 id="motrv2">MOTRv2:让预训练检测器为端到端跟踪"喂球"<a class="headerlink" href="#motrv2" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p>跟踪指标比检测复杂——既要"框得准"(检测),又要"跟得稳"(身份)。本篇系统梳理传统指标(MOTA/MOTP/IDF1)与近几年成为事实标准的新指标(HOTA),讲清每个指标度量<strong>什么</strong>、<strong>怎么算</strong>、以及它的<strong>盲区</strong>。</p>
-<p>概念前置见 <a href="../">概念总览</a>。</p>
+<p>Zhang et al. <em>MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2211.09791">2211.09791</a> · 代码 <a href="https://github.com/megvii-research/MOTRv2">megvii-research/MOTRv2</a></p>
+<p>📚 本方法仓库未实现,属知识体系补全。代码参见官方仓库。</p>
 </blockquote>
-<h2 id="1">1. 指标全景:三族 + 轨迹质量<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
-<div class="mermaid">graph TD
-    M["MOT 评测指标"]
-    M --&gt; A["① CLEAR-MOT 族 (2008)&lt;br/&gt;检测主导"]
-    M --&gt; B["② ID 族 (2016)&lt;br/&gt;身份主导"]
-    M --&gt; C["③ HOTA 族 (2021)&lt;br/&gt;检测/关联显式平衡 ← 当前主流"]
-    M --&gt; D["④ 轨迹质量&lt;br/&gt;MT / ML / Frag"]
-    A --&gt; A1["MOTA"]
-    A --&gt; A2["MOTP"]
-    B --&gt; B1["IDF1 / IDP / IDR"]
-    C --&gt; C1["HOTA = √(DetA·AssA)"]
-    style C fill:#66bb6a,color:#fff</div>
-<p><strong>演进逻辑</strong>:MOTA 偏检测、对 ID 不敏感 → IDF1 补上身份视角但偏关联 → HOTA 把检测与关联<strong>显式拆开再几何平均</strong>,一个数兼顾两面,成为今日论文标配。</p>
-<h2 id="2">2. 三类基础错误<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
-<p>所有指标都建立在帧级匹配后的四类计数上。先用一帧理解它们:</p>
-<div class="mermaid">graph TD
-    subgraph 一帧的匹配结果
-        GT["GT 框"] -.匹配.-&gt; TP["✅ TP 真正例&lt;br/&gt;(GT 与预测对上)"]
-        GT2["GT 框(没预测对上)"] --&gt; FN["❌ FN 漏检"]
-        PRED["预测框(没 GT 对上)"] --&gt; FP["❌ FP 误检"]
-        SW["同一 GT 的 ID 变了"] --&gt; IDSW["🔄 IDSW 身份切换"]
+<h2 id="1">1. 一句话核心<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<p><strong>MOTR 的检测和关联联合学习互相冲突,导致检测偏弱。MOTRv2 用预训练 YOLOX 的高质量检测提案替代 detect query,把检测质量问题甩给专业检测器,让 MOTR 专注于关联——一个简单改动,DanceTrack HOTA 从 54.2 飙升至 73.4。</strong></p>
+<div class="mermaid">graph LR
+    subgraph "MOTR 的困境"
+        DET_A["检测 ↔ 关联&lt;br/&gt;联合学习冲突"]
     end
-    style TP fill:#66bb6a,color:#fff
-    style FN fill:#ef5350,color:#fff
-    style FP fill:#ef5350,color:#fff
-    style IDSW fill:#fb8c00,color:#fff</div>
-<ul>
-<li><strong>TP</strong>:预测框与 GT 框匹配成功(通常 IoU ≥ 0.5)。</li>
-<li><strong>FP(误检)</strong>:预测了但没有对应 GT。</li>
-<li><strong>FN(漏检)</strong>:有 GT 但没预测到。</li>
-<li><strong>IDSW(身份切换)</strong>:同一条 GT 轨迹被分配的 tracker_id 发生了变化。</li>
-</ul>
-<h2 id="3-clear-mot-2008">3. CLEAR-MOT 族(2008,传统)<a class="headerlink" href="#3-clear-mot-2008" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>Bernardin &amp; Stiefelhagen. <em>Evaluating Multiple Object Tracking Performance: The CLEAR MOT Metrics</em>. EURASIP 2008.</p>
-</blockquote>
-<h3 id="31-mota">3.1 MOTA —— 最常被引用,也最容易误读<a class="headerlink" href="#31-mota" title="Permanent link">&para;</a></h3>
-<div class="arithmatex">\[\text{MOTA} = 1 - \frac{\sum_t (\text{FN}_t + \text{FP}_t + \text{IDSW}_t)}{\sum_t \text{GT}_t}\]</div>
-<ul>
-<li>范围 <span class="arithmatex">\((-\infty, 1]\)</span>,可为负(错误比 GT 还多时)。</li>
-<li><strong>盲区:由检测错误(FP+FN)主导</strong>。在典型场景里 FP+FN 数量远大于 IDSW,所以 <strong>MOTA 高几乎只说明"检测好",几乎不反映 ID 跟得稳不稳</strong>。</li>
-</ul>
-<div class="mermaid">graph LR
-    MOTA["MOTA"] --&gt; FP["FP 误检"]
-    MOTA --&gt; FN["FN 漏检 ← 通常占绝大部分"]
-    MOTA --&gt; IDSW["IDSW ← 权重很小"]
-    style FN fill:#ef5350,color:#fff
-    style IDSW fill:#78909c,color:#fff</div>
-<div class="admonition warning">
-<p class="admonition-title">经典陷阱</p>
-<p>两个跟踪器 MOTA 都是 80,但 A 的 IDSW 是 B 的 10 倍——MOTA 几乎看不出差别。这正是 DanceTrack 不主推 MOTA、改用 HOTA 的原因。</p>
-</div>
-<h3 id="32-motp">3.2 MOTP —— 只管定位精度<a class="headerlink" href="#32-motp" title="Permanent link">&para;</a></h3>
-<div class="arithmatex">\[\text{MOTP} = \frac{\sum_{t,i} \text{IoU}(\text{matched}_{t,i})}{\sum_t c_t}\]</div>
-<p>匹配上的真正例的平均 IoU(重叠度),<span class="arithmatex">\(c_t\)</span> 为第 <span class="arithmatex">\(t\)</span> 帧匹配数。<strong>只衡量"框得多准",完全不衡量"跟得对不对"</strong>,因此很少单独作为主指标。</p>
-<h2 id="4-id-2016">4. ID 族(2016,身份导向)<a class="headerlink" href="#4-id-2016" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>Ristani et al. <em>Performance Measures and a Data Set for Multi-Target, Multi-Camera Tracking</em>. ECCV 2016.</p>
-</blockquote>
-<p>CLEAR-MOT 的 IDSW 是<strong>逐帧局部</strong>统计;ID 族改为<strong>全局轨迹匹配</strong>:在 GT 轨迹与预测轨迹之间做一次全局二分匹配,再统计身份层面的真正例/误报/漏报(IDTP/IDFP/IDFN)。</p>
-<div class="mermaid">graph LR
-    GTT["GT 轨迹(整条)"] --&gt; BIP["全局二分匹配&lt;br/&gt;(预测轨迹 ↔ GT 轨迹)"]
-    PT["预测轨迹(整条)"] --&gt; BIP
-    BIP --&gt; IDTP["IDTP 身份真正例"]
-    BIP --&gt; IDFP["IDFP"]
-    BIP --&gt; IDFN["IDFN"]</div>
-<div class="arithmatex">\[\text{IDP} = \frac{\text{IDTP}}{\text{IDTP}+\text{IDFP}}, \quad \text{IDR} = \frac{\text{IDTP}}{\text{IDTP}+\text{IDFN}}, \quad \text{IDF1} = \frac{2\,\text{IDTP}}{2\,\text{IDTP}+\text{IDFP}+\text{IDFN}}\]</div>
-<ul>
-<li><strong>IDF1</strong> = IDP 与 IDR 的调和平均,<strong>衡量"全程是否一直保持同一个 ID"</strong>。</li>
-<li>与 MOTA 互补:MOTA 看检测,IDF1 看身份一致性。一个跟踪器可能 MOTA 高(检测好)但 IDF1 低(ID 乱跳)。</li>
-</ul>
-<h2 id="5-hota-2021">5. HOTA 族(2021,当前事实标准)<a class="headerlink" href="#5-hota-2021" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>Luiten et al. <em>HOTA: A Higher Order Metric for Evaluating Multi-Object Tracking</em>. IJCV 2021. arXiv:<a href="https://arxiv.org/abs/2009.07736">2009.07736</a> · 官方评测工具 <a href="https://github.com/JonathonLuiten/TrackEval">TrackEval</a></p>
-</blockquote>
-<p>HOTA 解决的痛点:MOTA 偏检测、IDF1 偏关联,且二者都把"定位阈值"写死。HOTA 把<strong>检测准确度</strong>与<strong>关联准确度</strong>显式拆开,几何平均,并在多个定位阈值 <span class="arithmatex">\(\alpha\)</span> 上积分:</p>
-<div class="arithmatex">\[\text{HOTA}(\alpha) = \sqrt{\text{DetA}(\alpha)\cdot\text{AssA}(\alpha)}, \qquad \text{HOTA} = \int_{0}^{1}\text{HOTA}(\alpha)\,d\alpha\]</div>
-<p>(实际在 <span class="arithmatex">\(\alpha \in \{0.05, 0.1, \dots, 0.95\}\)</span> 上平均。)</p>
-<div class="mermaid">graph TD
-    HOTA["HOTA = √(DetA · AssA)"]
-    HOTA --&gt; DETA["DetA 检测准确度&lt;br/&gt;= |TP| / (|TP|+|FN|+|FP|)&lt;br/&gt;(框检测得好不好)"]
-    HOTA --&gt; ASSA["AssA 关联准确度&lt;br/&gt;= 匹配轨迹对的关联 IoU 均值&lt;br/&gt;(ID 跟得稳不稳)"]
-    style DETA fill:#42a5f5
-    style ASSA fill:#66bb6a,color:#fff</div>
-<ul>
-<li><strong>DetA(Detection Accuracy)</strong> <span class="arithmatex">\(= \dfrac{|\text{TP}|}{|\text{TP}|+|\text{FN}|+|\text{FP}|}\)</span> —— 检测层面的 Jaccard。</li>
-<li><strong>AssA(Association Accuracy)</strong> —— 对每个 TP 计算其轨迹对的关联 IoU <span class="arithmatex">\(\dfrac{|\text{TPA}|}{|\text{TPA}|+|\text{FNA}|+|\text{FPA}|}\)</span>,再平均。</li>
-</ul>
-<p><strong>为什么 HOTA 取代了 MOTA</strong>:几何平均使得<strong>检测和关联任一坍塌都会拉低总分</strong>——它一眼区分"检测强但 ID 乱"(DetA 高 AssA 低)与"ID 稳但漏检多"(反之)。DanceTrack、SportsMOT、KITTI 均已将 HOTA 列为主指标。</p>
-<div class="mermaid">quadrantChart
-    title 用 DetA-AssA 看跟踪器画像
-    x-axis 低 DetA --&gt; 高 DetA
-    y-axis 低 AssA --&gt; 高 AssA
-    quadrant-1 理想 HOTA 高
-    quadrant-2 ID稳但漏检多
-    quadrant-3 双差
-    quadrant-4 检测强但ID乱
-    ByteTrack: [0.78, 0.55]
-    OC-SORT: [0.7, 0.72]
-    理想跟踪器: [0.85, 0.85]</div>
-<blockquote>
-<p>上图为示意性定位,非精确数值——意在说明 ByteTrack 偏"检测强",OC-SORT 偏"关联稳"。</p>
-</blockquote>
-<h2 id="6">6. 轨迹质量指标<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>指标</th>
-<th>定义</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>MT</strong> (Mostly Tracked)</td>
-<td>被成功覆盖 <strong>≥80%</strong> 生命周期的 GT 轨迹数</td>
-<td>越多越好</td>
-</tr>
-<tr>
-<td><strong>ML</strong> (Mostly Lost)</td>
-<td>被覆盖 <strong>≤20%</strong> 的 GT 轨迹数</td>
-<td>越少越好</td>
-</tr>
-<tr>
-<td><strong>Frag</strong> (Fragmentation)</td>
-<td>轨迹"跟踪→丢失→恢复"的断裂次数</td>
-<td>越少越好</td>
-</tr>
-</tbody>
-</table>
-<div class="mermaid">graph LR
-    subgraph 一条 GT 轨迹的覆盖率
-        A["覆盖 ≥80% → 计入 MT"]
-        B["覆盖 20%~80% → Partially Tracked"]
-        C["覆盖 ≤20% → 计入 ML"]
+    subgraph "MOTRv2 的解法"
+        DET_B["YOLOX 负责检测"] --&gt; MOTR_B["MOTR 专注关联"]
     end
-    style A fill:#66bb6a,color:#fff
-    style C fill:#ef5350,color:#fff</div>
-<h2 id="7">7. 速查表:该看哪个指标<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>你关心的问题</th>
-<th>看这个指标</th>
-<th>别只看</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>检测漏不漏、误不误</td>
-<td>MOTA / DetA</td>
-<td>—</td>
-</tr>
-<tr>
-<td>框定位准不准</td>
-<td>MOTP</td>
-<td>—</td>
-</tr>
-<tr>
-<td>ID 全程稳不稳</td>
-<td><strong>IDF1 / AssA</strong></td>
-<td>MOTA(对 ID 不敏感)</td>
-</tr>
-<tr>
-<td>综合一句话评价</td>
-<td><strong>HOTA</strong></td>
-<td>单看 MOTA</td>
-</tr>
-<tr>
-<td>长轨迹覆盖完整度</td>
-<td>MT / ML / Frag</td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
+    DET_A -.解耦.-&gt; DET_B
+    style DET_A fill:#ef5350,color:#fff
+    style DET_B fill:#66bb6a,color:#fff
+    style MOTR_B fill:#29b6f6</div>
+<h2 id="2-motr-">2. 问题回顾:MOTR 的检测-关联冲突<a class="headerlink" href="#2-motr-" title="Permanent link">&para;</a></h2>
+<p>MOTR 将检测和关联统一在一个网络中,但实验表明:</p>
+<ul>
+<li>MOTR 的 MOT17 检测 MOTA(73.4)远低于 ByteTrack(80.3),差距来自<strong>检测精度</strong></li>
+<li>联合训练时,关联梯度会"污染"检测学习,反之亦然</li>
+<li>直觉:detect query 既要学"在哪"(检测),又要学"是谁"(为后续关联做准备),两个目标打架</li>
+</ul>
+<p>MOTRv2 的核心思路:既然检测器已经有成熟的预训练方案(YOLOX-X 在 COCO 上 AP 51.1),<strong>为什么不直接拿来用?</strong></p>
+<h2 id="3-yolox-anchor-query-motr">3. 核心架构:YOLOX 提案 → anchor query → MOTR 解码器<a class="headerlink" href="#3-yolox-anchor-query-motr" title="Permanent link">&para;</a></h2>
 <div class="mermaid">flowchart TD
-    Q{"主要诉求?"}
-    Q --&gt;|综合、发论文| HOTA["报 HOTA(并附 DetA/AssA)"]
-    Q --&gt;|强调身份一致性| IDF1["报 IDF1"]
-    Q --&gt;|强调检测完整性| MOTA["报 MOTA + MT/ML"]
-    style HOTA fill:#66bb6a,color:#fff</div>
-<h2 id="8">8. 在本仓库里如何评测<a class="headerlink" href="#8" title="Permanent link">&para;</a></h2>
-<p>本仓库 tracker 输出标准 <code>supervision.Detections</code>(含 <code>tracker_id</code>),与 GT 对齐后可直接喂给官方 <a href="https://github.com/JonathonLuiten/TrackEval">TrackEval</a> 计算 HOTA/MOTA/IDF1。检测侧的 mAP 评测见 <a href="../../evaluation_guide/">模型评估指南</a>;跟踪指标目前依赖外部 TrackEval,本仓库不内置 MOT 指标实现。</p>
-<div class="admonition tip">
-<p class="admonition-title">评测时的常见坑</p>
-<ul>
-<li><strong>指标随检测器变</strong>:同一 tracker 配不同检测器,MOTA/HOTA 差异巨大——比较 tracker 时务必固定检测器与置信度阈值。</li>
-<li><strong>HOTA 需要完整轨迹</strong>:确保输出的 <code>tracker_id</code> 在序列内全局唯一且连续,换序列要 <code>tracker.reset()</code>(本仓库新建实例即从 1 重新发号)。</li>
-</ul>
+    IMG["帧 t 图像"] --&gt; YOLOX["预训练 YOLOX-X&lt;br/&gt;(冻结或微调)"]
+    IMG --&gt; ENC["Deformable DETR 编码器"]
+    YOLOX --&gt; PROP["检测提案&lt;br/&gt;(box, score)"]
+    PROP --&gt; PQ["proposal query 生成&lt;br/&gt;位置编码 + 内容嵌入"]
+    TQ["track query&lt;br/&gt;(来自 t-1, 携带 ID)"] --&gt; DEC["Deformable DETR 解码器"]
+    PQ --&gt; DEC
+    ENC --&gt; DEC
+    DEC --&gt; OUT_P["新目标:框 + 类别"]
+    DEC --&gt; OUT_T["已跟踪目标:框 + ID"]
+    OUT_T -.自回归.-&gt; TQ2["下一帧 track query"]
+    OUT_P -.新生轨迹.-&gt; TQ2
+    style YOLOX fill:#fb8c00,color:#fff
+    style PQ fill:#66bb6a,color:#fff</div>
+<h3 id="31-proposal-query">3.1 Proposal Query 生成<a class="headerlink" href="#31-proposal-query" title="Permanent link">&para;</a></h3>
+<p>YOLOX 输出的每个检测框 <span class="arithmatex">\((x, y, w, h, s)\)</span> 被转换为 <strong>proposal query</strong>,替代 MOTR 原有的 detect query:</p>
+<p><strong>位置编码(positional embedding)</strong>:</p>
+<div class="arithmatex">\[\text{PE}_{\text{pos}} = \text{SinCos}(x, y, w, h)\]</div>
+<p>采用 4D 正弦余弦位置编码,从框坐标直接生成,为解码器提供精确的空间先验。</p>
+<p><strong>内容嵌入(content embedding)</strong>:</p>
+<div class="arithmatex">\[\text{PE}_{\text{content}} = \text{Encode}(s) + \mathbf{e}_{\text{shared}}\]</div>
+<p>其中 <span class="arithmatex">\(\text{Encode}(s)\)</span> 是对置信度分数 <span class="arithmatex">\(s\)</span> 的编码(线性投影),<span class="arithmatex">\(\mathbf{e}_{\text{shared}}\)</span> 是所有 proposal query 共享的可学习嵌入。</p>
+<div class="admonition note">
+<p class="admonition-title">anchor 框 vs 中心点</p>
+<p>论文消融实验表明,使用 4D anchor 框(x, y, w, h)比仅用 2D 中心点(x, y)效果好得多——框的宽高信息为解码器提供了尺度先验,这对关联至关重要。</p>
 </div>
-<h2 id="_1">参考文献<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h3 id="32-track-query-motr">3.2 Track Query:延续 MOTR 的自回归机制<a class="headerlink" href="#32-track-query-motr" title="Permanent link">&para;</a></h3>
+<p>track query 的工作方式与 MOTR 完全一致:</p>
+<ol>
+<li>上一帧解码器输出的 embedding 作为 track query 注入当前帧</li>
+<li>通过 TALA 保持 GT 一致性分配</li>
+<li>得分低于阈值时退场</li>
+</ol>
+<p><strong>关键区别</strong>:新目标的"发现"不再依赖 detect query 的学习能力,而是由 YOLOX 的强检测保证——track query 只需专注于<strong>保持已有轨迹的身份连续性</strong>。</p>
+<h2 id="4">4. 训练策略<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<div class="mermaid">flowchart LR
+    S1["阶段一:训练 YOLOX&lt;br/&gt;(COCO + CrowdHuman)"] --&gt; S2["阶段二:训练 MOTR 解码器&lt;br/&gt;(YOLOX 冻结/微调)"]
+    S2 --&gt; S3["可选:联合微调&lt;br/&gt;(端到端 fine-tune)"]
+    style S1 fill:#29b6f6
+    style S2 fill:#fb8c00,color:#fff</div>
+<ol>
+<li><strong>阶段一</strong>:在 COCO/CrowdHuman 上训练 YOLOX-X,获得强检测器</li>
+<li><strong>阶段二</strong>:冻结(或轻微微调)YOLOX,训练 MOTR 的编码器-解码器部分</li>
+<li>YOLOX 提案作为 proposal query 输入</li>
+<li>全序列训练(继承 MOTR 的 TALA + 集体平均损失)</li>
+<li><strong>可选阶段三</strong>:小学习率联合微调</li>
+</ol>
+<p>这种解耦训练策略极大缓解了检测-关联冲突:YOLOX 已经"学会"了检测,MOTR 只需学习如何利用提案做关联。</p>
+<h2 id="5">5. 关键配置<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>典型值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>外部检测器</td>
+<td>YOLOX-X</td>
+<td>COCO AP 51.1,冻结或微调</td>
+</tr>
+<tr>
+<td>提案得分阈值</td>
+<td>保留全部(最大化召回)</td>
+<td>不做过滤,让解码器学习筛选</td>
+</tr>
+<tr>
+<td>骨干</td>
+<td>ResNet-50 + Deformable DETR</td>
+<td>多尺度编码器</td>
+</tr>
+<tr>
+<td>编码器/解码器层数</td>
+<td>各 6 层</td>
+<td>标准配置</td>
+</tr>
+<tr>
+<td>track query 得分阈值</td>
+<td>0.5</td>
+<td>低于此分终止轨迹</td>
+</tr>
+<tr>
+<td>位置编码</td>
+<td>4D SinCos (anchor box)</td>
+<td>从 YOLOX 框坐标生成</td>
+</tr>
+<tr>
+<td>内容嵌入</td>
+<td>线性投影(score) + 共享 query</td>
+<td>编码置信度信息</td>
+</tr>
+<tr>
+<td>训练序列长度</td>
+<td>5 帧 (clip)</td>
+<td>继承 MOTR 的全序列训练</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>AdamW, lr <span class="arithmatex">\(2\times10^{-4}\)</span></td>
+<td>标准设置</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-dancetrack-challenge">6. 性能:DanceTrack Challenge 冠军<a class="headerlink" href="#6-dancetrack-challenge" title="Permanent link">&para;</a></h2>
+<h3 id="_1">基准结果<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>HOTA</th>
+<th>DetA</th>
+<th>AssA</th>
+<th>MOTA</th>
+<th>IDF1</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DanceTrack test (单模型)</td>
+<td>69.9</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>单模型已大幅领先</td>
+</tr>
+<tr>
+<td>DanceTrack test (集成)</td>
+<td><strong>73.4</strong></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>4 模型集成,挑战赛冠军</td>
+</tr>
+<tr>
+<td>BDD100K val</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>43.6 mMOTA</td>
+<td>—</td>
+<td>超越 Unicorn 2.4%</td>
+</tr>
+<tr>
+<td>MOT17 test</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>78.6</td>
+<td>75.0</td>
+<td>接近 TbD 方法</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_2">三代方法对比<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>TrackFormer</th>
+<th>MOTR</th>
+<th>MOTRv2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基础架构</td>
+<td>DETR / Deformable</td>
+<td>Deformable DETR</td>
+<td>Deformable DETR + YOLOX</td>
+</tr>
+<tr>
+<td>训练方式</td>
+<td>帧对</td>
+<td>全序列</td>
+<td>全序列</td>
+</tr>
+<tr>
+<td>检测来源</td>
+<td>detect query 学习</td>
+<td>detect query 学习</td>
+<td><strong>YOLOX 预训练提案</strong></td>
+</tr>
+<tr>
+<td>关联方式</td>
+<td>track query 注意力</td>
+<td>track query + TALA</td>
+<td>track query + TALA</td>
+</tr>
+<tr>
+<td>MOT17 MOTA</td>
+<td>65.0</td>
+<td>73.4</td>
+<td>78.6</td>
+</tr>
+<tr>
+<td>DanceTrack HOTA</td>
+<td>—</td>
+<td>54.2</td>
+<td><strong>73.4</strong></td>
+</tr>
+<tr>
+<td>端到端程度</td>
+<td>完全</td>
+<td>完全</td>
+<td><strong>半端到端</strong></td>
+</tr>
+<tr>
+<td>关键贡献</td>
+<td>tracking-by-attention</td>
+<td>TALA + 全序列训练</td>
+<td>解耦检测与关联</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7">7. 范式反思:"半端到端"与钟摆效应<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<p>MOTRv2 的成功揭示了一个有趣的范式演化:</p>
+<div class="mermaid">graph LR
+    TBD["Tracking-by-Detection&lt;br/&gt;(完全解耦)"] --&gt; E2E["端到端&lt;br/&gt;(TrackFormer/MOTR)"]
+    E2E --&gt; SEMI["半端到端&lt;br/&gt;(MOTRv2)"]
+    SEMI -.钟摆回摆?.-&gt; TBD2["新一代 TbD?&lt;br/&gt;(强检测器 + 学习关联)"]
+    style TBD fill:#29b6f6
+    style E2E fill:#fb8c00,color:#fff
+    style SEMI fill:#66bb6a,color:#fff</div>
 <ul>
-<li>Luiten et al. <em>HOTA: A Higher Order Metric for Evaluating Multi-Object Tracking</em>. IJCV 2021. arXiv:<a href="https://arxiv.org/abs/2009.07736">2009.07736</a> · <a href="https://github.com/JonathonLuiten/TrackEval">TrackEval</a></li>
-<li>Bernardin &amp; Stiefelhagen. <em>The CLEAR MOT Metrics</em>. EURASIP 2008.</li>
-<li>Ristani et al. <em>Performance Measures and a Data Set for Multi-Target, Multi-Camera Tracking</em> (IDF1). ECCV 2016.</li>
+<li><strong>TrackFormer/MOTR</strong> 追求"纯端到端",把检测和关联全部塞进 Transformer,但检测质量受限</li>
+<li><strong>MOTRv2</strong> 承认检测器需要独立优化,回到"检测-关联解耦"的思路——只是关联部分仍用 Transformer 自回归,而非手工匹配</li>
+<li>这与本仓库的 <strong>tracking-by-detection</strong> 路线(ByteTrack/OC-SORT)殊途同归:都认为<strong>好的检测是好的跟踪的前提</strong></li>
 </ul>
-<p>→ 上一篇:<a href="../motrv2/">MOTRv2</a> · 返回:<a href="../">概念总览</a></p>
+<div class="admonition note">
+<p class="admonition-title">对本仓库用户的启示</p>
+<p>MOTRv2 验证了一个朴素直觉:<strong>强检测器 + 好关联 = 好跟踪</strong>。本仓库的 ByteTrack/OC-SORT 正是这一思路的工程化实践——用 YOLO/RT-DETR/RF-DETR 做强检测,用卡尔曼 + 匈牙利做高效关联。两条路线在理念上并不矛盾,只是 MOTRv2 用 Transformer 替代了手工关联,换取了更强的长时序建模能力,但也付出了速度和部署复杂度的代价。</p>
+</div>
+<h2 id="_3">参考文献<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Zhang et al. <em>MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors</em>. CVPR 2023. arXiv:<a href="https://arxiv.org/abs/2211.09791">2211.09791</a> · <a href="https://github.com/megvii-research/MOTRv2">代码</a></li>
+<li>Zeng et al. <em>MOTR: End-to-End Multiple-Object Tracking with Transformer</em>. ECCV 2022. arXiv:<a href="https://arxiv.org/abs/2105.03247">2105.03247</a> · <a href="https://github.com/megvii-research/MOTR">代码</a></li>
+<li>Ge et al. <em>YOLOX: Exceeding YOLO Series in 2021</em>. arXiv:<a href="https://arxiv.org/abs/2107.08430">2107.08430</a></li>
+<li>Meinhardt et al. <em>TrackFormer</em>. CVPR 2022. arXiv:<a href="https://arxiv.org/abs/2101.02702">2101.02702</a></li>
+</ul>
+<p>→ 上一篇:<a href="../motr/">MOTR</a> · 下一篇:<a href="../metrics/">评测指标详解</a></p>
 
 
 
