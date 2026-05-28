@@ -31,8 +31,8 @@
 ```mermaid
 graph LR
     subgraph 第t-1帧
-        A1["#quot;ID=1#quot; 行人"]
-        A2["#quot;ID=2#quot; 行人"]
+        A1["'ID=1' 行人"]
+        A2["'ID=2' 行人"]
     end
     subgraph 第t帧
         B1["检测框 a"]
@@ -41,9 +41,9 @@ graph LR
     end
     A1 -.关联.-> B2
     A2 -.关联.-> B1
-    B3 -.新建.-> C["#quot;ID=3#quot;"]
-    style B3 fill:#ffe0b2
-    style C fill:#c8e6c9
+    B3 -.新建.-> C["'ID=3'"]
+    style B3 fill:#fb8c00,color:#fff
+    style C fill:#66bb6a,color:#fff
 ```
 
 跟踪的本质难点不在"看到目标",而在**跨帧维持身份**。三大经典挑战:
@@ -90,8 +90,8 @@ graph TD
     E2E --> T2["MOTR / MOTRv2 2022/23"]
     E2E --> T3["前沿 2024-25<br/>MATR / PuTR ..."]
 
-    style M2 fill:#c8e6c9
-    style M3 fill:#c8e6c9
+    style M2 fill:#66bb6a,color:#fff
+    style M3 fill:#66bb6a,color:#fff
 ```
 
 > 🟢 绿色为本仓库已原生实现的两个方法(ByteTrack、OC-SORT)。
@@ -108,7 +108,7 @@ graph LR
     PREV["上一帧轨迹池"] --> TRK
     TRK --> OUT["带 tracker_id 的 Detections"]
     OUT -.更新.-> PREV
-    style TRK fill:#e1f5fe
+    style TRK fill:#29b6f6
 ```
 
 优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 `InferencePipeline` 正是这种解耦设计(`enable_tracking=True`)。
@@ -165,7 +165,7 @@ graph LR
 有了 N 条轨迹的预测框和 M 个新检测框,关联 = 在 N×M 的**代价矩阵**上求**最小代价二分匹配**。匈牙利算法 (Kuhn-Munkres) 在 $O(n^3)$ 内给出全局最优解。
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph 代价矩阵 N×M
         direction LR
         C["cost[i,j] = 轨迹i 与 检测j 的不相似度"]
@@ -324,7 +324,7 @@ graph LR
     D --> E["create_tracker(...).update()"]
     E --> F["带 tracker_id 的 Detections"]
     F --> G[Annotator 渲染]
-    style E fill:#e1f5fe
+    style E fill:#29b6f6
 ```
 
 完整 API、kwargs 标准化映射、与 pipeline 的集成见 [API · Tracking](../../api/tracking.md)。

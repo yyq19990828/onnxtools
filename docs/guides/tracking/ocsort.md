@@ -23,8 +23,8 @@ graph LR
         O1["遮挡期"] --> O2["记住 last_observation"]
         O2 --> O3["重现时用真实观测关联(OCR)<br/>并回溯重修轨迹(ORU)"]
     end
-    style E3 fill:#ffcdd2
-    style O3 fill:#c8e6c9
+    style E3 fill:#ef5350,color:#fff
+    style O3 fill:#66bb6a,color:#fff
 ```
 
 ## 2. 三件套:OCM / OCR / ORU
@@ -48,7 +48,7 @@ graph TD
     VEL --> COS["cos 夹角一致性"]
     DIR --> COS
     COS --> COST["代价 = −(IoU + inertia × 方向一致性)"]
-    style COST fill:#e1f5fe
+    style COST fill:#29b6f6
 ```
 
 对应仓库 `_associate`:
@@ -155,8 +155,8 @@ graph TD
     Q -->|"行人/街景/拥挤<br/>近线性运动"| BT["ByteTrack<br/>(关联低分框,救遮挡)"]
     Q -->|"快速/非线性运动<br/>急转/舞蹈/赛事"| OC["OC-SORT<br/>(运动方向一致性 + 观测恢复)"]
     Q -->|"外观可辨且想更稳"| MORE["→ BoT-SORT / StrongSORT<br/>(加 ReID)"]
-    style BT fill:#bbdefb
-    style OC fill:#c8e6c9
+    style BT fill:#42a5f5
+    style OC fill:#66bb6a,color:#fff
 ```
 
 ## 参考文献

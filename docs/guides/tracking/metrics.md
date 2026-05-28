@@ -17,7 +17,7 @@ graph TD
     A --> A2["MOTP"]
     B --> B1["IDF1 / IDP / IDR"]
     C --> C1["HOTA = √(DetA·AssA)"]
-    style C fill:#c8e6c9
+    style C fill:#66bb6a,color:#fff
 ```
 
 **演进逻辑**:MOTA 偏检测、对 ID 不敏感 → IDF1 补上身份视角但偏关联 → HOTA 把检测与关联**显式拆开再几何平均**,一个数兼顾两面,成为今日论文标配。
@@ -34,10 +34,10 @@ graph TD
         PRED["预测框(没 GT 对上)"] --> FP["❌ FP 误检"]
         SW["同一 GT 的 ID 变了"] --> IDSW["🔄 IDSW 身份切换"]
     end
-    style TP fill:#c8e6c9
-    style FN fill:#ffcdd2
-    style FP fill:#ffcdd2
-    style IDSW fill:#ffe0b2
+    style TP fill:#66bb6a,color:#fff
+    style FN fill:#ef5350,color:#fff
+    style FP fill:#ef5350,color:#fff
+    style IDSW fill:#fb8c00,color:#fff
 ```
 
 - **TP**:预测框与 GT 框匹配成功(通常 IoU ≥ 0.5)。
@@ -61,8 +61,8 @@ graph LR
     MOTA["MOTA"] --> FP["FP 误检"]
     MOTA --> FN["FN 漏检 ← 通常占绝大部分"]
     MOTA --> IDSW["IDSW ← 权重很小"]
-    style FN fill:#ffcdd2
-    style IDSW fill:#eeeeee
+    style FN fill:#ef5350,color:#fff
+    style IDSW fill:#78909c,color:#fff
 ```
 
 !!! warning "经典陷阱"
@@ -109,8 +109,8 @@ graph TD
     HOTA["HOTA = √(DetA · AssA)"]
     HOTA --> DETA["DetA 检测准确度<br/>= |TP| / (|TP|+|FN|+|FP|)<br/>(框检测得好不好)"]
     HOTA --> ASSA["AssA 关联准确度<br/>= 匹配轨迹对的关联 IoU 均值<br/>(ID 跟得稳不稳)"]
-    style DETA fill:#bbdefb
-    style ASSA fill:#c8e6c9
+    style DETA fill:#42a5f5
+    style ASSA fill:#66bb6a,color:#fff
 ```
 
 - **DetA(Detection Accuracy)** $= \dfrac{|\text{TP}|}{|\text{TP}|+|\text{FN}|+|\text{FP}|}$ —— 检测层面的 Jaccard。
@@ -145,12 +145,12 @@ quadrantChart
 ```mermaid
 graph LR
     subgraph 一条 GT 轨迹的覆盖率
-        A["覆盖 ≥80% → 计入 MT"] 
+        A["覆盖 ≥80% → 计入 MT"]
         B["覆盖 20%~80% → Partially Tracked"]
         C["覆盖 ≤20% → 计入 ML"]
     end
-    style A fill:#c8e6c9
-    style C fill:#ffcdd2
+    style A fill:#66bb6a,color:#fff
+    style C fill:#ef5350,color:#fff
 ```
 
 ## 7. 速查表:该看哪个指标
@@ -169,7 +169,7 @@ flowchart TD
     Q -->|综合、发论文| HOTA["报 HOTA(并附 DetA/AssA)"]
     Q -->|强调身份一致性| IDF1["报 IDF1"]
     Q -->|强调检测完整性| MOTA["报 MOTA + MT/ML"]
-    style HOTA fill:#c8e6c9
+    style HOTA fill:#66bb6a,color:#fff
 ```
 
 ## 8. 在本仓库里如何评测

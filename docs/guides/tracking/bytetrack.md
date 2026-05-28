@@ -24,8 +24,8 @@ graph TD
         B2 -->|高分| B3["第一关联"]
         B2 -->|低分| B4["✅ 第二关联<br/>(救回遮挡目标)"]
     end
-    style A4 fill:#ffcdd2
-    style B4 fill:#c8e6c9
+    style A4 fill:#ef5350,color:#fff
+    style B4 fill:#66bb6a,color:#fff
 ```
 
 ## 2. BYTE 关联:高低分两级匹配
@@ -53,9 +53,9 @@ flowchart TD
     S3 -->|未匹配 unconfirmed| RM["Removed"]
     S3 -->|高分检测仍剩余 且 score>new_track_thresh| NEW["新建 STrack(New)"]
 
-    style S1 fill:#e1f5fe
-    style S2 fill:#fff9c4
-    style S3 fill:#f3e5f5
+    style S1 fill:#29b6f6
+    style S2 fill:#fdd835
+    style S3 fill:#ab47bc,color:#fff
 ```
 
 ### 三个阶段的设计动机
@@ -189,7 +189,7 @@ tracker = create_tracker("bytetrack_native", track_buffer=60, frame_rate=30, cla
 graph LR
     A["ByteTrack 强项<br/>行人/街景/拥挤(MOT17/20)"] -.弱项.-> B["非线性运动<br/>(DanceTrack/SportsMOT)"]
     B --> C["→ OC-SORT 观测中心化"]
-    style C fill:#c8e6c9
+    style C fill:#66bb6a,color:#fff
 ```
 
 ## 参考文献

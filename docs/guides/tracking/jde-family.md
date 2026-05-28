@@ -22,8 +22,8 @@ graph TD
         N2 --> B2["框(检测头)"]
         N2 --> F2["外观特征(嵌入头)"]
     end
-    style R1 fill:#ffcdd2
-    style N2 fill:#c8e6c9
+    style R1 fill:#ef5350,color:#fff
+    style N2 fill:#66bb6a,color:#fff
 ```
 
 > SDE = Separate Detection and Embedding;JDE = Joint Detection and Embedding。
@@ -58,7 +58,7 @@ graph TD
     DLA --> B2["ReID 分支<br/>逐像素低维外观特征"]
     B1 --> EQ["两分支同质、等权、并行<br/>(消除 anchor 错位)"]
     B2 --> EQ
-    style EQ fill:#c8e6c9
+    style EQ fill:#66bb6a,color:#fff
 ```
 
 - **Anchor-free**:用 CenterNet 式中心点检测,消除 anchor 与 ReID 的错位;
@@ -100,7 +100,7 @@ graph LR
 graph LR
     JDE["JDE(anchor)"] -->|anchor-free 修正| FAIR["FairMOT"]
     CT["CenterTrack(点+位移)"] -.启发.-> E2E["端到端 query 派<br/>(下一篇)"]
-    style E2E fill:#e1f5fe
+    style E2E fill:#29b6f6
 ```
 
 !!! note "与本仓库的关系"

@@ -27,7 +27,7 @@ graph LR
     D3 --> S3
     D4 --> S4
     S1 --> PLUS["+ StrongSORT++ 后处理<br/>AFLink + GSI"]
-    style PLUS fill:#c8e6c9
+    style PLUS fill:#66bb6a,color:#fff
 ```
 
 ## 2. StrongSORT 的组件升级
@@ -85,8 +85,8 @@ flowchart TD
     RAW --> AFLINK["AFLink 全局拼接碎片"]
     AFLINK --> GSI["GSI 高斯插值补洞"]
     GSI --> OUT["StrongSORT++ 最终轨迹"]
-    style AFLINK fill:#c8e6c9
-    style GSI fill:#c8e6c9
+    style AFLINK fill:#66bb6a,color:#fff
+    style GSI fill:#66bb6a,color:#fff
 ```
 
 ## 5. 性能与局限

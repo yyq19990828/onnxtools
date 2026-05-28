@@ -22,7 +22,7 @@ graph LR
     DEC --> TQ_out["已跟踪目标 → 更新后的 track query"]
     TQ_out -.传到 t+1.-> NEXT["下一帧"]
     NEW -.传到 t+1.-> NEXT
-    style TQ_out fill:#c8e6c9
+    style TQ_out fill:#66bb6a,color:#fff
 ```
 
 - **新目标**:由静态 object query 检出 → 派生新 track query;
@@ -82,7 +82,7 @@ flowchart LR
     DET["预训练 YOLOX 检测器"] --> PROP["高质量提案 anchor"]
     PROP --> MOTR2["MOTR(query 关联)"]
     MOTR2 --> OUT["轨迹"]
-    style PROP fill:#ffe0b2
+    style PROP fill:#fb8c00,color:#fff
 ```
 
 - **指标**:DanceTrack Group Dance Challenge 第一,**DanceTrack HOTA 73.4**;BDD100K SOTA。
@@ -104,7 +104,7 @@ graph LR
     TF["TrackFormer 2022"] --> MOTR["MOTR 2022"]
     MOTR --> MOTR2["MOTRv2 2023<br/>(借力预训练检测器)"]
     MOTR2 --> FRONT["2024-25 前沿<br/>MATR / PuTR(端到端)<br/>MeMoSORT(检测后关联)"]
-    style FRONT fill:#e1f5fe
+    style FRONT fill:#29b6f6
 ```
 
 ## 5. 范式三 vs 范式一:何时用哪个

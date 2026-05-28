@@ -17,7 +17,7 @@ graph TD
     P1 --> OUT["BoT-SORT"]
     P2 --> OUT
     P3 --> OUT
-    style P2 fill:#ffe0b2
+    style P2 fill:#fb8c00,color:#fff
 ```
 
 ## 2. 补丁①:更好的卡尔曼状态向量
@@ -39,7 +39,7 @@ flowchart LR
     KLT --> RANSAC["RANSAC 估计全局仿射变换 A"]
     RANSAC --> WARP["用 A 校正所有轨迹的预测框<br/>(及卡尔曼状态)"]
     WARP --> ASSOC["再做 IoU/ReID 关联"]
-    style RANSAC fill:#e1f5fe
+    style RANSAC fill:#29b6f6
 ```
 
 具体:用金字塔 Lucas-Kanade 光流跟踪背景特征点,RANSAC 拟合全局仿射矩阵,作用到每条轨迹的预测均值与协方差上。这一步对车载/无人机场景几乎是必需的。

@@ -15,8 +15,8 @@ graph TD
     BASE --> HMIOU["+ HMIoU 高度调制 IoU<br/>(弱线索: 框高度)"]
     TCM --> OUT["Hybrid-SORT / Hybrid-SORT-ReID"]
     HMIOU --> OUT
-    style TCM fill:#ffe0b2
-    style HMIOU fill:#ffe0b2
+    style TCM fill:#fb8c00,color:#fff
+    style HMIOU fill:#fb8c00,color:#fff
 ```
 
 ## 2. 弱线索一:TCM 轨迹置信度建模

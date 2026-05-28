@@ -13,9 +13,9 @@ graph TD
     SORT --> BT["ByteTrack 2022<br/>(关联低分框)"]
     SORT --> OC["OC-SORT 2023<br/>(观测中心化)"]
     DEEP --> BOT["BoT-SORT / StrongSORT<br/>(现代化外观)"]
-    style IOU fill:#eeeeee
-    style SORT fill:#fff9c4
-    style DEEP fill:#fff9c4
+    style IOU fill:#78909c,color:#fff
+    style SORT fill:#fdd835
+    style DEEP fill:#fdd835
 ```
 
 ---

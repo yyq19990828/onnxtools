@@ -17,8 +17,8 @@ graph TD
     C1 --> OUT["Deep OC-SORT"]
     C2 --> OUT
     C3 --> OUT
-    style C2 fill:#ffe0b2
-    style C3 fill:#ffe0b2
+    style C2 fill:#fb8c00,color:#fff
+    style C3 fill:#fb8c00,color:#fff
 ```
 
 ## 2. 三个改进
@@ -36,7 +36,7 @@ graph LR
     DET["当前检测"] --> Q{"置信度高 且 未遮挡?"}
     Q -->|是| HIGH["大权重更新外观库"]
     Q -->|否| LOW["小权重 / 几乎不更新<br/>(保护干净记忆)"]
-    style LOW fill:#fff9c4
+    style LOW fill:#fdd835
 ```
 
 ### 2.3 Adaptive Weighting(自适应加权)
@@ -61,7 +61,7 @@ flowchart TD
     S1 -->|未匹配| OCR["OCR: last_observation 恢复"]
     OCR --> UPD["update → ORU 重算速度 + 动态外观更新"]
     UPD --> OUT["输出"]
-    style S1 fill:#e1f5fe
+    style S1 fill:#29b6f6
 ```
 
 底层运动建模(OCM/OCR/ORU)与本仓库 `OCSORT` 一致,Deep OC-SORT 只是在关联代价里叠加了**自适应外观项**,并在 `update` 时按质量更新外观库。
