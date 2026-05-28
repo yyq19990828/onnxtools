@@ -55,7 +55,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format: !!python/name:pymdownx.superfences.fence_div_format
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -102,14 +102,17 @@ nav:
       - 多目标跟踪:
           - 概念总览: guides/tracking/index.md
           - 传统方法 (IoU/SORT/DeepSORT): guides/tracking/traditional-methods.md
-          - ByteTrack: guides/tracking/bytetrack.md
-          - OC-SORT: guides/tracking/ocsort.md
-          - Deep OC-SORT: guides/tracking/deep-ocsort.md
-          - StrongSORT: guides/tracking/strongsort.md
-          - BoT-SORT: guides/tracking/botsort.md
-          - Hybrid-SORT: guides/tracking/hybrid-sort.md
-          - JDE / FairMOT / CenterTrack: guides/tracking/jde-family.md
-          - Transformer MOT: guides/tracking/transformer-mot.md
+          - TbD · 运动主导:
+              - ByteTrack: guides/tracking/bytetrack.md
+              - OC-SORT: guides/tracking/ocsort.md
+          - TbD · 外观增强:
+              - StrongSORT: guides/tracking/strongsort.md
+              - BoT-SORT: guides/tracking/botsort.md
+              - Deep OC-SORT: guides/tracking/deep-ocsort.md
+              - Hybrid-SORT: guides/tracking/hybrid-sort.md
+          - 其他范式:
+              - JDE / FairMOT / CenterTrack: guides/tracking/jde-family.md
+              - Transformer MOT: guides/tracking/transformer-mot.md
           - 评测指标: guides/tracking/metrics.md
   - API 参考:
       - 总览: api/index.md
@@ -125,5 +128,7 @@ nav:
   - 模型支持: models/model_support_list.md
 
 extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - javascripts/mermaid-init.js
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
