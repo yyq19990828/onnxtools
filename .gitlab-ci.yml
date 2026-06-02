@@ -3,8 +3,6 @@ stages:
 
 sync-from-github:
   stage: sync
-  tags:
-    - docker
   image:
     name: alpine/git:latest
     entrypoint: [""]
