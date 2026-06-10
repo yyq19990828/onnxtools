@@ -9,7 +9,10 @@ sync-from-github:
   only:
     - schedules
   script:
-    - git clone --bare https://github.com/yyq19990828/onnxtools.git /tmp/onnxtools-mirror
-    - cd /tmp/onnxtools-mirror
+    # Shell executor — /tmp 持久化, 上次残留会阻挡 clone, 用 mktemp 拿独占目录并退出时清理。
+    - MIRROR_DIR=$(mktemp -d -t onnxtools-mirror.XXXXXX)
+    - trap 'rm -rf "$MIRROR_DIR"' EXIT
+    - git clone --bare https://github.com/yyq19990828/onnxtools.git "$MIRROR_DIR"
+    - cd "$MIRROR_DIR"
     - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --all --force
     - git push "http://yangyiqing:${GITLAB_PAT}@192.168.2.10:82/perception/onnxtools.git" --tags --force
