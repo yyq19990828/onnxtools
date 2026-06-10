@@ -1,0 +1,88 @@
+# Tracker presets — empirically tuned for specific deployment scenarios.
+#
+# Each preset records the tracker algorithm + kwargs that performed best
+# on a representative video, plus the proxy metrics used to choose it.
+# Apply via `create_tracker(algo, **kwargs)` or pass the kwargs to
+# `examples/demo_detect.py` via its --minimum-matching-threshold etc.
+#
+# Metrics are unsupervised (no GT IDs available):
+#   num_ids        — total unique tracker IDs emitted (lower = fewer ID switches)
+#   mean_life      — mean lifetime of an ID, in tracked frames (higher = better)
+#   short_id_ratio — fraction of IDs that live <= 2 frames (lower = fewer fragments)
+#   mean_active    — mean active IDs per frame (sanity check; ~constant if detector is)
+
+intersection_3hz:
+  # 3Hz traffic intersection (固定路端相机, 红绿灯路口).
+  # Source video: 60fps; replay at frame_skip=19 to simulate 3Hz stream.
+  description: |
+    Best preset found via tools/sweep_bytetrack.py on
+    data/R39_Bn_CamW__102_...mp4 (3Hz). Cuts ID inflation from ~6.5x
+    per car to ~4.3x without any model / coordinate-system change.
+  algo: bytetrack_native
+  kwargs:
+    # Detection score gates — match the upstream conf_thres.
+    track_high_thresh: 0.4
+    new_track_thresh: 0.4
+    # First-stage IoU+fuse_score cost cap. 0.95 is much looser than the
+    # 0.8 supervision default — at 3Hz the frame-to-frame box drift is
+    # large, a tight gate produces fragments.
+    match_thresh: 0.95
+    # Lost-track buffer. 120 = ~40s real time (assuming frame_rate=30).
+    # See note below on the frame_rate quirk.
+    track_buffer: 120
+    # ⚠ Quirk: bytetrack.py computes
+    #     buffer_size = int(frame_rate / 30 * track_buffer)
+    # So leaving frame_rate=30 makes track_buffer mean "frames directly".
+    # Setting frame_rate=3 (the real rate) would shrink the buffer 10x
+    # to 12 frames ≈ 4s, which is worse. To express in real-rate terms
+    # use frame_rate=3, track_buffer=1200 — equivalent.
+    frame_rate: 30
+    class_aware: false
+  # Companion settings for the upstream stage (not tracker kwargs):
+  pipeline_hints:
+    conf_thres: 0.4
+    iou_thres: 0.5
+    annotator_preset: tracking
+    # When replaying a 60fps source as 3Hz, skip 19 of every 20 frames.
+    demo_frame_skip: 19
+  # Per-track class voting (suppresses label flicker when the detector
+  # disagrees with itself across frames for the same physical car).
+  class_voting:
+    enabled: true
+    # 1.0 = accumulate forever; <1.0 = exponential decay, recent frames
+    # dominate. At 3Hz, decay=0.95 has a ~13-frame half-life ≈ 4.3 sec —
+    # good if class genuinely changes (e.g. truck releases its trailer);
+    # leave at 1.0 if you trust the per-track class is static.
+    decay: 1.0
+    max_table_size: 4096
+  metrics_at_chosen:
+    video: data/R39_Bn_CamW__102_rss-ai-prd-suz-wt-gpu30_1920X1080_2025-05-14-07-29-59-898.mp4
+    detector: models/rfdetr-20250811.onnx
+    window_frames: 180   # 60s at 3Hz
+    num_ids: 183
+    mean_life: 41.9
+    median_life: 21.0
+    short_id_ratio: 0.038
+    mean_active: 42.6
+  baselines_for_reference:
+    # Same video / detector, alternate configs — kept here so reviewers
+    # can see why this preset was chosen.
+    - label: bytetrack (supervision, defaults)
+      num_ids: 281
+      mean_life: 25.0
+      short_id_ratio: 0.185
+    - label: bytetrack_native (defaults)
+      num_ids: 195
+      mean_life: 32.9
+      short_id_ratio: 0.108
+    - label: ocsort (iou_threshold=0.05, max_age=60)
+      num_ids: 196
+      mean_life: 41.0
+      short_id_ratio: 0.112
+  known_failure_modes:
+    - "ID swap between adjacent lanes when two cars run parallel at similar speed (looser match_thresh trades fragments for swaps)."
+    - "Stage-2 low-score rescue can latch onto a stale Lost track when the detector misses a frame in a dense queue."
+  next_steps_if_insufficient:
+    - "Add ground-plane projection (camera intrinsics + extrinsics) so association runs in metric space; fixes perspective-distorted velocity scales."
+    - "Add lightweight ReID head (StrongSORT / Deep-OCSORT style) for long occlusions where motion-only recovery fails."
+    - "Stabilize the detector before further tracker tuning — flickering boxes dominate residual IDSW."

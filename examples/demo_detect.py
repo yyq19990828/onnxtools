@@ -29,7 +29,24 @@ import supervision as sv
 
 from onnxtools import create_detector, setup_logger
 from onnxtools.tracking import SUPPORTED_TRACKERS, BaseTracker, create_tracker
+from onnxtools.tracking.class_voting import ClassVotingTracker
 from onnxtools.utils.supervision_preset import VisualizationPreset
+
+PRESETS_PATH = os.path.join(os.path.dirname(__file__), "..", "configs", "tracker_presets.yaml")
+
+
+def _load_preset(name: str) -> dict:
+    """Load a named tracker preset from configs/tracker_presets.yaml."""
+    import yaml
+
+    path = os.path.abspath(PRESETS_PATH)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"preset file not found: {path}")
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    if name not in data:
+        raise KeyError(f"preset {name!r} not in {path}; available: {list(data.keys())}")
+    return data[name]
 
 
 def infer_source_type(path: str) -> str:
@@ -73,6 +90,8 @@ class Detector:
         enable_tracking: bool,
         tracker_algo: str,
         tracker_kwargs: dict,
+        class_voting: bool = False,
+        class_voting_decay: float = 1.0,
     ):
         self.detector = create_detector(
             model_type=model_type,
@@ -86,7 +105,13 @@ class Detector:
         self.annotator_pipeline = preset.create_pipeline()
         self.label_type = preset.label_type
 
-        self.tracker: BaseTracker | None = create_tracker(tracker_algo, **tracker_kwargs) if enable_tracking else None
+        if enable_tracking:
+            inner = create_tracker(tracker_algo, **tracker_kwargs)
+            self.tracker: BaseTracker | None = (
+                ClassVotingTracker(inner, decay=class_voting_decay) if class_voting else inner
+            )
+        else:
+            self.tracker = None
 
     def reset_tracker(self) -> None:
         if self.tracker is not None:
@@ -266,6 +291,47 @@ def main(args):
 
         det_config = COCO_CLASSES
 
+    # Apply preset (overrides defaults; explicit CLI flags still win because
+    # argparse already parsed them — but here we don't distinguish, so the
+    # preset overwrites everything wholesale; re-pass flags on CLI to tweak).
+    tracker_kwargs = dict(
+        track_activation_threshold=args.track_activation_threshold,
+        lost_track_buffer=args.lost_track_buffer,
+        minimum_matching_threshold=args.minimum_matching_threshold,
+        frame_rate=args.track_frame_rate,
+    )
+    tracker_algo = args.tracker_algo
+    class_voting = args.class_voting
+    class_voting_decay = args.class_voting_decay
+
+    if args.preset:
+        p = _load_preset(args.preset)
+        logging.info(f"Applying tracker preset: {args.preset}")
+        args.enable_tracking = True
+        tracker_algo = p.get("algo", tracker_algo)
+        # Translate native-kwargs to demo_detect's CLI names. Both name
+        # styles are accepted by the native tracker constructors.
+        k = p.get("kwargs", {})
+        tracker_kwargs = {
+            "track_activation_threshold": k.get("track_high_thresh", tracker_kwargs["track_activation_threshold"]),
+            "lost_track_buffer": k.get("track_buffer", tracker_kwargs["lost_track_buffer"]),
+            "minimum_matching_threshold": k.get("match_thresh", tracker_kwargs["minimum_matching_threshold"]),
+            "frame_rate": k.get("frame_rate", tracker_kwargs["frame_rate"]),
+        }
+        # Native trackers also accept new_track_thresh / class_aware — forward.
+        for extra in ("new_track_thresh", "class_aware", "delta_t", "inertia"):
+            if extra in k:
+                tracker_kwargs[extra] = k[extra]
+        hints = p.get("pipeline_hints", {})
+        args.conf_thres = hints.get("conf_thres", args.conf_thres)
+        args.iou_thres = hints.get("iou_thres", args.iou_thres)
+        args.annotator_preset = hints.get("annotator_preset", args.annotator_preset)
+        args.frame_skip = hints.get("demo_frame_skip", args.frame_skip)
+        cv = p.get("class_voting", {})
+        if cv.get("enabled", False):
+            class_voting = True
+            class_voting_decay = float(cv.get("decay", class_voting_decay))
+
     det = Detector(
         model_type=args.model_type,
         model_path=args.model_path,
@@ -274,13 +340,10 @@ def main(args):
         annotator_preset=args.annotator_preset,
         det_config_arg=det_config,
         enable_tracking=args.enable_tracking,
-        tracker_algo=args.tracker_algo,
-        tracker_kwargs=dict(
-            track_activation_threshold=args.track_activation_threshold,
-            lost_track_buffer=args.lost_track_buffer,
-            minimum_matching_threshold=args.minimum_matching_threshold,
-            frame_rate=args.track_frame_rate,
-        ),
+        tracker_algo=tracker_algo,
+        tracker_kwargs=tracker_kwargs,
+        class_voting=class_voting,
+        class_voting_decay=class_voting_decay,
     )
 
     src = infer_source_type(args.input)
@@ -337,6 +400,26 @@ if __name__ == "__main__":
     parser.add_argument("--lost-track-buffer", type=int, default=30)
     parser.add_argument("--minimum-matching-threshold", type=float, default=0.8)
     parser.add_argument("--track-frame-rate", type=int, default=30)
+
+    parser.add_argument(
+        "--preset",
+        type=str,
+        default=None,
+        help="Named tracker preset from configs/tracker_presets.yaml "
+        "(e.g. 'intersection_3hz'). Applies algo, kwargs, conf_thres, "
+        "annotator_preset, frame_skip, and class_voting.",
+    )
+    parser.add_argument(
+        "--class-voting",
+        action="store_true",
+        help="Stabilise per-track class_id via confidence-weighted majority vote.",
+    )
+    parser.add_argument(
+        "--class-voting-decay",
+        type=float,
+        default=1.0,
+        help="Exponential decay applied to vote weights each frame. 1.0 = no decay.",
+    )
 
     parser.add_argument(
         "--log-level", type=str, default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
