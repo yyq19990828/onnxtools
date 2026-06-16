@@ -11,6 +11,8 @@
 - **模型评估**: `eval.py` - COCO数据集评估主入口
 - **引擎构建**: `build_engine.py` - TensorRT引擎构建工具
 - **性能比较**: `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
+- **清洁同步**: `scripts/rsync_export.sh` - 交互式 rsync 迁移脚本，支持远程服务器，
+  默认排除 git 元数据、缓存和构建产物
 
 ## 外部接口
 
@@ -42,6 +44,12 @@ python tools/compare_onnx_engine.py \
     --engine-path models/rtdetr-2024080100.engine \
     --input-shape 1,3,640,640 \
     --iterations 100
+```
+
+### 清洁同步/迁移
+```bash
+# 交互式选择源目录和本地/远程目标，然后直接同步
+bash tools/scripts/rsync_export.sh
 ```
 
 ### OCR数据集评估

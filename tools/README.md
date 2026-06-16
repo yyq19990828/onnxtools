@@ -19,7 +19,8 @@ tools/
 ├── scripts/                   # Shell 脚本
 │   ├── build.sh               # ONNX 优化 + TensorRT 引擎构建
 │   ├── eval.sh                # 模型评估快捷脚本
-│   └── third_party.sh         # 第三方库初始化
+│   ├── third_party.sh         # 第三方库初始化
+│   └── rsync_export.sh        # 交互式清洁同步/迁移脚本
 ├── debug/                     # Polygraphy 调试脚本
 │   ├── 01_debug_subonnx_fp16.sh
 │   ├── 01_debug_subonnx_fp32.sh
@@ -110,4 +111,12 @@ python tools/modify_onnx_io_names.py \
 快速配置项目所需的第三方子模块（如 Polygraphy, Ultralytics 等）。
 ```bash
 bash tools/scripts/third_party.sh
+```
+
+### 清洁同步/迁移
+使用 rsync 交互式同步项目目录到本地目录或远程服务器，默认排除 `.git`、缓存、
+虚拟环境、构建产物、运行输出、模型和数据目录。远程模式会询问 Host/IP、用户名、
+SSH 端口、私钥路径和目标目录，自动创建远程目录，然后直接执行同步。
+```bash
+bash tools/scripts/rsync_export.sh
 ```
