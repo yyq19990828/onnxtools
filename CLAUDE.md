@@ -45,7 +45,7 @@ Invariants AI must understand before modifying code in this repo. Implementation
 
 ### BaseORT Template Method
 - All inference classes inherit from [BaseORT](onnxtools/infer_onnx/onnx_base.py). `__call__` is provided by the base — **subclasses must not override it**.
-- Subclasses **must** implement two abstract methods: `_preprocess_static(img, **kwargs)` and `_postprocess(outputs, **kwargs)`.
+- Subclasses **must** implement two static abstract methods (`@staticmethod @abstractmethod`): `preprocess(image, input_shape, **kwargs) -> tuple` and `postprocess(prediction, input_shape, conf_thres, **kwargs) -> list[np.ndarray]`.
 - When unimplemented, the base raises `NotImplementedError` with the class name. Do not silently fall back.
 
 ### Factory Function Is the Only Entry Point
@@ -70,7 +70,7 @@ Invariants AI must understand before modifying code in this repo. Implementation
 
 ### Adding a New Model Architecture
 
-1. **Create the inference class** at `onnxtools/infer_onnx/onnx_<name>.py`, inheriting `BaseORT`. Implement `_preprocess_static` and `_postprocess` returning a `Result`.
+1. **Create the inference class** at `onnxtools/infer_onnx/onnx_<name>.py`, inheriting `BaseORT`. Implement static `preprocess` and `postprocess` (the latter returns `list[np.ndarray]`; the base wraps it into a `Result`).
 2. **Register in the factory**: edit `create_detector` in [onnxtools/__init__.py](onnxtools/__init__.py), adding a new `model_type` branch.
 3. **Add tests**: `tests/unit/test_<name>.py` + `tests/integration/test_<name>_pipeline.py`.
 
