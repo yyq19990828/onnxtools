@@ -4,227 +4,100 @@
 
 ## 模块职责
 
-提供模型评估、TensorRT引擎构建、性能分析和调试工具，支持模型优化、精度验证和性能基准测试。
+模型评估（COCO / OCR / 分类 / MOT）、TensorRT 引擎构建、ONNX vs TRT 性能对比，以及 Polygraphy 子图调试。引擎构建/对比依赖 `tensorrt` + `polygraphy`（可选 `[trt]` extra）。
 
-## 入口和启动
+## 脚本清单
 
-- **模型评估**: `eval.py` - COCO数据集评估主入口
-- **引擎构建**: `build_engine.py` - TensorRT引擎构建工具
-- **性能比较**: `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
-- **清洁同步**: `scripts/rsync_export.sh` - 交互式 rsync 迁移脚本，支持远程服务器，
-  默认排除 git 元数据、缓存和构建产物
+### Python 工具
+- `eval.py` — COCO 数据集检测评估主入口（mAP/mAP50/75）。
+- `eval_ocr.py` — OCR 数据集评估，支持深度错误分析与 JSON 导出。
+- `eval_cls.py` — 颜色/层数分类模型评估。
+- `eval_mot.py` — MOT 跟踪评估（HOTA/MOTA/IDF1，MOTChallenge 格式）。
+- `build_engine.py` — ONNX 转 TensorRT 引擎构建。
+- `compare_onnx_engine.py` — ONNX vs TensorRT 延迟/吞吐/精度对比。
+- `draw_engine.py` — TensorRT 引擎结构可视化。
+- `layer_statistics.py` — 模型层统计分析。
+- `tensor_selector.py` — 张量选择与分析。
+- `modify_onnx_io_names.py` — ONNX 输入/输出张量重命名。
+- `modify_rfdetr.py` — RF-DETR ONNX 结构调整。
+- `network_postprocess.py` — 网络后处理分析。
 
-## 外部接口
+### Shell 脚本 (scripts/)
+- `scripts/build.sh` — 批量引擎构建。
+- `scripts/eval.sh` — 批量评估。
+- `scripts/third_party.sh` — 第三方库初始化。
+- `scripts/rsync_export.sh` — 交互式 rsync 迁移（本地/远程，默认排除 git 元数据、缓存、构建产物）。
 
-### 模型评估
+### 调试脚本 (debug/)
+- `debug/01_debug_subonnx_fp16.sh` / `debug/01_debug_subonnx_fp32.sh` / `debug/02_debug_subonnx_fp32.sh` — Polygraphy 子图精度调试。
+- `debug/debug_fp16.sh` — FP16 精度调试。
+- `debug/data_loader.py.template` — 校准/调试数据加载器模板。
+
+## 示例命令
+
+### COCO 检测评估
 ```bash
-# COCO数据集评估
 python tools/eval.py \
-    --model-path models/rtdetr-2024080100.onnx \
-    --model-type rtdetr \
-    --dataset-path /path/to/coco \
-    --annotations-path /path/to/annotations.json
+    --model-path models/rtdetr-2024080100.onnx --model-type rtdetr \
+    --dataset-path /path/to/coco --annotations-path /path/to/annotations.json
 ```
 
-### TensorRT引擎构建
+### OCR 评估
 ```bash
-# 构建TensorRT引擎
-python tools/build_engine.py \
-    --onnx-path models/rtdetr-2024080100.onnx \
-    --engine-path models/rtdetr-2024080100.engine \
-    --precision fp16 \
-    --max-batch-size 8
+python tools/eval_ocr.py \
+    --label-file data/val.txt --dataset-base data/ \
+    --ocr-model models/ocr.onnx --config configs/plate.yaml \
+    --conf-threshold 0.5
+# 错误分析: --error-analysis report.json ；JSON 导出: --output-format json
 ```
 
-### 性能对比分析
+### 分类评估
 ```bash
-# ONNX vs TensorRT性能对比
-python tools/compare_onnx_engine.py \
-    --onnx-path models/rtdetr-2024080100.onnx \
-    --engine-path models/rtdetr-2024080100.engine \
-    --input-shape 1,3,640,640 \
-    --iterations 100
-```
-
-### 清洁同步/迁移
-```bash
-# 交互式选择源目录和本地/远程目标，然后直接同步
-bash tools/scripts/rsync_export.sh
+python tools/eval_cls.py --model models/color_layer.onnx --config configs/plate.yaml --dataset-base data/cls/
 ```
 
 ### MOT 跟踪评估
 ```bash
-# 用 GT 框作为理想检测，现场跑某跟踪后端并评估（对比关联质量，无需检测器）
-python tools/eval_mot.py \
-    --gt-root data/track/MOT_dataset \
-    --tracker bytetrack_native \
-    --frame-rate 5
+# 模式 A: 用 GT 框作理想检测，现场跑某跟踪后端评估关联质量（无需检测器）
+python tools/eval_mot.py --gt-root data/track/MOT_dataset --tracker bytetrack_native --frame-rate 5
 
-# 评估已有跟踪结果目录（每序列一个 <seq>.txt，MOTChallenge result 格式）
-python tools/eval_mot.py \
-    --gt-root data/track/MOT_dataset \
-    --predictions runs/tracker_out \
-    --metrics hota identity \
-    --output runs/mot_eval/result.json
+# 模式 B: 评估已有跟踪结果目录（每序列 <seq>.txt，MOTChallenge 格式）
+python tools/eval_mot.py --gt-root data/track/MOT_dataset \
+    --predictions runs/tracker_out --metrics hota identity --output runs/mot_eval/result.json
 ```
 
-### OCR数据集评估
+### TensorRT 引擎构建
 ```bash
-# OCR模型评估（表格输出）
-python tools/eval_ocr.py \
-    --label-file data/ocr_rec_dataset_examples/val.txt \
-    --dataset-base data/ocr_rec_dataset_examples \
-    --ocr-model models/ocr.onnx \
-    --config configs/plate.yaml \
-    --conf-threshold 0.5
-
-# 深度错误分析
-python tools/eval_ocr.py \
-    --label-file data/val.txt \
-    --dataset-base data/ \
-    --ocr-model models/ocr.onnx \
-    --config configs/plate.yaml \
-    --error-analysis error_report.json
-
-# JSON格式导出用于模型比较
-python tools/eval_ocr.py \
-    --label-file data/val.txt \
-    --dataset-base data/ \
-    --ocr-model models/ocr_v2.onnx \
-    --config configs/plate.yaml \
-    --output-format json > results_v2.json
+python tools/build_engine.py \
+    --onnx-path models/rtdetr-2024080100.onnx --engine-path models/rtdetr-2024080100.engine \
+    --precision fp16 --max-batch-size 8
 ```
 
-## 关键依赖和配置
+### ONNX vs TensorRT 性能对比
+```bash
+python tools/compare_onnx_engine.py \
+    --onnx-path models/x.onnx --engine-path models/x.engine \
+    --input-shape 1,3,640,640 --iterations 100
+```
 
-### 核心依赖
-- **tensorrt**: TensorRT引擎构建和推理
-- **polygraphy**: NVIDIA模型调试和优化工具
-- **onnx**: ONNX模型操作和验证
-- **matplotlib**: 性能可视化和图表绘制
+### 引擎结构可视化
+```bash
+python tools/draw_engine.py --engine-path models/x.engine
+```
 
-### 调试脚本依赖
-- **bash**: Shell脚本执行环境
-- **nvidia-ml-py**: GPU监控和资源管理
-
-### 配置文件
-- `debug/` 目录下的调试配置脚本
-- Polygraphy配置模板文件
+### 清洁同步/迁移
+```bash
+bash tools/scripts/rsync_export.sh   # 交互式选源目录 + 本地/远程目标
+```
 
 ## 数据模型
 
-### 评估结果格式
-```python
-evaluation_metrics = {
-    'mAP': float,                    # 平均精度
-    'mAP_50': float,                 # IoU@0.5的mAP
-    'mAP_75': float,                 # IoU@0.75的mAP
-    'mAP_small': float,              # 小目标mAP
-    'mAP_medium': float,             # 中等目标mAP
-    'mAP_large': float,              # 大目标mAP
-    'per_class_ap': dict,            # 每类别AP
-    'inference_time': float,         # 平均推理时间(ms)
-    'total_images': int              # 总测试图像数
-}
-```
+- 检测评估输出: `mAP / mAP_50 / mAP_75 / mAP_{small,medium,large} / per_class_ap / inference_time / total_images`。
+- 性能对比输出: `onnx_runtime` 与 `tensorrt_runtime` 各含 `mean_latency / std_latency / throughput / memory_usage`，外加 `speedup_ratio`。
+- 引擎构建配置: `precision('fp32'|'fp16'|'int8') / max_batch_size / max_workspace_size / input_shapes / optimization_level`。
 
-### 性能基准结果
-```python
-benchmark_result = {
-    'onnx_runtime': {
-        'mean_latency': float,       # 平均延迟(ms)
-        'std_latency': float,        # 延迟标准差
-        'throughput': float,         # 吞吐量(FPS)
-        'memory_usage': float        # 内存使用(MB)
-    },
-    'tensorrt_runtime': {
-        'mean_latency': float,
-        'std_latency': float,
-        'throughput': float,
-        'memory_usage': float
-    },
-    'speedup_ratio': float           # 加速比
-}
-```
+## FAQ
 
-### 引擎构建配置
-```python
-engine_config = {
-    'precision': str,                # 'fp32', 'fp16', 'int8'
-    'max_batch_size': int,           # 最大批次大小
-    'max_workspace_size': int,       # 最大工作空间(bytes)
-    'input_shapes': dict,            # 输入形状范围
-    'optimization_level': int        # 优化级别 0-5
-}
-```
-
-## 测试和质量
-
-### 测试覆盖范围
-- [ ] 多模型架构评估兼容性
-- [ ] TensorRT引擎构建成功率
-- [ ] 性能基准测试稳定性
-- [ ] 调试脚本执行正确性
-
-### 性能基准
-- [ ] COCO评估完成时间 (< 30min for val2017)
-- [ ] TensorRT引擎构建时间 (< 10min for typical model)
-- [ ] 性能对比测试精度 (误差 < 5%)
-
-### 质量指标
-- [ ] 评估结果准确性验证
-- [ ] 引擎精度损失监控 (< 1% mAP drop)
-- [ ] 调试工具可靠性
-
-## 常见问题 (FAQ)
-
-### Q: TensorRT引擎构建失败怎么解决？
-A: 1) 检查ONNX模型兼容性; 2) 验证TensorRT版本匹配; 3) 调整工作空间大小; 4) 使用Polygraphy调试
-
-### Q: 模型评估精度异常怎么排查？
-A: 1) 验证数据集标注格式; 2) 检查预处理一致性; 3) 确认类别映射正确; 4) 对比少量样本的推理结果
-
-### Q: 如何使用Polygraphy进行深度调试？
-A: 参考 `../docs/polygraphy使用指南/` 目录下的详细文档和示例
-
-### Q: 性能对比结果不稳定怎么办？
-A: 1) 增加测试迭代次数; 2) 确保GPU处于稳定状态; 3) 关闭其他GPU进程; 4) 使用固定的输入数据
-
-## 相关文件列表
-
-### 核心工具脚本
-- `eval.py` - COCO数据集模型评估主程序
-- **`eval_ocr.py`** - OCR数据集评估命令行工具 (支持深度错误分析)
-- `eval_cls.py` - 分类模型评估命令行工具
-- **`eval_mot.py`** - MOT 跟踪评估命令行工具 (HOTA/MOTA/IDF1, MOTChallenge 格式)
-- `build_engine.py` - TensorRT引擎构建工具
-- `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
-- `modify_onnx_io_names.py` - ONNX模型输入输出重命名工具
-- `network_postprocess.py` - 网络后处理分析工具
-
-### 可视化和分析
-- `draw_engine.py` - TensorRT引擎结构可视化
-- `layer_statistics.py` - 模型层统计分析
-- `tensor_selector.py` - 张量选择和分析工具
-
-### Shell脚本 (scripts/)
-- `scripts/build.sh` - 批量构建脚本
-- `scripts/eval.sh` - 批量评估脚本
-- `scripts/third_party.sh` - 第三方库初始化脚本
-
-### 调试脚本 (debug/)
-- `debug/01_debug_subonnx_fp16.sh` - FP16子图调试
-- `debug/01_debug_subonnx_fp32.sh` - FP32子图调试
-- `debug/02_debug_subonnx_fp32.sh` - 高级FP32调试
-- `debug/debug_fp16.sh` - FP16精度调试
-
-### 模板和配置
-- `debug/data_loader.py.template` - 数据加载器模板
-
-## 变更日志 (Changelog)
-
-**2025-09-15 20:01:23 CST** - 初始化调试工具模块文档，建立模型评估和优化工具规范
-
----
-
-*模块路径: `/home/tyjt/桌面/onnx_vehicle_plate_recognition/tools/`*
+- **TRT 引擎构建失败**：检查 ONNX 兼容性与 TensorRT 版本，调大工作空间，用 Polygraphy 定位。
+- **评估精度异常**：核对标注格式、预处理一致性、类别映射；对比少量样本推理结果。
+- **Polygraphy 深度调试**：见 `../docs/polygraphy使用指南/`。
