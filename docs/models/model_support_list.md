@@ -47,7 +47,7 @@ YoloORT(
 数值范围: [0.0, 1.0]  # 归一化RGB
 颜色空间: RGB (从BGR转换)
 
-# 输出 (基于 _postprocess 自适应处理)
+# 输出 (基于 postprocess 自适应处理)
 输出形状: [B, N, 4+C] 或 [B, 4+C, N]  # 自动检测并转换
 坐标格式: [x_center, y_center, width, height]
 类别输出: [conf1, ..., confC]  # 每类独立置信度
@@ -57,7 +57,7 @@ YoloORT(
 #### 前处理流程
 
 ```python
-# 源自 onnx_yolo.py::_preprocess_static()
+# 源自 onnx_yolo.py::preprocess()
 # Letterbox: 保持宽高比 + padding
 letterbox = UltralyticsLetterBox(new_shape=(640, 640))
 input_tensor, scale, original_shape, ratio_pad = letterbox(image)
@@ -66,7 +66,7 @@ input_tensor, scale, original_shape, ratio_pad = letterbox(image)
 #### 后处理流程
 
 ```python
-# 源自 onnx_yolo.py::_postprocess()
+# 源自 onnx_yolo.py::postprocess()
 # 1. 格式自适应: [B,C,N] -> [B,N,C]
 # 2. 坐标归一化检测并转换为像素坐标
 # 3. NMS后处理 (multi_label, has_objectness)
@@ -113,7 +113,7 @@ RtdetrORT(
 #### 前处理流程
 
 ```python
-# 源自 onnx_rtdetr.py::_preprocess_static()
+# 源自 onnx_rtdetr.py::preprocess()
 # 直接Resize (不保持宽高比)
 resized = cv2.resize(image, (640, 640), interpolation=cv2.INTER_LINEAR)
 rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
@@ -124,7 +124,7 @@ tensor = np.transpose(normalized, (2, 0, 1))[np.newaxis, ...]
 #### 后处理流程
 
 ```python
-# 源自 onnx_rtdetr.py::_postprocess()
+# 源自 onnx_rtdetr.py::postprocess()
 # 1. 分离bbox和scores
 # 2. 智能归一化 (_smart_normalize_scores)
 # 3. bbox缩放: 归一化坐标 * 640 -> 像素坐标
@@ -170,7 +170,7 @@ RfdetrORT(
 #### 前处理流程
 
 ```python
-# 源自 onnx_rfdetr.py::_preprocess_static()
+# 源自 onnx_rfdetr.py::preprocess()
 resized = cv2.resize(image, (576, 576))
 rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
 normalized = rgb.astype(np.float32) / 255.0
@@ -184,7 +184,7 @@ normalized = (normalized - imagenet_mean) / imagenet_std
 #### 后处理流程
 
 ```python
-# 源自 onnx_rfdetr.py::_postprocess()
+# 源自 onnx_rfdetr.py::postprocess()
 # 1. 应用sigmoid激活
 # 2. TopK选择 (展平所有query×classes, 选top 300)
 # 3. 坐标转换: cxcywh -> xyxy
