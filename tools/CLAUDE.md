@@ -52,6 +52,22 @@ python tools/compare_onnx_engine.py \
 bash tools/scripts/rsync_export.sh
 ```
 
+### MOT 跟踪评估
+```bash
+# 用 GT 框作为理想检测，现场跑某跟踪后端并评估（对比关联质量，无需检测器）
+python tools/eval_mot.py \
+    --gt-root data/track/MOT_dataset \
+    --tracker bytetrack_native \
+    --frame-rate 5
+
+# 评估已有跟踪结果目录（每序列一个 <seq>.txt，MOTChallenge result 格式）
+python tools/eval_mot.py \
+    --gt-root data/track/MOT_dataset \
+    --predictions runs/tracker_out \
+    --metrics hota identity \
+    --output runs/mot_eval/result.json
+```
+
 ### OCR数据集评估
 ```bash
 # OCR模型评估（表格输出）
@@ -180,6 +196,7 @@ A: 1) 增加测试迭代次数; 2) 确保GPU处于稳定状态; 3) 关闭其他G
 - `eval.py` - COCO数据集模型评估主程序
 - **`eval_ocr.py`** - OCR数据集评估命令行工具 (支持深度错误分析)
 - `eval_cls.py` - 分类模型评估命令行工具
+- **`eval_mot.py`** - MOT 跟踪评估命令行工具 (HOTA/MOTA/IDF1, MOTChallenge 格式)
 - `build_engine.py` - TensorRT引擎构建工具
 - `compare_onnx_engine.py` - ONNX vs TensorRT性能对比
 - `modify_onnx_io_names.py` - ONNX模型输入输出重命名工具

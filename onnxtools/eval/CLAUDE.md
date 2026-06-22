@@ -4,7 +4,12 @@
 
 ## 模块职责
 
-提供COCO格式检测数据集评估和OCR数据集评估功能,支持mAP计算、编辑距离指标、置信度过滤和多种输出格式(表格/JSON)。
+提供COCO格式检测数据集评估、OCR数据集评估和 MOT(多目标跟踪)评估功能,支持mAP计算、编辑距离指标、HOTA/MOTA/IDF1 跟踪指标、置信度过滤和多种输出格式(表格/JSON)。
+
+> **惰性加载**: `eval/__init__.py` 采用 PEP 562 `__getattr__` 按需导入。检测/OCR/分类
+> 评估器依赖 ONNX 推理栈;MOT 评估器(`MOTEvaluator`)仅依赖 numpy + motmetrics/trackeval
+> (`[mot]` extra),故纯 `[tracking]`/`[mot]` 安装也能 `from onnxtools.eval import MOTEvaluator`,
+> 不触发 `onnxruntime` 导入。
 
 ## 入口和启动
 
@@ -155,13 +160,62 @@ def load_label_file(label_file: str, dataset_base_path: str) -> List[Tuple[str, 
     pass
 ```
 
+### 3. MOTEvaluator - MOT 跟踪评估器
+
+MOTChallenge 格式跟踪评估,用两套现成库出指标:**motmetrics**(CLEAR-MOT/IDF1)+
+**TrackEval**(HOTA)。两库惰性导入、缺失时优雅降级(只装其一也能跑对应指标子集)。
+
+```python
+from onnxtools.eval import MOTEvaluator, run_tracker_on_gt
+
+ev = MOTEvaluator("data/track/MOT_dataset")        # 读 seqmap/seqinfo/gt.txt
+
+# 来源 A: 用 GT 框作为理想检测,现场跑某跟踪后端 → 度量纯关联质量(无需检测器)
+preds = run_tracker_on_gt("data/track/MOT_dataset", "bytetrack_native", frame_rate=5)
+
+# 来源 B: 已有跟踪结果目录(每序列一个 <seq>.txt,MOTChallenge result 格式)
+#   preds = "runs/tracker_out"
+# 来源 C: 内存 dict {seq: {frame: ndarray(N,7)}} 或 {seq: MOTSequence}
+
+result = ev.evaluate(
+    preds,
+    iou_threshold=0.5,                 # CLEAR/Identity 匹配阈值(HOTA 不受影响)
+    metrics=("clear", "identity", "hota"),
+    classes=None,                      # None=池化所有类别(默认);[1] 只评 pedestrian
+    conf_threshold=0.0,                # 过滤低分预测框
+)
+print(result.summary_table())          # 等宽表格:每序列 + OVERALL
+result.overall["HOTA"]                 # 标量(0~100)
+result.to_dict()                       # 可 JSON 序列化(含 OVERALL)
+```
+
+**数据格式**: 标准 MOTChallenge,见 `data/track/MOT_dataset/README.md`。gt.txt 9 列
+`frame,id,x,y,w,h,conf,class,vis`;result 文件无 class 列(第 8 列起为 -1 占位),故文件
+来源的预测一律池化评估,需按类别评估时用内存 dict 形态传入。
+
+**指标语义**: 百分比型指标(HOTA/MOTA/IDF1/...)以 `[0,100]` 存放;`MOTP` 已转为平均
+IoU 重叠%(=`(1-motmetrics.motp)*100`,越大越好);计数型(IDsw/FP/FN/Frag/MT/ML/GT_IDs)
+为整数。
+
+**关键实现**:
+- IoU 距离矩阵自算后喂给 `mm.MOTAccumulator`,**绕过 motmetrics 的 `np.asfarray`**
+  (该函数在 NumPy 2.0 已移除,本仓库用 numpy≥2.2.6)。
+- HOTA 直接构造 TrackEval `eval_sequence` 的 data dict(连续 0 基 id + 逐帧 IoU 相似度),
+  **绕过其文件式数据集机制**,跨序列用 `combine_sequences` 聚合。
+- motmetrics 的计时日志(`partials: x seconds`)在评估期间被临时抬高 root logger 级别屏蔽。
+
+CLI: `python tools/eval_mot.py --gt-root <dir> (--tracker <algo> | --predictions <dir>)`。
+
 ## 模块结构
 
 ```
 onnxtools/eval/
-├── __init__.py           # 导出DatasetEvaluator, OCRDatasetEvaluator, SampleEvaluation
-├── eval_coco.py          # COCO/YOLO数据集评估器
-└── eval_ocr.py           # OCR数据集评估器
+├── __init__.py           # PEP 562 惰性导出全部评估器
+├── eval_coco.py          # COCO/YOLO数据集评估器 (DetDatasetEvaluator)
+├── eval_ocr.py           # OCR数据集评估器 (OCRDatasetEvaluator)
+├── eval_cls.py           # 分类数据集评估器 (ClsDatasetEvaluator)
+├── mot_data.py           # MOTChallenge 格式解析层 (load_gt/load_predictions/write_mot_file)
+└── eval_mot.py           # MOT 评估器 (MOTEvaluator/MOTResult/run_tracker_on_gt)
 ```
 
 ## 关键依赖和配置
@@ -421,6 +475,16 @@ for sample in results['per_sample_results'][:5]:
 ```
 
 ## 变更日志 (Changelog)
+
+**2026-06-22** - 新增 MOT 跟踪评估
+- ✅ 新增 `mot_data.py`:MOTChallenge 格式解析(seqinfo/seqmap/classes/gt.txt/result)
+- ✅ 新增 `eval_mot.py`:`MOTEvaluator`(motmetrics CLEAR/IDF1 + trackeval HOTA)、
+  `MOTResult`、`run_tracker_on_gt`(GT 框喂跟踪器度量关联质量)
+- ✅ 两套评估库惰性导入、缺失优雅降级;绕过 motmetrics 的 NumPy2.0 不兼容与
+  TrackEval 的文件式数据集机制
+- ✅ `eval/__init__.py` 改 PEP 562 惰性加载,MOT 评估免 ONNX 导入
+- ✅ `pyproject.toml` 新增 `[mot]` 可选依赖组;`tools/eval_mot.py` CLI
+- ✅ `tests/unit/test_eval_mot.py` 20 个单元测试(解析/几何/指标/缺库降级)
 
 **2025-11-07** - 创建评估子模块文档
 - 初始化完整的eval子模块文档

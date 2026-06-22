@@ -37,6 +37,9 @@ _LAZY_EXPORTS = {
     "ClsDatasetEvaluator": ("onnxtools.eval", "ClsDatasetEvaluator"),
     "ClsSampleEvaluation": ("onnxtools.eval", "ClsSampleEvaluation"),
     "BranchConfig": ("onnxtools.eval", "BranchConfig"),
+    "MOTEvaluator": ("onnxtools.eval", "MOTEvaluator"),
+    "MOTResult": ("onnxtools.eval", "MOTResult"),
+    "run_tracker_on_gt": ("onnxtools.eval", "run_tracker_on_gt"),
     # Utilities
     "setup_logger": ("onnxtools.utils", "setup_logger"),
     # Constants
@@ -137,6 +140,9 @@ __all__ = [
     "ClsDatasetEvaluator",
     "ClsSampleEvaluation",
     "BranchConfig",
+    "MOTEvaluator",
+    "MOTResult",
+    "run_tracker_on_gt",
     # Utilities
     "setup_logger",
     # Constants

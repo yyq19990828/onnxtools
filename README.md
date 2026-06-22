@@ -43,6 +43,14 @@ uv pip install -e ".[tracking]"
 uv pip install -e ".[tracking-fast]"
 ```
 
+### MOT 评估安装
+
+评估 MOTChallenge 格式跟踪结果（HOTA / MOTA / IDF1）需要额外的评估库，同样无需 ONNX：
+
+```bash
+uv pip install -e ".[mot]"   # motmetrics(CLEAR/IDF1) + trackeval(HOTA) + supervision
+```
+
 ### TensorRT 加速（可选）
 
 TensorRT 为可选 extra `[trt]`，依赖本地 NVIDIA GPU 及 NVIDIA PyPI 源。安装前需在 `pyproject.toml` 中取消注释 `[tool.uv]` 的 `extra-index-url` 与 `[project.optional-dependencies].trt` 三个包：
@@ -211,6 +219,12 @@ python tools/build_engine.py --onnx models/yolov8s_640.onnx \
 
 # 模型评估（COCO mAP / OCR 指标）
 python tools/eval.py --model-path models/rtdetr-2024080100.onnx --test-dir data/test/
+
+# MOT 跟踪评估（HOTA / MOTA / IDF1，MOTChallenge 格式）
+# 用 GT 框作为理想检测现场跑某跟踪后端，对比关联质量：
+python tools/eval_mot.py --gt-root data/track/MOT_dataset --tracker bytetrack_native --frame-rate 5
+# 或评估已有跟踪结果目录（每序列一个 <seq>.txt）：
+python tools/eval_mot.py --gt-root data/track/MOT_dataset --predictions runs/tracker_out
 
 # ONNX vs TensorRT 性能对比
 python tools/compare_onnx_engine.py --onnx models/yolov8s_640.onnx --engine models/yolov8s_640.engine

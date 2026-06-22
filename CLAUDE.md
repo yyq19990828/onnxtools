@@ -12,7 +12,7 @@ ONNX-based vehicle and license plate recognition toolkit. Supports YOLO / RT-DET
 | Add a new model architecture | [Core Conventions](#core-conventions) below + [onnxtools/infer_onnx/CLAUDE.md](onnxtools/infer_onnx/CLAUDE.md) |
 | Inference engine internals (BaseORT, Result, ORT subclasses) | [onnxtools/infer_onnx/CLAUDE.md](onnxtools/infer_onnx/CLAUDE.md) |
 | Visualization customization (13 annotators, 5 presets) | [onnxtools/utils/CLAUDE.md](onnxtools/utils/CLAUDE.md) · [docs/annotator_usage.md](docs/annotator_usage.md) |
-| Model evaluation (COCO mAP, OCR metrics) | [onnxtools/eval/CLAUDE.md](onnxtools/eval/CLAUDE.md) · [docs/evaluation_guide.md](docs/evaluation_guide.md) |
+| Model evaluation (COCO mAP, OCR metrics, MOT HOTA/MOTA/IDF1) | [onnxtools/eval/CLAUDE.md](onnxtools/eval/CLAUDE.md) · [docs/evaluation_guide.md](docs/evaluation_guide.md) |
 | 2D multi-object tracking (ByteTrack, OC-SORT) | [onnxtools/tracking/CLAUDE.md](onnxtools/tracking/CLAUDE.md) · [docs/api/tracking.md](docs/api/tracking.md) |
 | TensorRT build / ONNX debugging | [tools/README.md](tools/README.md) · [docs/polygraphy使用指南/](docs/polygraphy使用指南/) |
 | Run/write tests | [tests/CLAUDE.md](tests/CLAUDE.md) |

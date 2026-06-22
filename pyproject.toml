@@ -63,6 +63,17 @@ tracking-fast = [
     "lap>=0.5.0",
 ]
 
+# MOT 评估 (可选) — MOTChallenge 格式跟踪指标
+# 安装方式: uv pip install -e ".[mot]"
+# motmetrics 提供 CLEAR-MOT/IDF1 等，trackeval 提供 HOTA；
+# 含 supervision 以支持 run_tracker_on_gt 直接跑各跟踪后端。无需 ONNX。
+mot = [
+    "motmetrics>=1.4.0",
+    "trackeval>=1.0.0",
+    "supervision==0.26.1",
+    "scipy>=1.10.0",
+]
+
 # TensorRT加速支持 (可选)
 # 安装方式: uv pip install -e ".[trt]"
 # 注意: 需要先安装 pip setuptools wheel: uv pip install pip setuptools wheel
