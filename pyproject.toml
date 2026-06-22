@@ -9,6 +9,12 @@ requires-python = ">=3.10"
 dependencies = [
     "colorlog>=6.9.0",
     "numpy>=2.2.6",
+]
+
+[project.optional-dependencies]
+# ONNX 推理 / OCR / 可视化主链路
+# 安装方式: uv pip install -e ".[inference]"
+inference = [
     "onnx==1.17.0",
     # 不使用 [cuda,cudnn] extras，避免自动安装 nvidia-* python包
     # 系统应该已经安装了 CUDA 和 cuDNN 库（通过 apt/yum 或手动安装）
@@ -22,7 +28,6 @@ dependencies = [
     "scipy>=1.10.0",
 ]
 
-[project.optional-dependencies]
 # 开发/测试工具 — 仅在跑测试、改图、调试 ONNX 图时需要
 # 安装方式: uv pip install -e ".[dev]"
 dev = [
@@ -32,11 +37,29 @@ dev = [
     "onnxslim>=0.1.65",
     "onnx-graphsurgeon",
     "colored>=2.3.1",
+    "onnx==1.17.0",
+    "onnxruntime-gpu==1.22.0",
+    "opencv-contrib-python>=4.12.0.88",
+    "pillow>=11.3.0",
+    "polygraphy>=0.49.26",
+    "python-levenshtein>=0.25.0",
+    "pyyaml>=6.0.2",
+    "supervision==0.26.1",
+    "scipy>=1.10.0",
+]
+
+# 纯 2D tracking，不安装 ONNX / ONNX Runtime / Polygraphy
+# 安装方式: uv pip install -e ".[tracking]"
+tracking = [
+    "supervision==0.26.1",
+    "scipy>=1.10.0",
 ]
 
 # 跟踪加速 (可选) — lap.lapjv 替代 scipy 的 linear_sum_assignment，边缘设备效果显著
 # 安装方式: uv pip install -e ".[tracking-fast]"
 tracking-fast = [
+    "supervision==0.26.1",
+    "scipy>=1.10.0",
     "lap>=0.5.0",
 ]
 

@@ -4,54 +4,67 @@ onnxtools - ONNX模型推理工具集
 提供多种目标检测模型架构的统一推理接口，包括YOLO、RT-DETR、RF-DETR等。
 """
 
-# 从 eval 子模块导入评估工具
-from .eval import (
-    BranchConfig,
-    ClsDatasetEvaluator,
-    ClsSampleEvaluation,
-    DetDatasetEvaluator,
-    OCRDatasetEvaluator,
-    SampleEvaluation,
-)
+from __future__ import annotations
 
-# 从 infer_onnx 子模块导入推理引擎类
-from .infer_onnx import (
-    RUN,
-    BaseClsORT,
-    BaseORT,
-    ClsResult,
-    ColorLayerORT,
-    HelmetORT,
-    OcrORT,
-    Result,
-    RfdetrORT,
-    RtdetrORT,
-    VehicleAttributeORT,
-    YoloORT,
-)
-from .infer_onnx.experiment import RfdetrUnifiedORT
+from importlib import import_module
+from typing import Any
 
-# 从 pipeline 子模块导入推理管道类
-from .pipeline import InferencePipeline
+__version__ = "0.1.0"
 
-# 从 utils 子模块导入工具函数
-from .utils import setup_logger
+_LAZY_EXPORTS = {
+    # Detection base and implementations
+    "BaseORT": ("onnxtools.infer_onnx", "BaseORT"),
+    "YoloORT": ("onnxtools.infer_onnx", "YoloORT"),
+    "RtdetrORT": ("onnxtools.infer_onnx", "RtdetrORT"),
+    "RfdetrORT": ("onnxtools.infer_onnx", "RfdetrORT"),
+    "RfdetrUnifiedORT": ("onnxtools.infer_onnx.experiment", "RfdetrUnifiedORT"),
+    # Classification base and implementations
+    "BaseClsORT": ("onnxtools.infer_onnx", "BaseClsORT"),
+    "ClsResult": ("onnxtools.infer_onnx", "ClsResult"),
+    "ColorLayerORT": ("onnxtools.infer_onnx", "ColorLayerORT"),
+    "HelmetORT": ("onnxtools.infer_onnx", "HelmetORT"),
+    "VehicleAttributeORT": ("onnxtools.infer_onnx", "VehicleAttributeORT"),
+    # OCR
+    "OcrORT": ("onnxtools.infer_onnx", "OcrORT"),
+    # Result classes
+    "Result": ("onnxtools.infer_onnx.result", "Result"),
+    # Inference pipeline
+    "InferencePipeline": ("onnxtools.pipeline", "InferencePipeline"),
+    # Evaluation tools
+    "DetDatasetEvaluator": ("onnxtools.eval", "DetDatasetEvaluator"),
+    "OCRDatasetEvaluator": ("onnxtools.eval", "OCRDatasetEvaluator"),
+    "SampleEvaluation": ("onnxtools.eval", "SampleEvaluation"),
+    "ClsDatasetEvaluator": ("onnxtools.eval", "ClsDatasetEvaluator"),
+    "ClsSampleEvaluation": ("onnxtools.eval", "ClsSampleEvaluation"),
+    "BranchConfig": ("onnxtools.eval", "BranchConfig"),
+    # Utilities
+    "setup_logger": ("onnxtools.utils", "setup_logger"),
+    # Constants
+    "RUN": ("onnxtools.infer_onnx", "RUN"),
+}
 
-# ============================================================================
-# 工厂函数：根据模型类型创建相应的检测器
-# ============================================================================
+
+def __getattr__(name: str) -> Any:
+    """Lazily load optional subsystems so tracking-only installs avoid ONNX imports."""
+    if name not in _LAZY_EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module_name, attr_name = _LAZY_EXPORTS[name]
+    value = getattr(import_module(module_name), attr_name)
+    globals()[name] = value
+    return value
 
 
-def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
+def create_detector(model_type: str, onnx_path: str, **kwargs: Any) -> Any:
     """根据模型类型创建相应的检测器实例(工厂函数)。
 
     Args:
         model_type (str): 模型类型,大小写不敏感。支持以下别名:
 
             - YOLO 系列: ``'yolo'`` / ``'yolov5'`` / ``'yolov8'`` / ``'yolov11'``
-              → :class:`YoloORT`
-            - RT-DETR: ``'rtdetr'`` / ``'rt-detr'`` → :class:`RtdetrORT`
-            - RF-DETR: ``'rfdetr'`` / ``'rf-detr'`` → :class:`RfdetrORT`
+              -> :class:`YoloORT`
+            - RT-DETR: ``'rtdetr'`` / ``'rt-detr'`` -> :class:`RtdetrORT`
+            - RF-DETR: ``'rfdetr'`` / ``'rf-detr'`` -> :class:`RfdetrORT`
             - RF-DETR Unified (实验性): ``'rfdetr_unified'`` / ``'rfdetr-unified'``
 
         onnx_path (str): ONNX 模型文件路径。
@@ -78,18 +91,23 @@ def create_detector(model_type: str, onnx_path: str, **kwargs) -> BaseORT:
     model_type = model_type.lower()
 
     if model_type in ["yolo", "yolov5", "yolov8", "yolov11"]:
+        from .infer_onnx import YoloORT
+
         return YoloORT(onnx_path, **kwargs)
-    elif model_type in ["rtdetr", "rt-detr"]:
+    if model_type in ["rtdetr", "rt-detr"]:
+        from .infer_onnx import RtdetrORT
+
         return RtdetrORT(onnx_path, **kwargs)
-    elif model_type in ["rfdetr", "rf-detr"]:
+    if model_type in ["rfdetr", "rf-detr"]:
+        from .infer_onnx import RfdetrORT
+
         return RfdetrORT(onnx_path, **kwargs)
-    elif model_type in ["rfdetr_unified", "rfdetr-unified"]:
+    if model_type in ["rfdetr_unified", "rfdetr-unified"]:
+        from .infer_onnx.experiment import RfdetrUnifiedORT
+
         return RfdetrUnifiedORT(onnx_path, **kwargs)
-    else:
-        raise ValueError(f"不支持的模型类型: {model_type}. 支持的类型: yolo, rtdetr, rfdetr")
+    raise ValueError(f"不支持的模型类型: {model_type}. 支持的类型: yolo, rtdetr, rfdetr")
 
-
-__version__ = "0.1.0"
 
 __all__ = [
     # Detection base and implementations
@@ -97,6 +115,7 @@ __all__ = [
     "YoloORT",
     "RtdetrORT",
     "RfdetrORT",
+    "RfdetrUnifiedORT",
     # Classification base and implementations
     "BaseClsORT",
     "ClsResult",

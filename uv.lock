@@ -1874,6 +1874,35 @@ dependencies = [
     { name = "colorlog" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "colored" },
+    { name = "matplotlib" },
+    { name = "onnx" },
+    { name = "onnx-graphsurgeon" },
+    { name = "onnxruntime-gpu" },
+    { name = "onnxslim" },
+    { name = "opencv-contrib-python" },
+    { name = "pillow" },
+    { name = "polygraphy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "python-levenshtein" },
+    { name = "pyyaml" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.0", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
+    { name = "supervision" },
+]
+docs = [
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-literate-nav" },
+    { name = "mkdocs-material" },
+    { name = "mkdocs-mermaid2-plugin" },
+    { name = "mkdocstrings", extra = ["python"] },
+]
+inference = [
     { name = "onnx" },
     { name = "onnxruntime-gpu" },
     { name = "opencv-contrib-python" },
@@ -1885,29 +1914,20 @@ dependencies = [
     { name = "scipy", version = "1.17.0", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
     { name = "supervision" },
 ]
-
-[package.optional-dependencies]
-dev = [
-    { name = "colored" },
-    { name = "matplotlib" },
-    { name = "onnx-graphsurgeon" },
-    { name = "onnxslim" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-docs = [
-    { name = "mkdocs-gen-files" },
-    { name = "mkdocs-literate-nav" },
-    { name = "mkdocs-material" },
-    { name = "mkdocs-mermaid2-plugin" },
-    { name = "mkdocstrings", extra = ["python"] },
-]
 mcp = [
     { name = "httpx" },
     { name = "mcp" },
 ]
+tracking = [
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.0", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
+    { name = "supervision" },
+]
 tracking-fast = [
     { name = "lap" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.0", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
+    { name = "supervision" },
 ]
 trt = [
     { name = "tensorrt" },
@@ -1938,24 +1958,37 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.27" },
     { name = "numpy", specifier = ">=2.2.6" },
-    { name = "onnx", specifier = "==1.17.0" },
+    { name = "onnx", marker = "extra == 'dev'", specifier = "==1.17.0" },
+    { name = "onnx", marker = "extra == 'inference'", specifier = "==1.17.0" },
     { name = "onnx-graphsurgeon", marker = "extra == 'dev'" },
-    { name = "onnxruntime-gpu", specifier = "==1.22.0" },
+    { name = "onnxruntime-gpu", marker = "extra == 'dev'", specifier = "==1.22.0" },
+    { name = "onnxruntime-gpu", marker = "extra == 'inference'", specifier = "==1.22.0" },
     { name = "onnxslim", marker = "extra == 'dev'", specifier = ">=0.1.65" },
-    { name = "opencv-contrib-python", specifier = ">=4.12.0.88" },
-    { name = "pillow", specifier = ">=11.3.0" },
-    { name = "polygraphy", specifier = ">=0.49.26" },
+    { name = "opencv-contrib-python", marker = "extra == 'dev'", specifier = ">=4.12.0.88" },
+    { name = "opencv-contrib-python", marker = "extra == 'inference'", specifier = ">=4.12.0.88" },
+    { name = "pillow", marker = "extra == 'dev'", specifier = ">=11.3.0" },
+    { name = "pillow", marker = "extra == 'inference'", specifier = ">=11.3.0" },
+    { name = "polygraphy", marker = "extra == 'dev'", specifier = ">=0.49.26" },
+    { name = "polygraphy", marker = "extra == 'inference'", specifier = ">=0.49.26" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "python-levenshtein", specifier = ">=0.25.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "scipy", specifier = ">=1.10.0" },
-    { name = "supervision", specifier = "==0.26.1" },
+    { name = "python-levenshtein", marker = "extra == 'dev'", specifier = ">=0.25.0" },
+    { name = "python-levenshtein", marker = "extra == 'inference'", specifier = ">=0.25.0" },
+    { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.2" },
+    { name = "pyyaml", marker = "extra == 'inference'", specifier = ">=6.0.2" },
+    { name = "scipy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
+    { name = "scipy", marker = "extra == 'inference'", specifier = ">=1.10.0" },
+    { name = "scipy", marker = "extra == 'tracking'", specifier = ">=1.10.0" },
+    { name = "scipy", marker = "extra == 'tracking-fast'", specifier = ">=1.10.0" },
+    { name = "supervision", marker = "extra == 'dev'", specifier = "==0.26.1" },
+    { name = "supervision", marker = "extra == 'inference'", specifier = "==0.26.1" },
+    { name = "supervision", marker = "extra == 'tracking'", specifier = "==0.26.1" },
+    { name = "supervision", marker = "extra == 'tracking-fast'", specifier = "==0.26.1" },
     { name = "tensorrt", marker = "extra == 'trt'", specifier = "==8.6.1.post1" },
     { name = "tensorrt-bindings", marker = "extra == 'trt'", specifier = "==8.6.1" },
     { name = "tensorrt-libs", marker = "extra == 'trt'", specifier = "==8.6.1" },
 ]
-provides-extras = ["dev", "tracking-fast", "trt", "mcp", "docs"]
+provides-extras = ["inference", "dev", "tracking", "tracking-fast", "trt", "mcp", "docs"]
 
 [package.metadata.requires-dev]
 build = [

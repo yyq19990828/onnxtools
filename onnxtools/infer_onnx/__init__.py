@@ -13,26 +13,44 @@ OCR Models (independent):
 - OcrORT: Optical Character Recognition
 """
 
-from .experiment import RfdetrUnifiedORT
+from __future__ import annotations
 
-# Import detection classes from separate modules
-from .onnx_base import BaseORT
-
-# Import classification classes (new architecture)
-from .onnx_cls import BaseClsORT, ClsResult, ColorLayerORT, HelmetORT, VehicleAttributeORT
-
-# Import OCR class
-from .onnx_ocr import OcrORT
-from .onnx_rfdetr import RfdetrORT
-from .onnx_rtdetr import RtdetrORT
-from .onnx_yolo import YoloORT
-
-# Import result class
-from .result import Result
+from importlib import import_module
+from typing import Any
 
 RUN = "runs"
 
-# This makes `from onnxtools.infer_onnx import *` behave nicely, exporting only these names.
+_LAZY_EXPORTS = {
+    # Detection base and implementations
+    "BaseORT": ("onnxtools.infer_onnx.onnx_base", "BaseORT"),
+    "YoloORT": ("onnxtools.infer_onnx.onnx_yolo", "YoloORT"),
+    "RtdetrORT": ("onnxtools.infer_onnx.onnx_rtdetr", "RtdetrORT"),
+    "RfdetrORT": ("onnxtools.infer_onnx.onnx_rfdetr", "RfdetrORT"),
+    "RfdetrUnifiedORT": ("onnxtools.infer_onnx.experiment", "RfdetrUnifiedORT"),
+    # Classification base and implementations
+    "BaseClsORT": ("onnxtools.infer_onnx.onnx_cls", "BaseClsORT"),
+    "ClsResult": ("onnxtools.infer_onnx.onnx_cls", "ClsResult"),
+    "ColorLayerORT": ("onnxtools.infer_onnx.onnx_cls", "ColorLayerORT"),
+    "HelmetORT": ("onnxtools.infer_onnx.onnx_cls", "HelmetORT"),
+    "VehicleAttributeORT": ("onnxtools.infer_onnx.onnx_cls", "VehicleAttributeORT"),
+    # OCR
+    "OcrORT": ("onnxtools.infer_onnx.onnx_ocr", "OcrORT"),
+    # Result classes
+    "Result": ("onnxtools.infer_onnx.result", "Result"),
+}
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily load inference exports so Result can be used without ONNX deps."""
+    if name not in _LAZY_EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module_name, attr_name = _LAZY_EXPORTS[name]
+    value = getattr(import_module(module_name), attr_name)
+    globals()[name] = value
+    return value
+
+
 __all__ = [
     # Detection base and implementations
     "BaseORT",
