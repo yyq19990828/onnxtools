@@ -22,19 +22,19 @@
 
 用法:
     # 全部改造 (默认)
-    python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_unified.onnx
+    python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_unified.onnx
 
     # 仅重命名 + 动态 batch
-    python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --rename --dynamic-batch
+    python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --rename --dynamic-batch
 
     # 仅烧入归一化 (不 concat、不 resize)
-    python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --normalize
+    python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --normalize
 
     # 仅折叠常量 (不做其他改造)
-    python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_fold.onnx --fold
+    python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_fold.onnx --fold
 
     # 跳过归一化，其余全做
-    python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx \\
+    python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx \\
         --rename --dynamic-batch --resize --concat --fold --input-hw 640 640
 """
 
@@ -295,16 +295,16 @@ def main():
         epilog="""
 示例:
   # 全部改造 (默认，等价于 --rename --dynamic-batch --normalize --resize --concat)
-  python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_unified.onnx
+  python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_unified.onnx
 
   # 仅重命名 + 动态 batch
-  python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --rename --dynamic-batch
+  python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --rename --dynamic-batch
 
   # 仅烧入归一化
-  python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --normalize
+  python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx --normalize
 
   # Resize + Concat (不烧入归一化)
-  python tools/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx \\
+  python tools/onnx/modify_rfdetr.py -i rfdetr.onnx -o rfdetr_mod.onnx \\
       --resize --concat --input-hw 640 640
     """,
     )

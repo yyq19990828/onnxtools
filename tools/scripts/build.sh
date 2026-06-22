@@ -130,7 +130,7 @@ else
 fi
 
 # 执行引擎构建
-if ! python tools/build_engine.py $BUILD_ARGS; then
+if ! python tools/trt/build_engine.py $BUILD_ARGS; then
     echo "错误: TensorRT引擎构建失败" >&2
     exit 1
 fi

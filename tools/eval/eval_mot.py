@@ -12,18 +12,18 @@
 
 Usage:
     # 评估已有跟踪结果目录
-    python tools/eval_mot.py \\
+    python tools/eval/eval_mot.py \\
         --gt-root data/track/MOT_dataset \\
         --predictions runs/my_tracker_outputs
 
     # 用 GT 框现场跑某个跟踪后端并评估（对比三种后端的关联质量）
-    python tools/eval_mot.py \\
+    python tools/eval/eval_mot.py \\
         --gt-root data/track/MOT_dataset \\
         --tracker bytetrack_native \\
         --frame-rate 5
 
     # 只算 HOTA，按类别 1 (pedestrian) 单独评估，导出 JSON
-    python tools/eval_mot.py \\
+    python tools/eval/eval_mot.py \\
         --gt-root data/track/MOT_dataset \\
         --tracker ocsort \\
         --metrics hota \\
@@ -40,7 +40,7 @@ import sys
 from pathlib import Path
 
 # 允许从仓库根目录直接运行
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from onnxtools.eval import MOTEvaluator, run_tracker_on_gt  # noqa: E402
 from onnxtools.utils import setup_logger  # noqa: E402

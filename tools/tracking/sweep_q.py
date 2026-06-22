@@ -19,7 +19,7 @@ position/velocity blocks, simplest knob with clear semantics.
 
 Run::
 
-    .venv/bin/python tools/sweep_q.py
+    .venv/bin/python tools/tracking/sweep_q.py
 """
 
 from __future__ import annotations

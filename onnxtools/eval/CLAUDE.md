@@ -89,7 +89,7 @@ result.to_dict()                       # 可 JSON 序列化
 - 评估期间临时抬高 root logger 级别屏蔽 motmetrics 的 `partials: x seconds` 计时日志。
 - result 文件无 class 列(第 8 列起 -1 占位),故文件来源一律池化;需分类别评估用内存 dict。
 
-CLI:`python tools/eval_mot.py --gt-root <dir> (--tracker <algo> | --predictions <dir>)`
+CLI:`python tools/eval/eval_mot.py --gt-root <dir> (--tracker <algo> | --predictions <dir>)`
 
 ## 模块结构
 
@@ -117,7 +117,7 @@ onnxtools/eval/
 
 - 核心依赖:`infer_onnx.BaseORT`、`utils.detection_metrics`(mAP)、`utils.ocr_metrics`、
   `python-levenshtein>=0.25.0`、`[mot]` extra(motmetrics/trackeval)。
-- CLI 工具:`tools/eval.py`(COCO)、`tools/eval_ocr.py`(OCR)、`tools/eval_mot.py`(MOT)。
+- CLI 工具:`tools/eval/eval.py`(COCO)、`tools/eval/eval_ocr.py`(OCR)、`tools/eval/eval_mot.py`(MOT)。
 - 配置:`configs/det_config.yaml`、`configs/plate.yaml`。
 
 ## FAQ

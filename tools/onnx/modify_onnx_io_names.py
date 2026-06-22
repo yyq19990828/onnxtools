@@ -113,13 +113,13 @@ def main():
         epilog="""
 示例用法:
   # 修改ocr_mobile.onnx的输入输出名字为input和output
-  python tools/modify_onnx_io_names.py
+  python tools/onnx/modify_onnx_io_names.py
 
   # 指定自定义的输入输出文件
-  python tools/modify_onnx_io_names.py -i models/my_model.onnx -o models/my_model_modified.onnx
+  python tools/onnx/modify_onnx_io_names.py -i models/my_model.onnx -o models/my_model_modified.onnx
 
   # 指定自定义的输入输出名字
-  python tools/modify_onnx_io_names.py --input-name "data" --output-name "result"
+  python tools/onnx/modify_onnx_io_names.py --input-name "data" --output-name "result"
         """,
     )
 

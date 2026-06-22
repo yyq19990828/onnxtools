@@ -6,7 +6,7 @@ Supports CSV and ImageFolder formats, multiple output formats, and multi-branch 
 
 Usage:
     # Helmet model evaluation (single-branch, CSV format)
-    python tools/eval_cls.py \
+    python tools/eval/eval_cls.py \
         --model-type helmet \
         --model-path models/helmet.onnx \
         --csv-path data/helmet_val.csv \
@@ -15,7 +15,7 @@ Usage:
         --output-format table
 
     # ColorLayer model evaluation (dual-branch, CSV format)
-    python tools/eval_cls.py \
+    python tools/eval/eval_cls.py \
         --model-type color_layer \
         --model-path models/color_layer.onnx \
         --csv-path data/plate_val.csv \
@@ -25,7 +25,7 @@ Usage:
         --output-format table
 
     # ImageFolder format evaluation
-    python tools/eval_cls.py \
+    python tools/eval/eval_cls.py \
         --model-type helmet \
         --model-path models/helmet.onnx \
         --dataset-dir data/helmet_imagefolder/ \
@@ -37,7 +37,7 @@ import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from onnxtools import ClsDatasetEvaluator, setup_logger  # noqa: E402
 from onnxtools.eval.eval_cls import BranchConfig  # noqa: E402

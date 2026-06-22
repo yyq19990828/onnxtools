@@ -1055,7 +1055,7 @@ results_json = coco_extended_metrics(coco_eval)
 
 ### 7.1 可复用组件清单
 
-基于RF-DETR的实现，以下组件可以直接迁移到你的 `tools/eval.py` 中：
+基于RF-DETR的实现，以下组件可以直接迁移到你的 `tools/eval/eval.py` 中：
 
 | 组件名称 | 源文件 | 功能 | 建议用途 |
 |---------|--------|------|---------|
@@ -1065,12 +1065,12 @@ results_json = coco_extended_metrics(coco_eval)
 | **coco_extended_metrics** | `rfdetr/engine.py` | 扩展指标计算 | 增强报告 |
 | **evaluate** | `rfdetr/datasets/coco_eval.py` | 自定义评估函数 | 分布式支持 |
 
-### 7.2 集成到 `tools/eval.py` 的建议
+### 7.2 集成到 `tools/eval/eval.py` 的建议
 
 #### 方案1: 直接导入RF-DETR模块
 
 ```python
-# tools/eval.py
+# tools/eval/eval.py
 import sys
 sys.path.insert(0, './third_party/rfdetr')
 
@@ -1190,7 +1190,7 @@ def coco_extended_metrics(coco_eval, coco=None):
 你的项目中`BaseOnnx`的输出需要转换为COCO格式：
 
 ```python
-# infer_onnx/base_onnx.py 或 tools/eval.py
+# infer_onnx/base_onnx.py 或 tools/eval/eval.py
 
 def convert_baseonnx_output_to_coco_format(model_output, image_id, orig_size):
     """
@@ -1250,7 +1250,7 @@ for images, targets in dataloader:
 ### 7.4 命令行工具示例
 
 ```python
-# tools/eval.py
+# tools/eval/eval.py
 
 import argparse
 from pathlib import Path
@@ -1379,7 +1379,7 @@ if __name__ == '__main__':
 
 2. **短期计划**:
    - 集成完整的CocoEvaluator类
-   - 在 `tools/eval.py` 添加COCO评估选项
+   - 在 `tools/eval/eval.py` 添加COCO评估选项
    - 验证评估结果与Ultralytics一致性
 
 3. **长期优化**:

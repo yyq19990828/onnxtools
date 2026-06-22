@@ -8,7 +8,7 @@
 - **完整识别管道**:[`InferencePipeline`](api/pipeline.md) 一站式串接检测 + OCR + 颜色/属性分类 + 可视化
 - **统一分类抽象**:`BaseClsORT` + `ClsResult`,覆盖车牌颜色层级、车辆属性多标签
 - **Supervision 可视化**:13 种 annotator + 5 套预设(`standard` / `debug` / `lightweight` / `privacy` / `high_contrast`)
-- **TensorRT 加速**:`tools/build_engine.py` 一键构建 FP16 引擎,推理代码无需改动
+- **TensorRT 加速**:`tools/trt/build_engine.py` 一键构建 FP16 引擎,推理代码无需改动
 - **Polygraphy 调试集成**:ONNX↔TensorRT 输出对齐校验
 
 ## 快速链接

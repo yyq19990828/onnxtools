@@ -17,7 +17,7 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # 添加项目路径到系统路径
-project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
+project_root = Path(__file__).parent.parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 
 from onnxtools import RUN, create_detector

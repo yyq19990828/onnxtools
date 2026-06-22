@@ -6,7 +6,7 @@ Supports multiple output formats, confidence thresholds, detailed analysis, and 
 
 Usage:
     # Basic evaluation with default output directory (runs/{dataset_name})
-    python tools/eval_ocr.py \\
+    python tools/eval/eval_ocr.py \\
         --label-file data/ocr_rec_dataset_examples/val.txt \\
         --dataset-base data/ocr_rec_dataset_examples \\
         --ocr-model models/ocr.onnx \\
@@ -15,7 +15,7 @@ Usage:
         --output-format table
 
     # Save badcase images and error analysis report
-    python tools/eval_ocr.py \\
+    python tools/eval/eval_ocr.py \\
         --label-file data/val.txt \\
         --dataset-base data/ \\
         --ocr-model models/ocr.onnx \\
@@ -24,7 +24,7 @@ Usage:
         --error-analysis
 
     # Custom output directory
-    python tools/eval_ocr.py \\
+    python tools/eval/eval_ocr.py \\
         --label-file data/val.txt \\
         --dataset-base data/ \\
         --ocr-model models/ocr_v2.onnx \\
@@ -44,7 +44,7 @@ from typing import Any
 import yaml
 
 # Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import logging
 

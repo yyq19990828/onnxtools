@@ -7,7 +7,7 @@
 ### 检测(COCO 格式)
 
 ```bash
-python tools/eval.py \
+python tools/eval/eval.py \
     --model-type rtdetr \
     --model-path models/rtdetr.onnx \
     --dataset-path /path/to/coco \
@@ -21,7 +21,7 @@ python tools/eval.py \
 ### OCR
 
 ```bash
-python tools/eval_ocr.py \
+python tools/eval/eval_ocr.py \
     --label-file data/val.txt \
     --dataset-base data/ \
     --ocr-model models/ocr.onnx \
@@ -35,13 +35,13 @@ python tools/eval_ocr.py \
 
 ```bash
 # FP16 引擎
-python tools/build_engine.py \
+python tools/trt/build_engine.py \
     --onnx-path models/rtdetr.onnx \
     --engine-path models/rtdetr_fp16.engine \
     --fp16
 
 # 构建后自动与 ONNX 对齐校验
-python tools/build_engine.py \
+python tools/trt/build_engine.py \
     --onnx-path models/yolov8s_640.onnx \
     --compare
 ```
@@ -49,7 +49,7 @@ python tools/build_engine.py \
 ## ONNX ↔ TensorRT 对比
 
 ```bash
-python tools/compare_onnx_engine.py \
+python tools/trt/compare_onnx_engine.py \
     --onnx  models/yolov8s_640.onnx \
     --engine models/yolov8s_640.engine
 ```
@@ -72,7 +72,7 @@ python tools/compare_onnx_engine.py \
 
 | 脚本 | 用途 |
 |---|---|
-| `tools/draw_engine.py` | 可视化 TensorRT engine 计算图 |
-| `tools/layer_statistics.py` | 各 layer 的耗时、精度统计 |
+| `tools/trt/draw_engine.py` | 可视化 TensorRT engine 计算图 |
+| `tools/trt/layer_statistics.py` | 各 layer 的耗时、精度统计 |
 
 每个脚本都支持 `--help`,可直接查看完整参数。

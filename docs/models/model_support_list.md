@@ -203,12 +203,12 @@ normalized = (normalized - imagenet_mean) / imagenet_std
 **实现类**: `infer_onnx/experiment.py::RfdetrUnifiedORT`
 **基类**: `BaseORT`
 **状态**: 实验性，用于快速验证和原型开发
-**改造工具**: `tools/modify_rfdetr.py`
+**改造工具**: `tools/onnx/modify_rfdetr.py`
 **适用配置**: `configs/shangdian.yaml` / `SHANGDIAN_CLASSES`
 
 **背景**: 原始 RF-DETR 模型 (576×576, 双输出, ImageNet归一化) 经 ONNX 图改造后，将预处理烧入模型内部，使其具备与 RT-DETR 一致的外部接口（640×640, 单输出, [0,1]归一化），同时保留 RF-DETR 的后处理逻辑。
 
-#### 模型改造内容 (tools/modify_rfdetr.py)
+#### 模型改造内容 (tools/onnx/modify_rfdetr.py)
 
 ```
 原始模型:
@@ -332,7 +332,7 @@ detector = RfdetrUnifiedORT(
 result = detector(image)
 
 # 使用 TRT FP16 引擎 (需通过 Polygraphy TrtRunner 加载)
-# 详见 tools/build_engine.py
+# 详见 tools/trt/build_engine.py
 ```
 
 ---

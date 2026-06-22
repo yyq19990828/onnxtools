@@ -11,7 +11,7 @@
 - 支持命令行参数配置
 
 Usage:
-    python tools/build_engine.py --onnx-path models/model.onnx [--engine-path models/model.engine] [--compare]
+    python tools/trt/build_engine.py --onnx-path models/model.onnx [--engine-path models/model.engine] [--compare]
 """
 
 import argparse
@@ -40,7 +40,7 @@ from polygraphy.comparator import Comparator
 # config.USE_TENSORRT_RTX 将根据操作动态设置
 
 # 添加项目路径到系统路径
-project_root = Path(__file__).parent.parent  # 获取父目录作为项目根目录
+project_root = Path(__file__).parent.parent.parent  # 获取父目录作为项目根目录
 sys.path.insert(0, str(project_root))
 
 from onnxtools.infer_onnx import RUN
@@ -117,7 +117,7 @@ def check_engine_exists_and_prompt(engine_path, compare_enabled):
         # 如果compare未启用，询问用户是否想要启用
         if not compare_enabled:
             print("💡 建议启用比较功能来验证已存在引擎的精度和性能")
-            print("   使用方式: python tools/build_engine.py --onnx-path <path> --engine-path <path> --compare")
+            print("   使用方式: python tools/trt/build_engine.py --onnx-path <path> --engine-path <path> --compare")
             print("   高级选项: --rtol 1e-2 --atol 1e-3 --iterations 5 --warmup 2")
 
             try:
@@ -197,7 +197,7 @@ def main():
 
         # 网络后处理仅在FP16开启时进行
         if args.fp16:
-            postprocess_script = "tools/network_postprocess.py"
+            postprocess_script = "tools/trt/network_postprocess.py"
             if os.path.exists(postprocess_script):
                 print(f"FP16模式已启用，加载智能网络后处理脚本: {postprocess_script}")
                 postprocess_func = InvokeFromScript(postprocess_script, name="postprocess")
@@ -267,7 +267,7 @@ def main():
         print(f"✓ TensorRT引擎构建完成: {engine_path}")
         print("💡 提示: 使用 --compare 参数可进行精度对比测试")
         print(
-            "   示例: python tools/build_engine.py --onnx-path <path> --engine-path <path> --compare --rtol 1e-2 --atol 1e-3"
+            "   示例: python tools/trt/build_engine.py --onnx-path <path> --engine-path <path> --compare --rtol 1e-2 --atol 1e-3"
         )
 
 

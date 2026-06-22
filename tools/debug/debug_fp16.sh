@@ -3,6 +3,6 @@
         --trt-outputs mark all \
         --fp16 \
         --precision-constraints obey \
-        --trt-network-postprocess-script tools/network_postprocess.py \
+        --trt-network-postprocess-script tools/trt/network_postprocess.py \
     --onnxrt \
         --onnx-outputs mark all \

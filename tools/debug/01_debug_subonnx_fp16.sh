@@ -134,7 +134,7 @@ debug_reduce_cmd="$debug_reduce_cmd --check polygraphy run polygraphy_debug.onnx
                     --trt \
                         --fp16 \
                         --precision-constraints obey \
-                        --trt-network-postprocess-script tools/network_postprocess.py \
+                        --trt-network-postprocess-script tools/trt/network_postprocess.py \
                     --load-inputs \"$combined_file\" \
                     --load-outputs \"$golden_file\"
                     --check-error-stat quantile \

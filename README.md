@@ -214,20 +214,20 @@ onnxtools/
 
 ```bash
 # 构建 TensorRT FP16 引擎
-python tools/build_engine.py --onnx models/yolov8s_640.onnx \
+python tools/trt/build_engine.py --onnx models/yolov8s_640.onnx \
     --output models/yolov8s_640_fp16.engine --precision fp16
 
 # 模型评估（COCO mAP / OCR 指标）
-python tools/eval.py --model-path models/rtdetr-2024080100.onnx --test-dir data/test/
+python tools/eval/eval.py --model-path models/rtdetr-2024080100.onnx --test-dir data/test/
 
 # MOT 跟踪评估（HOTA / MOTA / IDF1，MOTChallenge 格式）
 # 用 GT 框作为理想检测现场跑某跟踪后端，对比关联质量：
-python tools/eval_mot.py --gt-root data/track/MOT_dataset --tracker bytetrack_native --frame-rate 5
+python tools/eval/eval_mot.py --gt-root data/track/MOT_dataset --tracker bytetrack_native --frame-rate 5
 # 或评估已有跟踪结果目录（每序列一个 <seq>.txt）：
-python tools/eval_mot.py --gt-root data/track/MOT_dataset --predictions runs/tracker_out
+python tools/eval/eval_mot.py --gt-root data/track/MOT_dataset --predictions runs/tracker_out
 
 # ONNX vs TensorRT 性能对比
-python tools/compare_onnx_engine.py --onnx models/yolov8s_640.onnx --engine models/yolov8s_640.engine
+python tools/trt/compare_onnx_engine.py --onnx models/yolov8s_640.onnx --engine models/yolov8s_640.engine
 ```
 
 Polygraphy 调试详见 [docs/polygraphy使用指南/](docs/polygraphy使用指南/)。

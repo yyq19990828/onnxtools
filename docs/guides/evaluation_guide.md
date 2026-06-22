@@ -65,7 +65,7 @@ print(f"mAP@0.5:0.95: {results['map']:.3f}")
 
 #### CLI方式
 ```bash
-python tools/eval.py \
+python tools/eval/eval.py \
     --model-type yolo \
     --model-path models/yolo_model.onnx \
     --dataset-path /path/to/coco \
@@ -105,7 +105,7 @@ results = evaluator.evaluate_dataset(
 
 #### CLI方式
 ```bash
-python tools/eval_cls.py \
+python tools/eval/eval_cls.py \
     --model-type helmet \
     --model-path models/helmet.onnx \
     --csv-path data/val.csv \
@@ -236,7 +236,7 @@ names:
 
 ## 支持的模型类型
 
-### 检测模型 (tools/eval.py)
+### 检测模型 (tools/eval/eval.py)
 
 | 模型类型 | 推理类 | 默认输入尺寸 | 创建方式 |
 |---------|--------|------------|---------|
@@ -244,7 +244,7 @@ names:
 | `rtdetr` | `RtdetrORT` | 640×640 | `create_detector('rtdetr', ...)` |
 | `rfdetr` | `RfdetrORT` | 576×576 | `create_detector('rfdetr', ...)` |
 
-### 分类模型 (tools/eval_cls.py)
+### 分类模型 (tools/eval/eval_cls.py)
 
 | 模型类型 | 推理类 | 默认输入尺寸 | Batch处理 |
 |---------|--------|------------|----------|
@@ -307,7 +307,7 @@ names:
 
 3. **小规模测试**：
    ```bash
-   python tools/eval.py --model-type yolo --model-path models/yolo.onnx \
+   python tools/eval/eval.py --model-type yolo --model-path models/yolo.onnx \
        --dataset-path /path/to/dataset --max-images 10
    ```
 
@@ -317,12 +317,12 @@ names:
 
 1. 在 `onnxtools/infer_onnx/` 中实现新推理类（继承 `BaseORT`）
 2. 在 `onnxtools/__init__.py` 的 `create_detector()` 中注册
-3. 在 `tools/eval.py` 中添加 model-type 选项
+3. 在 `tools/eval/eval.py` 中添加 model-type 选项
 
 ### 添加新的分类模型评估支持
 
 1. 在 `onnxtools/infer_onnx/onnx_cls.py` 中实现新分类类（继承 `BaseClsORT`）
-2. 在 `tools/eval_cls.py` 的 `create_model()` 中注册
+2. 在 `tools/eval/eval_cls.py` 的 `create_model()` 中注册
 3. Batch维度会由 `BaseClsORT` 自动处理
 
 ### 相关文档
