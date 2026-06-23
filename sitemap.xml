@@ -2,158 +2,158 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://example.com/onnxtools/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/getting-started/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/classifiers/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/config/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/detectors/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/eval/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/ocr/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/pipeline/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/result/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/tracking/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/api/utils/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/annotator_usage/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/cli-tools/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/evaluation_guide/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/mcp/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/botsort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/bytetrack/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/centertrack/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/deep-ocsort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/fairmot/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/fasttracktr/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/hybrid-sort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/jde-family/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/jde/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/math-foundations/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/matr/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/memosort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/metrics/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/motr/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/motrv2/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/ocsort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/putr/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/strongsort/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/trackformer/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/traditional-methods/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/guides/tracking/transformer-mot/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
     <url>
          <loc>https://example.com/onnxtools/models/model_support_list/</loc>
-         <lastmod>2026-06-22</lastmod>
+         <lastmod>2026-06-23</lastmod>
     </url>
 </urlset>

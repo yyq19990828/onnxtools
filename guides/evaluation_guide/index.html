@@ -796,10 +796,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#toolsevalpy" class="md-nav__link">
+  <a href="#toolsevalevalpy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        检测模型 (tools/eval.py)
+        检测模型 (tools/eval/eval.py)
       
     </span>
   </a>
@@ -807,10 +807,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#toolseval_clspy" class="md-nav__link">
+  <a href="#toolsevaleval_clspy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        分类模型 (tools/eval_cls.py)
+        分类模型 (tools/eval/eval_cls.py)
       
     </span>
   </a>
@@ -2563,10 +2563,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#toolsevalpy" class="md-nav__link">
+  <a href="#toolsevalevalpy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        检测模型 (tools/eval.py)
+        检测模型 (tools/eval/eval.py)
       
     </span>
   </a>
@@ -2574,10 +2574,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#toolseval_clspy" class="md-nav__link">
+  <a href="#toolsevaleval_clspy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        分类模型 (tools/eval_cls.py)
+        分类模型 (tools/eval/eval_cls.py)
       
     </span>
   </a>
@@ -2766,7 +2766,7 @@
 </span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;mAP@0.5:0.95: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;map&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="cli">CLI方式<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h4>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>tools/eval.py<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>tools/eval/eval.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--model-type<span class="w"> </span>yolo<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--model-path<span class="w"> </span>models/yolo_model.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--dataset-path<span class="w"> </span>/path/to/coco<span class="w"> </span><span class="se">\</span>
@@ -2801,7 +2801,7 @@
 </span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="cli_1">CLI方式<a class="headerlink" href="#cli_1" title="Permanent link">&para;</a></h4>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>tools/eval_cls.py<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>tools/eval/eval_cls.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--model-type<span class="w"> </span>helmet<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--model-path<span class="w"> </span>models/helmet.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--csv-path<span class="w"> </span>data/val.csv<span class="w"> </span><span class="se">\</span>
@@ -2909,7 +2909,7 @@
 <li><strong>mAP汇总</strong>: 对所有类别求平均得到mAP</li>
 </ol>
 <h2 id="_12">支持的模型类型<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
-<h3 id="toolsevalpy">检测模型 (tools/eval.py)<a class="headerlink" href="#toolsevalpy" title="Permanent link">&para;</a></h3>
+<h3 id="toolsevalevalpy">检测模型 (tools/eval/eval.py)<a class="headerlink" href="#toolsevalevalpy" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2940,7 +2940,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="toolseval_clspy">分类模型 (tools/eval_cls.py)<a class="headerlink" href="#toolseval_clspy" title="Permanent link">&para;</a></h3>
+<h3 id="toolsevaleval_clspy">分类模型 (tools/eval/eval_cls.py)<a class="headerlink" href="#toolsevaleval_clspy" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -3027,7 +3027,7 @@
 </li>
 <li>
 <p><strong>小规模测试</strong>：
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>python<span class="w"> </span>tools/eval.py<span class="w"> </span>--model-type<span class="w"> </span>yolo<span class="w"> </span>--model-path<span class="w"> </span>models/yolo.onnx<span class="w"> </span><span class="se">\</span>
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>python<span class="w"> </span>tools/eval/eval.py<span class="w"> </span>--model-type<span class="w"> </span>yolo<span class="w"> </span>--model-path<span class="w"> </span>models/yolo.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span>--dataset-path<span class="w"> </span>/path/to/dataset<span class="w"> </span>--max-images<span class="w"> </span><span class="m">10</span>
 </span></code></pre></div></p>
 </li>
@@ -3037,12 +3037,12 @@
 <ol>
 <li>在 <code>onnxtools/infer_onnx/</code> 中实现新推理类（继承 <code>BaseORT</code>）</li>
 <li>在 <code>onnxtools/__init__.py</code> 的 <code>create_detector()</code> 中注册</li>
-<li>在 <code>tools/eval.py</code> 中添加 model-type 选项</li>
+<li>在 <code>tools/eval/eval.py</code> 中添加 model-type 选项</li>
 </ol>
 <h3 id="_19">添加新的分类模型评估支持<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h3>
 <ol>
 <li>在 <code>onnxtools/infer_onnx/onnx_cls.py</code> 中实现新分类类（继承 <code>BaseClsORT</code>）</li>
-<li>在 <code>tools/eval_cls.py</code> 的 <code>create_model()</code> 中注册</li>
+<li>在 <code>tools/eval/eval_cls.py</code> 的 <code>create_model()</code> 中注册</li>
 <li>Batch维度会由 <code>BaseClsORT</code> 自动处理</li>
 </ol>
 <h3 id="_20">相关文档<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>

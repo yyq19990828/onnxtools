@@ -2211,7 +2211,7 @@
 <p><code>tools/</code> 下的命令行脚本用于评估、TensorRT 引擎构建与 ONNX↔TRT 对比。</p>
 <h2 id="_1">模型评估<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <h3 id="coco">检测(COCO 格式)<a class="headerlink" href="#coco" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>tools/eval.py<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>tools/eval/eval.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>--model-type<span class="w"> </span>rtdetr<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>--model-path<span class="w"> </span>models/rtdetr.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span>--dataset-path<span class="w"> </span>/path/to/coco<span class="w"> </span><span class="se">\</span>
@@ -2221,7 +2221,7 @@
 <p>输出 mAP@0.5 / mAP@0.5:0.95 / Precision / Recall 等。详见
 <a href="../evaluation_guide/">模型评估指南</a>。</p>
 <h3 id="ocr">OCR<a class="headerlink" href="#ocr" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>tools/eval_ocr.py<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>tools/eval/eval_ocr.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--label-file<span class="w"> </span>data/val.txt<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>--dataset-base<span class="w"> </span>data/<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>--ocr-model<span class="w"> </span>models/ocr.onnx<span class="w"> </span><span class="se">\</span>
@@ -2231,18 +2231,18 @@
 <p>输出完全匹配率、归一化编辑距离、编辑距离相似度。</p>
 <h2 id="tensorrt">TensorRT 引擎构建<a class="headerlink" href="#tensorrt" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># FP16 引擎</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>tools/build_engine.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>tools/trt/build_engine.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>--onnx-path<span class="w"> </span>models/rtdetr.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>--engine-path<span class="w"> </span>models/rtdetr_fp16.engine<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>--fp16
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># 构建后自动与 ONNX 对齐校验</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>python<span class="w"> </span>tools/build_engine.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>python<span class="w"> </span>tools/trt/build_engine.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span>--onnx-path<span class="w"> </span>models/yolov8s_640.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span>--compare
 </span></code></pre></div>
 <h2 id="onnx-tensorrt">ONNX ↔ TensorRT 对比<a class="headerlink" href="#onnx-tensorrt" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>tools/compare_onnx_engine.py<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>tools/trt/compare_onnx_engine.py<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>--onnx<span class="w">  </span>models/yolov8s_640.onnx<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--engine<span class="w"> </span>models/yolov8s_640.engine
 </span></code></pre></div>
@@ -2283,11 +2283,11 @@
 </thead>
 <tbody>
 <tr>
-<td><code>tools/draw_engine.py</code></td>
+<td><code>tools/trt/draw_engine.py</code></td>
 <td>可视化 TensorRT engine 计算图</td>
 </tr>
 <tr>
-<td><code>tools/layer_statistics.py</code></td>
+<td><code>tools/trt/layer_statistics.py</code></td>
 <td>各 layer 的耗时、精度统计</td>
 </tr>
 </tbody>
