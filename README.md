@@ -150,6 +150,33 @@ if out:
     print(f"{text}  ({conf:.2f})")
 ```
 
+### 车辆属性二阶段预标
+
+`VehicleAttributePipeline` 串联检测与车辆属性分类：检测框出目标 → 对机动车
+（car / truck / heavy_truck / van / bus / motorcycle）裁剪 ROI → 用车辆属性模型得到
+车型（13 类）与颜色（11 类），写入该框属性。非机动车只输出几何，不做二次推理。
+
+```python
+import cv2
+from onnxtools import VehicleAttributePipeline, setup_logger
+
+setup_logger("INFO")
+
+pipeline = VehicleAttributePipeline(
+    model_type="rtdetr",
+    model_path="models/rtdetr-2024080100.onnx",
+    va_model_path="models/va_260612.onnx",
+    conf_thres=0.5,
+)
+
+output = pipeline(cv2.imread("data/sample.jpg"))
+for item in output:
+    if "vehicle_type" in item:        # 机动车
+        print(item["type"], item["vehicle_type"], item["color"])
+```
+
+命令行：`python examples/demo_vehicle_attribute.py --input data/sample.jpg`。
+
 ## 模型与配置
 
 模型放置在 `models/` 目录，需要三类 ONNX：

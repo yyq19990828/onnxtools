@@ -536,3 +536,165 @@ class InferencePipeline:
             )
 
         return result_frame, output_data
+
+
+class VehicleAttributePipeline:
+    """二阶段车辆属性预标注管道:检测 → 机动车 ROI → 车型/颜色分类。
+
+    第一阶段用检测器 (rtdetr / yolo / rfdetr) 框出目标;对判定为「机动车」的
+    检测框裁剪 ROI,送入 :class:`VehicleAttributeORT` 得到车型 (13 类) 与颜色
+    (11 类),作为该框的属性写入输出。非机动车框只输出几何,不做二次推理。
+
+    与 :class:`InferencePipeline` (车牌 OCR 场景) 解耦——不加载 OCR / 颜色层级
+    模型。``detector`` 与 ``va_classifier`` 均为独立可调用单元,便于上游平台将
+    检测与分类拆分为各自独立的步骤进行编排。
+
+    Attributes:
+        detector: 第一阶段目标检测器 (由 create_detector 构建)。
+        va_classifier: 第二阶段车辆属性分类器 (VehicleAttributeORT)。
+        class_names: 检测类别名称列表,下标即 class_id。
+        roi_pad_ratio: ROI 裁剪时四周外扩的比例 (相对框宽高)。
+
+    Example:
+        >>> pipeline = VehicleAttributePipeline(
+        ...     model_type='rtdetr',
+        ...     model_path='models/rtdetr-2024080100.onnx',
+        ...     va_model_path='models/va_260612.onnx',
+        ... )
+        >>> output = pipeline(image)
+        >>> output[0]
+        {'type': 'car', 'box2d': [...], 'score': 0.97,
+         'vehicle_type': 'school_bus', 'vehicle_type_conf': 0.93,
+         'color': 'blue', 'color_conf': 0.88}
+    """
+
+    #: det 类名中被视为「机动车」、需要做属性分类的类别
+    MOTOR_VEHICLE_CLASSES = frozenset({"car", "truck", "heavy_truck", "van", "bus", "motorcycle"})
+
+    def __init__(
+        self,
+        model_type: str,
+        model_path: str,
+        va_model_path: str = "models/va_260612.onnx",
+        conf_thres: float = 0.5,
+        iou_thres: float = 0.5,
+        va_conf_thres: float = 0.5,
+        roi_pad_ratio: float = 0.1,
+        det_config: str | dict[int, str] | None = None,
+        providers: list[str] | None = None,
+    ):
+        """初始化车辆属性二阶段管道。
+
+        Args:
+            model_type: 检测模型类型 ('yolo', 'rtdetr', 'rfdetr')。
+            model_path: ONNX 检测模型路径。
+            va_model_path: 车辆属性分类 ONNX 模型路径。
+            conf_thres: 检测置信度阈值。
+            iou_thres: 检测 NMS 的 IoU 阈值。
+            va_conf_thres: 车辆属性分类的低置信度告警阈值。
+            roi_pad_ratio: ROI 四周外扩比例 (相对框宽高),默认 0.1。
+            det_config: 检测类别配置,支持配置文件路径、{class_id: name} 字典或
+                None (优先读模型 metadata,再回落到默认 DET_CLASSES)。
+            providers: ONNX Runtime 执行提供程序。
+        """
+        from onnxtools import VehicleAttributeORT, create_detector
+
+        self.roi_pad_ratio = roi_pad_ratio
+        self.detector = create_detector(
+            model_type=model_type, onnx_path=model_path, conf_thres=conf_thres, iou_thres=iou_thres
+        )
+        self.va_classifier = VehicleAttributeORT(va_model_path, conf_thres=va_conf_thres, providers=providers)
+        self.class_names = self._resolve_class_names(det_config)
+        logging.info(
+            "VehicleAttributePipeline initialized: detector=%s, va=%s, %d classes",
+            model_path,
+            va_model_path,
+            len(self.class_names),
+        )
+
+    def _resolve_class_names(self, det_config: str | dict[int, str] | None) -> list[str]:
+        """解析检测类别名称列表 (下标为 class_id)。
+
+        优先级:显式 det_config (字典 / 路径) > 模型 metadata > 默认 DET_CLASSES。
+
+        Args:
+            det_config: 类别配置,见 :meth:`__init__`。
+
+        Returns:
+            类别名称列表;空配置时返回空列表。
+        """
+        from onnxtools.config import load_det_config
+
+        if isinstance(det_config, dict):
+            names_dict = det_config
+        elif isinstance(det_config, str):
+            names_dict = load_det_config(det_config).get("class_names", {})
+        elif self.detector.class_names:
+            names_dict = self.detector.class_names
+        else:
+            names_dict = load_det_config(None)["class_names"]
+
+        if not names_dict:
+            return []
+        max_class_id = max(names_dict.keys())
+        return [names_dict.get(i, f"class_{i}") for i in range(max_class_id + 1)]
+
+    def _crop_roi(self, frame: np.ndarray, xyxy: list[float], w_img: int, h_img: int) -> np.ndarray:
+        """按 roi_pad_ratio 外扩并裁剪检测框对应的 ROI (已做图像边界 clip)。
+
+        Args:
+            frame: 原图 (BGR)。
+            xyxy: 检测框 [x1, y1, x2, y2] (原图坐标)。
+            w_img: 原图宽。
+            h_img: 原图高。
+
+        Returns:
+            裁剪出的 ROI 图像 (可能为空,调用方需检查 ``.size``)。
+        """
+        x1, y1, x2, y2 = map(int, xyxy)
+        pad_w = int((x2 - x1) * self.roi_pad_ratio)
+        pad_h = int((y2 - y1) * self.roi_pad_ratio)
+        ex1 = max(0, x1 - pad_w)
+        ey1 = max(0, y1 - pad_h)
+        ex2 = min(w_img, x2 + pad_w)
+        ey2 = min(h_img, y2 + pad_h)
+        return frame[ey1:ey2, ex1:ex2]
+
+    def __call__(self, frame: np.ndarray) -> list[dict[str, Any]]:
+        """执行两阶段推理。
+
+        Args:
+            frame: 输入图像 (BGR 格式)。
+
+        Returns:
+            每个检测一个 dict:始终含 ``type`` / ``box2d`` / ``score``;机动车额外
+            含 ``vehicle_type`` / ``vehicle_type_conf`` / ``color`` / ``color_conf``。
+        """
+        result = self.detector(frame)
+        output_data: list[dict[str, Any]] = []
+        if len(result) == 0:
+            return output_data
+
+        h_img, w_img = frame.shape[:2]
+        boxes = result.boxes
+        scores = result.scores
+        class_ids = result.class_ids
+
+        for i in range(len(result)):
+            xyxy = [float(c) for c in boxes[i]]
+            cls = int(class_ids[i])
+            class_name = self.class_names[cls] if cls < len(self.class_names) else "unknown"
+            item: dict[str, Any] = {"type": class_name, "box2d": xyxy, "score": float(scores[i])}
+
+            if class_name in self.MOTOR_VEHICLE_CLASSES:
+                roi = self._crop_roi(frame, xyxy, w_img, h_img)
+                if roi.size > 0:
+                    va = self.va_classifier(roi)
+                    item["vehicle_type"] = va.labels[0]
+                    item["vehicle_type_conf"] = va.confidences[0]
+                    item["color"] = va.labels[1]
+                    item["color_conf"] = va.confidences[1]
+
+            output_data.append(item)
+
+        return output_data
