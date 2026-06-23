@@ -2,12 +2,14 @@
 
 Realistic budget @ 200 persistent detections on x86: 5-15 ms / frame
 (100+ FPS). Runs without pytest-benchmark — uses time.perf_counter +
-median over rounds. Skips automatically if a CI host is too slow to be
-informative.
+mean over iterations. The per-frame ceiling is relaxed on shared CI
+runners (env ``CI``), whose timing is too noisy for a tight absolute
+bound; it stays strict locally so genuine regressions still surface.
 """
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -53,5 +55,8 @@ def test_tracker_200_dets_perf(algo):
         tracker.update(_persistent_dets(rng, base), frame)
     mean_ms = (time.perf_counter() - start) / iters * 1e3
 
-    # Ceiling = ~16ms (still > 60 FPS). Beyond that, something regressed.
-    assert mean_ms < 16.0, f"{algo}: {mean_ms:.2f}ms over 16ms ceiling"
+    # Locally ~16ms (still > 60 FPS) catches regressions tightly. Shared CI
+    # runners are too noisy for that bound, so relax it there — a coarse 40ms
+    # cap still flags order-of-magnitude regressions.
+    ceiling = 40.0 if os.environ.get("CI") else 16.0
+    assert mean_ms < ceiling, f"{algo}: {mean_ms:.2f}ms over {ceiling:.0f}ms ceiling"
