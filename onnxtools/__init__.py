@@ -30,6 +30,7 @@ _LAZY_EXPORTS = {
     "Result": ("onnxtools.infer_onnx.result", "Result"),
     # Inference pipeline
     "InferencePipeline": ("onnxtools.pipeline", "InferencePipeline"),
+    "VehicleAttributePipeline": ("onnxtools.pipeline", "VehicleAttributePipeline"),
     # Evaluation tools
     "DetDatasetEvaluator": ("onnxtools.eval", "DetDatasetEvaluator"),
     "OCRDatasetEvaluator": ("onnxtools.eval", "OCRDatasetEvaluator"),
@@ -133,6 +134,7 @@ __all__ = [
     "create_detector",
     # Inference pipeline
     "InferencePipeline",
+    "VehicleAttributePipeline",
     # Evaluation tools
     "DetDatasetEvaluator",
     "OCRDatasetEvaluator",
