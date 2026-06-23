@@ -2897,8 +2897,7 @@
 
             <details class="mkdocstrings-source">
               <summary>源代码位于： <code>onnxtools/__init__.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
-<span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
 <span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
 <span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
 <span class="normal"><a href="#__codelineno-0-65"> 65</a></span>
@@ -2948,58 +2947,59 @@
 <span class="normal"><a href="#__codelineno-0-109">109</a></span>
 <span class="normal"><a href="#__codelineno-0-110">110</a></span>
 <span class="normal"><a href="#__codelineno-0-111">111</a></span>
-<span class="normal"><a href="#__codelineno-0-112">112</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_detector</span><span class="p">(</span><span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">onnx_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;根据模型类型创建相应的检测器实例(工厂函数)。</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        model_type (str): 模型类型,大小写不敏感。支持以下别名:</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">            - YOLO 系列: ``&#39;yolo&#39;`` / ``&#39;yolov5&#39;`` / ``&#39;yolov8&#39;`` / ``&#39;yolov11&#39;``</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">              -&gt; :class:`YoloORT`</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">            - RT-DETR: ``&#39;rtdetr&#39;`` / ``&#39;rt-detr&#39;`` -&gt; :class:`RtdetrORT`</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            - RF-DETR: ``&#39;rfdetr&#39;`` / ``&#39;rf-detr&#39;`` -&gt; :class:`RfdetrORT`</span>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            - RF-DETR Unified (实验性): ``&#39;rfdetr_unified&#39;`` / ``&#39;rfdetr-unified&#39;``</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">        onnx_path (str): ONNX 模型文件路径。</span>
-</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">        **kwargs: 透传给具体检测器构造函数,常用项:</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            - ``conf_thres`` (float): 置信度阈值</span>
-</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            - ``iou_thres`` (float): NMS IoU 阈值(仅 YOLO 实际使用)</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            - ``input_shape`` (Tuple[int, int]): 输入尺寸 (H, W)</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            - ``providers`` (List[str]): ONNX Runtime 执行提供程序</span>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            - ``det_config`` (str | Dict[int, str]): 类别配置文件或字典</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        BaseORT: 检测器实例。调用 ``detector(image)`` 得到 :class:`Result` 对象。</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a>
-</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        ValueError: 当 ``model_type`` 不在支持列表中时抛出。</span>
-</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>
-</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">        &gt;&gt;&gt; from onnxtools import create_detector</span>
-</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        &gt;&gt;&gt; det = create_detector(&#39;yolo&#39;, &#39;models/yolo11n.onnx&#39;, conf_thres=0.5)</span>
-</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">        &gt;&gt;&gt; det = create_detector(&#39;rtdetr&#39;, &#39;models/rtdetr.onnx&#39;, iou_thres=0.7)</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        &gt;&gt;&gt; result = det(image)               # Result 实例</span>
-</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="n">model_type</span> <span class="o">=</span> <span class="n">model_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;yolo&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov5&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov8&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov11&quot;</span><span class="p">]:</span>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">YoloORT</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>        <span class="k">return</span> <span class="n">YoloORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rtdetr&quot;</span><span class="p">,</span> <span class="s2">&quot;rt-detr&quot;</span><span class="p">]:</span>
-</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">RtdetrORT</span>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>        <span class="k">return</span> <span class="n">RtdetrORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rfdetr&quot;</span><span class="p">,</span> <span class="s2">&quot;rf-detr&quot;</span><span class="p">]:</span>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">RfdetrORT</span>
-</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>
-</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>        <span class="k">return</span> <span class="n">RfdetrORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rfdetr_unified&quot;</span><span class="p">,</span> <span class="s2">&quot;rfdetr-unified&quot;</span><span class="p">]:</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">RfdetrUnifiedORT</span>
-</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>
-</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="k">return</span> <span class="n">RfdetrUnifiedORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;不支持的模型类型: </span><span class="si">{</span><span class="n">model_type</span><span class="si">}</span><span class="s2">. 支持的类型: yolo, rtdetr, rfdetr&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-112">112</a></span>
+<span class="normal"><a href="#__codelineno-0-113">113</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_detector</span><span class="p">(</span><span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">onnx_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;根据模型类型创建相应的检测器实例(工厂函数)。</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        model_type (str): 模型类型,大小写不敏感。支持以下别名:</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">            - YOLO 系列: ``&#39;yolo&#39;`` / ``&#39;yolov5&#39;`` / ``&#39;yolov8&#39;`` / ``&#39;yolov11&#39;``</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">              -&gt; :class:`YoloORT`</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            - RT-DETR: ``&#39;rtdetr&#39;`` / ``&#39;rt-detr&#39;`` -&gt; :class:`RtdetrORT`</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            - RF-DETR: ``&#39;rfdetr&#39;`` / ``&#39;rf-detr&#39;`` -&gt; :class:`RfdetrORT`</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">            - RF-DETR Unified (实验性): ``&#39;rfdetr_unified&#39;`` / ``&#39;rfdetr-unified&#39;``</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">        onnx_path (str): ONNX 模型文件路径。</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        **kwargs: 透传给具体检测器构造函数,常用项:</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            - ``conf_thres`` (float): 置信度阈值</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            - ``iou_thres`` (float): NMS IoU 阈值(仅 YOLO 实际使用)</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            - ``input_shape`` (Tuple[int, int]): 输入尺寸 (H, W)</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            - ``providers`` (List[str]): ONNX Runtime 执行提供程序</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">            - ``det_config`` (str | Dict[int, str]): 类别配置文件或字典</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        BaseORT: 检测器实例。调用 ``detector(image)`` 得到 :class:`Result` 对象。</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">        ValueError: 当 ``model_type`` 不在支持列表中时抛出。</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    Examples:</span>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        &gt;&gt;&gt; from onnxtools import create_detector</span>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">        &gt;&gt;&gt; det = create_detector(&#39;yolo&#39;, &#39;models/yolo11n.onnx&#39;, conf_thres=0.5)</span>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        &gt;&gt;&gt; det = create_detector(&#39;rtdetr&#39;, &#39;models/rtdetr.onnx&#39;, iou_thres=0.7)</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        &gt;&gt;&gt; result = det(image)               # Result 实例</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">model_type</span> <span class="o">=</span> <span class="n">model_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;yolo&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov5&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov8&quot;</span><span class="p">,</span> <span class="s2">&quot;yolov11&quot;</span><span class="p">]:</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">YoloORT</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>        <span class="k">return</span> <span class="n">YoloORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rtdetr&quot;</span><span class="p">,</span> <span class="s2">&quot;rt-detr&quot;</span><span class="p">]:</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">RtdetrORT</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>        <span class="k">return</span> <span class="n">RtdetrORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rfdetr&quot;</span><span class="p">,</span> <span class="s2">&quot;rf-detr&quot;</span><span class="p">]:</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">RfdetrORT</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="k">return</span> <span class="n">RfdetrORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rfdetr_unified&quot;</span><span class="p">,</span> <span class="s2">&quot;rfdetr-unified&quot;</span><span class="p">]:</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.infer_onnx.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">RfdetrUnifiedORT</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="k">return</span> <span class="n">RfdetrUnifiedORT</span><span class="p">(</span><span class="n">onnx_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;不支持的模型类型: </span><span class="si">{</span><span class="n">model_type</span><span class="si">}</span><span class="s2">. 支持的类型: yolo, rtdetr, rfdetr&quot;</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
