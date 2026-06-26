@@ -106,8 +106,8 @@ class InferencePipeline:
         self.plate_conf_thres = plate_conf_thres if plate_conf_thres is not None else conf_thres
 
         # 2D tracking — optional, default off. Algorithms come from
-        # onnxtools.tracking; "bytetrack" (supervision built-in) is the only
-        # backend shipped today.
+        # onnxtools.tracking; "bytetrack" (supervision built-in) remains the
+        # back-compatible default.
         self.enable_tracking = enable_tracking
         self._tracker_algo = tracker_algo
         self._tracker_kwargs = dict(
@@ -272,11 +272,12 @@ class InferencePipeline:
         sv_detections,
         output_data: list[dict[str, Any]],
     ) -> np.ndarray | None:
-        """Align ByteTrack's tracker_id back to per-detection order and JSON output.
+        """Align tracker_id back to per-detection order and JSON output.
 
-        ByteTrack may drop unmatched detections, so it returns a Detections object
+        Trackers may drop unmatched detections, so they return a Detections object
         whose length can be smaller than the input ``boxes``. We match by xyxy
-        (ByteTrack does not modify box coordinates) to recover the alignment.
+        (native trackers emit the original observation boxes) to recover the
+        alignment.
 
         Args:
             boxes: Original per-detection boxes [N, 4] xyxy in pre-tracking order.

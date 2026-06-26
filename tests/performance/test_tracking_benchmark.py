@@ -38,7 +38,7 @@ def _make_base(n: int = 200) -> np.ndarray:
     return np.concatenate([tl, tl + wh], axis=1)
 
 
-@pytest.mark.parametrize("algo", ["bytetrack_native", "ocsort"])
+@pytest.mark.parametrize("algo", ["bytetrack_native", "ocsort", "botsort"])
 def test_tracker_200_dets_perf(algo):
     tracker = create_tracker(algo)
     frame = np.zeros((1080, 1920, 3), dtype=np.uint8)

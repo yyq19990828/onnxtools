@@ -13,7 +13,7 @@
 | [传统方法总结](traditional-methods.md) | IoU-Tracker、SORT、DeepSORT | 设计血统来源 |
 | [ByteTrack](bytetrack.md) | 关联每一个检测框(高/低分双关联) | ✅ [`bytetrack.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/bytetrack.py) 原生实现 |
 | [OC-SORT](ocsort.md) | 观测中心化(OCM/OCR/ORU) | ✅ [`ocsort.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/ocsort.py) 原生实现 |
-| [BoT-SORT](botsort.md) | 相机运动补偿 + ReID 融合 | 进阶方向 |
+| [BoT-SORT](botsort.md) | 相机运动补偿 + ReID 融合 | ✅ [`botsort.py`](https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/botsort.py) 原生实现 |
 | [StrongSORT](strongsort.md) | DeepSORT 现代化 + AFLink/GSI | 进阶方向 |
 | [Deep OC-SORT](deep-ocsort.md) | 自适应外观增强的 OC-SORT | 进阶方向 |
 | [Hybrid-SORT](hybrid-sort.md) | 弱线索(置信度/高度)关联 | 进阶方向 |
@@ -95,9 +95,10 @@ graph TD
 
     style M2 fill:#66bb6a,color:#fff
     style M3 fill:#66bb6a,color:#fff
+    style A1 fill:#66bb6a,color:#fff
 ```
 
-> 🟢 绿色为本仓库已原生实现的两个方法(ByteTrack、OC-SORT)。
+> 🟢 绿色为本仓库已原生实现的方法(ByteTrack、OC-SORT、BoT-SORT)。
 
 ### 范式一:Tracking-by-Detection(检测后关联)
 
@@ -114,7 +115,7 @@ graph LR
     style TRK fill:#29b6f6
 ```
 
-优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 `InferencePipeline` 正是这种解耦设计(`enable_tracking=True`)。
+优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 `InferencePipeline` 正是这种解耦设计(`enable_tracking=True`)；`botsort` 的 ReID 也遵循同一原则,只接收外部 embedding,不绑定具体模型框架。
 
 ### 范式二:Joint Detection & Embedding(一阶段 / JDE)
 
@@ -307,7 +308,7 @@ $$\text{HOTA}(\alpha) = \sqrt{\text{DetA}(\alpha)\cdot\text{AssA}(\alpha)}, \qqu
 
 ## 7. 在本仓库里跑起来
 
-三种后端共用同一工厂,可即插即用到 `InferencePipeline`:
+四种后端共用同一工厂,可即插即用到 `InferencePipeline`:
 
 ```python
 from onnxtools.tracking import create_tracker
@@ -315,6 +316,7 @@ from onnxtools.tracking import create_tracker
 tracker = create_tracker("bytetrack")          # supervision 封装(默认,零依赖)
 tracker = create_tracker("bytetrack_native")   # 原生向量化 ByteTrack(本系列重点)
 tracker = create_tracker("ocsort")             # 原生 OC-SORT(本系列重点)
+tracker = create_tracker("botsort")            # 原生 BoT-SORT(CMC/ReID 可选)
 
 for frame, raw_dets in stream:
     tracked = tracker.update(raw_dets, frame)  # tracked.tracker_id 已就位

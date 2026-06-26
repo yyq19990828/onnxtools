@@ -41,7 +41,12 @@ uv pip install -e ".[tracking]"
 
 # 可选：使用 lap.lapjv 加速匹配
 uv pip install -e ".[tracking-fast]"
+
+# 可选：BoT-SORT 相机运动补偿(camera_motion=True)所需 OpenCV
+uv pip install -e ".[tracking-cmc]"
 ```
+
+可用后端:`bytetrack`、`bytetrack_native`、`ocsort`、`botsort`。`botsort` 的 ReID 模型由调用方外部提供 embedding,不会强制安装 PyTorch / ONNX Runtime。
 
 ### MOT 评估安装
 
@@ -249,7 +254,7 @@ python tools/eval/eval.py --model-path models/rtdetr-2024080100.onnx --test-dir 
 
 # MOT 跟踪评估（HOTA / MOTA / IDF1，MOTChallenge 格式）
 # 用 GT 框作为理想检测现场跑某跟踪后端，对比关联质量：
-python tools/eval/eval_mot.py --gt-root data/track/MOT_dataset --tracker bytetrack_native --frame-rate 5
+python tools/eval/eval_mot.py --gt-root data/track/MOT_dataset --tracker botsort --frame-rate 5
 # 或评估已有跟踪结果目录（每序列一个 <seq>.txt）：
 python tools/eval/eval_mot.py --gt-root data/track/MOT_dataset --predictions runs/tracker_out
 

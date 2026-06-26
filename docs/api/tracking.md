@@ -12,8 +12,9 @@
 | `bytetrack` | supervision 内置封装 (`SupervisionByteTrack`) | 默认,零额外依赖,完全向后兼容 |
 | `bytetrack_native` | 手写向量化 numpy (`ByteTrackNative`) | 需要严格的官方 ByteTrack 三阶段行为、可调阈值、类别隔离 |
 | `ocsort` | 手写向量化 numpy (`OCSORT`) | 快速运动 / 长时间遮挡场景,含 OCM/OCR/ORU 观测中心改进 |
+| `botsort` | 手写向量化 numpy (`BoTSORT`) | 移动相机或密集行人/骑行者,可选 CMC 与 ReID |
 
-性能预算(200 持续目标 / 1080p / x86):约 7-10 ms/帧(>100 FPS)。安装可选依赖 `pip install onnxtools[tracking-fast]` 启用 `lap.lapjv` 加速分配。
+性能预算(200 持续目标 / 1080p / x86):纯运动后端约 7-10 ms/帧(>100 FPS)。安装可选依赖 `pip install onnxtools[tracking-fast]` 启用 `lap.lapjv` 加速分配；`botsort(camera_motion=True)` 还需要 OpenCV(`.[tracking-cmc]` 或 `.[inference]`)。
 
 ## 快速开始
 
@@ -29,6 +30,28 @@ for frame, raw_dets in stream:
 ```
 
 切换视频 / 摄像头时调用 `tracker.reset()`,ID 从 1 重新发号。
+
+### BoT-SORT + ReID
+
+`botsort` 不内置 ReID 模型,避免把 PyTorch/FastReID/ONNX 推理链路强耦合进纯 tracking。外观特征有两种入口:
+
+```python
+tracker = create_tracker("botsort", with_reid=True)
+
+# 方式一: 上游已经算好 embedding, 每个检测一条
+detections.data["features"] = reid_features  # shape: [N, D]
+tracked = tracker.update(detections, frame)
+
+# 方式二: 传入可调用编码器
+tracker = create_tracker("botsort", with_reid=True, reid_encoder=my_encoder)
+tracked = tracker.update(detections, frame)
+```
+
+相机运动补偿默认关闭:
+
+```python
+tracker = create_tracker("botsort", camera_motion=True, cmc_method="orb")
+```
 
 ## 与 InferencePipeline 集成
 
@@ -50,12 +73,13 @@ result_img, output_data = pipeline(frame)
 
 为了让一份共享 kwargs 字典适用于三种后端,所有 native tracker 都接受 supervision 风格的别名:
 
-| 标准参数 | supervision 别名 | bytetrack_native 含义 | ocsort 含义 |
-|----------|-------------------|----------------------|--------------|
-| `track_high_thresh` / `det_thresh` | `track_activation_threshold` | 高/低分检测切分阈值 | 检测置信度下限 |
-| `track_buffer` / `max_age` | `lost_track_buffer` | lost 状态最大帧数 | track 失踪最大帧数 |
-| `match_thresh` / `iou_threshold` | `minimum_matching_threshold` | 一阶段代价上限 (cost = 1 - IoU) | iou_threshold = 1 − x |
-| `frame_rate` | `frame_rate` | buffer 帧数换算 | 忽略 |
+| 标准参数 | supervision 别名 | bytetrack_native 含义 | ocsort 含义 | botsort 含义 |
+|----------|-------------------|----------------------|--------------|--------------|
+| `track_high_thresh` / `det_thresh` | `track_activation_threshold` | 高/低分检测切分阈值 | 检测置信度下限 | 高/低分检测切分阈值 |
+| `track_buffer` / `max_age` | `lost_track_buffer` | lost 状态最大帧数 | track 失踪最大帧数 | lost 状态最大帧数 |
+| `match_thresh` / `iou_threshold` | `minimum_matching_threshold` | 一阶段代价上限 (cost = 1 - IoU) | iou_threshold = 1 − x | IoU/ReID 融合代价上限 |
+| `frame_rate` | `frame_rate` | buffer 帧数换算 | 忽略 | buffer 帧数换算 |
+| `camera_motion` / `with_reid` | — | — | — | CMC / ReID 开关 |
 
 未知 kwargs 用 `**_` 吸收,不会抛错。
 
@@ -130,6 +154,31 @@ result_img, output_data = pipeline(frame)
         - update
         - get_state
 
+## BoTSORT
+
+手写向量化 BoT-SORT。继承 ByteTrack 的高/低分两级关联,改用 XYWH Kalman 状态,并可选叠加:
+
+* `camera_motion=True`:OpenCV ORB + RANSAC 估计全局仿射运动并补偿轨迹预测框。
+* `with_reid=True`:融合 IoU/fuse-score 与余弦外观距离,embedding 由 `detections.data["features"]` 或 `reid_encoder(frame, xyxy)` 提供。
+
+::: onnxtools.tracking.botsort.BoTSORT
+    options:
+      heading_level: 3
+      show_root_heading: true
+      members_order: source
+
+### BOTrack / CMC
+
+::: onnxtools.tracking.botsort.BOTrack
+    options:
+      heading_level: 4
+      members_order: source
+
+::: onnxtools.tracking.botsort.CameraMotionCompensator
+    options:
+      heading_level: 4
+      members_order: source
+
 ## 共享基元
 
 ### Kalman 滤波
@@ -180,8 +229,9 @@ result_img, output_data = pipeline(frame)
 
 * **x86**:scipy fallback 已足够(~8 ms/帧 @ 200 检测)。
 * **边缘设备(Jetson)**:`uv pip install -e ".[tracking-fast]"` 启用 `lap.lapjv`,Hungarian 求解快 ~3-5×。
+* **移动相机**:`uv pip install -e ".[tracking-cmc]"`,然后使用 `create_tracker("botsort", camera_motion=True)`。
 * **缩减 pool**:降低 `lost_track_buffer` / `max_age`,或在上游用 NMS 削减进入跟踪的检测数。
-* **类别隔离**:`bytetrack_native(class_aware=True)` 用 cost mask 屏蔽跨类匹配,适合多类共存场景。
+* **类别隔离**:`bytetrack_native(class_aware=True)` 或 `botsort(class_aware=True)` 用 cost mask 屏蔽跨类匹配,适合多类共存场景。
 
 更多内部约定与扩展指引参见仓库内 `onnxtools/tracking/CLAUDE.md`(GitHub 浏览:
 <https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/CLAUDE.md>)。

@@ -12,13 +12,14 @@ Quick start
     tracker = create_tracker('bytetrack')         # supervision built-in (default)
     tracker = create_tracker('bytetrack_native')  # native vectorised ByteTrack
     tracker = create_tracker('ocsort')            # native OC-SORT
+    tracker = create_tracker('botsort')           # native BoT-SORT
     tracked = tracker.update(detections, frame)   # adds .tracker_id
     tracker.reset()                                # restart IDs from 1
 
-The native back-ends (``bytetrack_native`` and ``ocsort``) are hand-written on
-top of numpy with optional ``lap.lapjv`` acceleration (``[tracking-fast]``
-extra). They share the kalman + matching primitives in :mod:`.kalman` and
-:mod:`.matching`.
+The native back-ends (``bytetrack_native``, ``ocsort``, and ``botsort``) are
+hand-written on top of numpy with optional ``lap.lapjv`` acceleration
+(``[tracking-fast]`` extra). They share the kalman + matching primitives in
+:mod:`.kalman` and :mod:`.matching`.
 """
 
 from __future__ import annotations
@@ -108,7 +109,7 @@ class SupervisionByteTrack(BaseTracker):
 # ---------------------------------------------------------------------------
 
 
-SUPPORTED_TRACKERS = ("bytetrack", "bytetrack_native", "ocsort")
+SUPPORTED_TRACKERS = ("bytetrack", "bytetrack_native", "ocsort", "botsort")
 
 
 def create_tracker(algo: str = "bytetrack", **kwargs: Any) -> BaseTracker:
@@ -120,6 +121,7 @@ def create_tracker(algo: str = "bytetrack", **kwargs: Any) -> BaseTracker:
             * ``"bytetrack"`` — supervision built-in (default; back-compat).
             * ``"bytetrack_native"`` — hand-rolled vectorised ByteTrack.
             * ``"ocsort"`` — hand-rolled vectorised OC-SORT.
+            * ``"botsort"`` — hand-rolled BoT-SORT with optional CMC/ReID.
         **kwargs: Tracker parameters. The supervision-style aliases
             (``track_activation_threshold`` / ``lost_track_buffer`` /
             ``minimum_matching_threshold`` / ``frame_rate``) are accepted by
@@ -142,6 +144,10 @@ def create_tracker(algo: str = "bytetrack", **kwargs: Any) -> BaseTracker:
         from .ocsort import OCSORT
 
         return OCSORT(**kwargs)
+    if algo == "botsort":
+        from .botsort import BoTSORT
+
+        return BoTSORT(**kwargs)
     raise ValueError(f"Unknown tracker algorithm: {algo!r}. Supported: {SUPPORTED_TRACKERS}")
 
 

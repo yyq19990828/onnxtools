@@ -4,13 +4,14 @@
 
 ## 模块职责
 
-基于运动模型的 2D 多目标跟踪 (MOT)，统一以 `supervision.Detections` 为输入输出，可在 `InferencePipeline` 中即插即用。三个后端共享 `kalman.py` / `matching.py` 的批量化基元，`lap` 不可用时透明回落到 `scipy.optimize.linear_sum_assignment`。
+基于运动模型/外观特征的 2D 多目标跟踪 (MOT)，统一以 `supervision.Detections` 为输入输出，可在 `InferencePipeline` 中即插即用。四个后端共享 `kalman.py` / `matching.py` 的批量化基元，`lap` 不可用时透明回落到 `scipy.optimize.linear_sum_assignment`。
 
 | 算法 | 实现 | 主要特性 |
 |------|------|----------|
 | `bytetrack` | supervision 封装 `SupervisionByteTrack` | 零额外依赖，默认值，向后兼容 |
 | `bytetrack_native` | 向量化 numpy `ByteTrackNative` | 三阶段关联 + lost-buffer，对齐官方 byte_tracker，支持 `class_aware` |
 | `ocsort` | 向量化 numpy `OCSORT` | 含 OCM / OCR / ORU 观测中心改进 |
+| `botsort` | 向量化 numpy `BoTSORT` | XYWH Kalman + 可选 CMC + 可选 ReID 特征融合 |
 
 ## 入口
 
@@ -20,12 +21,13 @@ from onnxtools.tracking import create_tracker
 tracker = create_tracker("bytetrack")          # supervision (默认)
 tracker = create_tracker("bytetrack_native")   # 原生 ByteTrack
 tracker = create_tracker("ocsort")             # 原生 OC-SORT
+tracker = create_tracker("botsort")            # 原生 BoT-SORT
 
 tracked = tracker.update(detections, frame)    # 返回 tracker_id 已填充的 sv.Detections
 tracker.reset()                                # 重置后 ID 从 1 重新发号
 ```
 
-`update(detections, frame)` 接受任意长度(含空)的 `sv.Detections`。`frame` 对纯运动模型是占位参数(预留 ReID)。
+`update(detections, frame)` 接受任意长度(含空)的 `sv.Detections`。`frame` 对 ByteTrack / OC-SORT 是占位参数；对 `botsort(camera_motion=True)` 和 `botsort(reid_encoder=...)` 会参与 CMC / ReID。
 
 ### BaseTracker 契约
 
@@ -59,14 +61,15 @@ result_img, output_data = pipeline(frame)
 
 所有 backend 用 `**_` 吸收未知 kwargs，可共用一份 kwargs 字典。
 
-| 标准名 | supervision 别名 | bytetrack_native | ocsort |
-|--------|------------------|-------------------|--------|
-| `track_high_thresh` | `track_activation_threshold` | 高分检测切分阈值 | `det_thresh` |
-| `track_buffer` | `lost_track_buffer` | lost 最大帧数 | `max_age` |
-| `match_thresh` | `minimum_matching_threshold` | 一阶段 IoU 代价上限 | `iou_threshold = 1 - x` |
-| `frame_rate` | `frame_rate` | 换算 buffer 帧数 | 忽略 |
-| `class_aware` | — | 按类别隔离匹配 | 不支持 |
-| `delta_t` / `inertia` | — | — | OC-SORT 专属 |
+| 标准名 | supervision 别名 | bytetrack_native | ocsort | botsort |
+|--------|------------------|-------------------|--------|---------|
+| `track_high_thresh` | `track_activation_threshold` | 高分检测切分阈值 | `det_thresh` | 高分检测切分阈值 |
+| `track_buffer` | `lost_track_buffer` | lost 最大帧数 | `max_age` | lost 最大帧数 |
+| `match_thresh` | `minimum_matching_threshold` | 一阶段 IoU 代价上限 | `iou_threshold = 1 - x` | 一阶段融合代价上限 |
+| `frame_rate` | `frame_rate` | 换算 buffer 帧数 | 忽略 | 换算 buffer 帧数 |
+| `class_aware` | — | 按类别隔离匹配 | 不支持 | 按类别隔离匹配 |
+| `camera_motion` / `with_reid` | — | — | — | BoT-SORT 专属 |
+| `delta_t` / `inertia` | — | — | OC-SORT 专属 | — |
 
 ## 共享原语 (`kalman.py` / `matching.py`)
 
@@ -92,7 +95,8 @@ onnxtools/tracking/
 ├── kalman.py      # KalmanFilterXYAH (8D) / KalmanFilterXYSR (7D)
 ├── matching.py    # IoU/GIoU 向量化 + 分数融合 + lap/scipy 分配器
 ├── bytetrack.py   # STrack 状态机 + ByteTrackNative (3 阶段关联)
-└── ocsort.py      # KalmanBoxTracker + OCSORT (OCM/OCR/ORU)
+├── ocsort.py      # KalmanBoxTracker + OCSORT (OCM/OCR/ORU)
+└── botsort.py     # BOTrack + BoTSORT (XYWH + CMC + ReID)
 ```
 
 ## 算法行为要点
@@ -117,6 +121,12 @@ onnxtools/tracking/
 
 OCSORT 内部 `id` 从 0 计数，emit 时 `+1`，与 supervision 的 1-based 约定一致。
 
+### BoTSORT 可选能力
+
+* `camera_motion=False` 默认关闭；设为 `True` 时使用 OpenCV ORB + RANSAC 估计上一帧到当前帧的全局仿射变换，并 warp 轨迹预测框。纯 tracking 安装未必有 OpenCV，单独安装 `.[tracking-cmc]` 或 `.[inference]`。
+* `with_reid=True` 只启用融合逻辑，不内置模型。调用方必须传 `detections.data["features"]` 或 `reid_encoder(frame, xyxy)`，每个检测一条 embedding。
+* ReID 融合只在几何接近(`proximity_thresh`)时采信外观，外观低于 `appearance_thresh` 时退回 IoU/fuse-score。
+
 ## 性能
 
 x86 + 200 持续目标 + 1080p 下约 7-10 ms/帧(100+ FPS)，`lap.lapjv` 比 scipy fallback 略快。边缘设备超阈值时安装 `lap`(`uv pip install -e ".[tracking-fast]"`) 或减小 `max_age` / 上游收紧 conf。
@@ -124,16 +134,17 @@ x86 + 200 持续目标 + 1080p 下约 7-10 ms/帧(100+ FPS)，`lap.lapjv` 比 sc
 ## 依赖与测试
 
 * `numpy>=2.2.6`、`supervision==0.26.1`、`scipy>=1.10.0`(必需)、`lap>=0.5.0`(可选 `[tracking-fast]`)。
-* 单元测试覆盖 `kalman` / `matching` / `bytetrack_native` / `ocsort` / `factory` / `_align_tracker_ids` 回填，性能测试 `tests/performance/test_tracking_benchmark.py`(200 检测/帧 < 16ms)。
+* `botsort(camera_motion=True)` 需要 OpenCV：安装 `[tracking-cmc]` 或 `[inference]`。
+* 单元测试覆盖 `kalman` / `matching` / `bytetrack_native` / `ocsort` / `botsort` / `factory` / `_align_tracker_ids` 回填，性能测试 `tests/performance/test_tracking_benchmark.py`(200 检测/帧 < 16ms)。
 
 ## 相关文件
 
-* 实现：`__init__.py` · `base.py` · `kalman.py` · `matching.py` · `bytetrack.py` · `ocsort.py`
+* 实现：`__init__.py` · `base.py` · `kalman.py` · `matching.py` · `bytetrack.py` · `ocsort.py` · `botsort.py`
 * 集成：[`onnxtools/pipeline.py`](../pipeline.py)(`enable_tracking` / `_align_tracker_ids`)、[`utils/supervision_labels.py`](../utils/supervision_labels.py)(`tracker_id` 前缀)
 * 文档：[`docs/api/tracking.md`](../../docs/api/tracking.md) · [`docs/guides/tracking/`](../../docs/guides/tracking/index.md)
 
 ## FAQ
 
-* **选哪个后端？** 零依赖/兼容历史 → `bytetrack`；严格论文行为/可调阈值/类别隔离 → `bytetrack_native`；快速运动或长遮挡 → `ocsort`。
+* **选哪个后端？** 零依赖/兼容历史 → `bytetrack`；严格论文行为/可调阈值/类别隔离 → `bytetrack_native`；快速运动或长遮挡 → `ocsort`；移动相机或需要外观特征 → `botsort`。
 * **多实例 ID 会冲突吗？** 不会，新建实例即重置类级计数器，ID 从 1 发号；但跨实例**并行**会重叠(仅为单 stream 设计)。
 * **如何加新算法？** 在本目录新增继承 `BaseTracker` 的类，在 `create_tracker` 中延迟导入注册，并加入 `SUPPORTED_TRACKERS`，复用 `kalman.py` / `matching.py` 基元。

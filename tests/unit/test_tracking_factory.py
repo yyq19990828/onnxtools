@@ -32,7 +32,7 @@ def frame():
 class TestFactory:
     def test_supported_lists_only_shipped_algos(self):
         # Living source of truth — when we vendor more, this expands.
-        assert SUPPORTED_TRACKERS == ("bytetrack", "bytetrack_native", "ocsort")
+        assert SUPPORTED_TRACKERS == ("bytetrack", "bytetrack_native", "ocsort", "botsort")
 
     def test_unknown_algo_raises(self):
         with pytest.raises(ValueError, match="Unknown tracker"):
@@ -55,6 +55,17 @@ class TestFactory:
         tracker = create_tracker("ocsort", min_hits=1)
         assert isinstance(tracker, BaseTracker)
         assert isinstance(tracker, OCSORT)
+        for _ in range(2):
+            out = tracker.update(_dets([[100, 100, 200, 200]]), frame)
+        assert out.tracker_id is not None
+        assert int(out.tracker_id[0]) == 1
+
+    def test_botsort_is_constructed(self, frame):
+        from onnxtools.tracking.botsort import BoTSORT
+
+        tracker = create_tracker("botsort")
+        assert isinstance(tracker, BaseTracker)
+        assert isinstance(tracker, BoTSORT)
         for _ in range(2):
             out = tracker.update(_dets([[100, 100, 200, 200]]), frame)
         assert out.tracker_id is not None

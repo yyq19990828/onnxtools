@@ -63,6 +63,14 @@ tracking-fast = [
     "lap>=0.5.0",
 ]
 
+# 跟踪 + 相机运动补偿 (可选) — 为 BoT-SORT camera_motion=True 提供 OpenCV
+# 安装方式: uv pip install -e ".[tracking-cmc]"
+tracking-cmc = [
+    "supervision==0.26.1",
+    "scipy>=1.10.0",
+    "opencv-contrib-python>=4.12.0.88",
+]
+
 # MOT 评估 (可选) — MOTChallenge 格式跟踪指标
 # 安装方式: uv pip install -e ".[mot]"
 # motmetrics 提供 CLEAR-MOT/IDF1 等，trackeval 提供 HOTA；

@@ -119,7 +119,7 @@ graph LR
 | 长时序建模 | 强(全序列 query) | 靠 buffer/ReID |
 
 !!! note "对本仓库用户的建议"
-    端到端方法在 DanceTrack/SportsMOT 等学术榜单亮眼,但**实时、可换检测器、易部署**仍是 tracking-by-detection 的天下。本仓库的 [ByteTrack](bytetrack.md) / [OC-SORT](ocsort.md) 正是为这种工程落地而设计——若未来需要更强的长时序/外观能力,可循 [BoT-SORT](botsort.md)/[Deep OC-SORT](deep-ocsort.md) 路线增量扩展,而非直接上端到端。
+    端到端方法在 DanceTrack/SportsMOT 等学术榜单亮眼,但**实时、可换检测器、易部署**仍是 tracking-by-detection 的天下。本仓库的 [ByteTrack](bytetrack.md) / [OC-SORT](ocsort.md) / [BoT-SORT](botsort.md) 正是为这种工程落地而设计——若未来需要更强的长时序能力,可循 [Deep OC-SORT](deep-ocsort.md) 路线继续增量扩展,而非直接上端到端。
 
 ## 参考文献
 
