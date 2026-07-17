@@ -86,3 +86,35 @@ intersection_3hz:
     - "Add ground-plane projection (camera intrinsics + extrinsics) so association runs in metric space; fixes perspective-distorted velocity scales."
     - "Add lightweight ReID head (StrongSORT / Deep-OCSORT style) for long occlusions where motion-only recovery fails."
     - "Stabilize the detector before further tracker tuning — flickering boxes dominate residual IDSW."
+
+mot_5hz_best:
+  # 5Hz MOT_dataset (data/track/MOT_dataset, 5 sequences).
+  # Source: tools/tracking/sweep_bytetrack.py result at
+  # runs/bytetrack_sweep_20260620/result.json (rank 1, HOTA=39.38).
+  description: |
+    Best ByteTrack-native config found on data/track/MOT_dataset
+    (5Hz). frame_rate=30 with track_buffer=15 means ~15 frames of
+    direct buffer (see intersection_3hz preset for the frame_rate
+    quirk note).
+  algo: bytetrack_native
+  kwargs:
+    track_high_thresh: 0.7
+    new_track_thresh: 0.7
+    match_thresh: 0.9
+    track_buffer: 15
+    frame_rate: 30
+    # car 经过 cyclist 时 cyclist 轨迹会吸附到 car 检测上 (跨类 IoU 抢轨)，
+    # 开启 class_aware 阻断跨类关联。
+    class_aware: true
+  pipeline_hints:
+    annotator_preset: tracking
+  class_voting:
+    enabled: true
+    decay: 1.0
+    max_table_size: 4096
+  metrics_at_chosen:
+    dataset: data/track/MOT_dataset
+    detector: models/vehicle_det_detr_batch4.onnx
+    HOTA: 39.38
+    MOTA: 19.59
+    IDF1: 45.60

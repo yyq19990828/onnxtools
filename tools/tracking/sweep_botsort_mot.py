@@ -17,12 +17,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import sys
 from collections import defaultdict
 from collections.abc import Sequence
-from configparser import ConfigParser
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -35,14 +35,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from onnxtools import create_detector  # noqa: E402
 from onnxtools.eval import MOTEvaluator  # noqa: E402
-from onnxtools.eval.mot_data import MOTSequence  # noqa: E402
+from onnxtools.eval.mot_data import MOTSequence, parse_seqinfo  # noqa: E402
 from onnxtools.tracking import create_tracker  # noqa: E402
+from onnxtools.tracking.class_voting import ClassVotingTracker  # noqa: E402
 
 # ----------------------------------------------------------------------------
 # 常量
 # ----------------------------------------------------------------------------
-MODEL = "models/vehicle_det_detr_batch4.onnx"
-FALLBACK_MODEL = "models/vehicle_det_detr_batch1.onnx"
+MODEL = "models/rfdetr-medium_20260629_d_unified.onnx"
+MODEL_TYPE = "rfdetr_unified"
+FALLBACK_MODEL = "models/vehicle_det_detr_batch4.onnx"
+FALLBACK_MODEL_TYPE = "rtdetr"
 MOT_ROOT = "data/track/MOT_dataset"
 PROXY_DIR = "data/track/proxy_videos"
 DEFAULT_REID_MODEL = (
@@ -56,11 +59,24 @@ VRU_CLASS = 0
 MOT_FRAME_RATE = 5
 PROXY_FPS = 3.0
 
-# 搜索空间：基础 tracker 参数与 runs/bytetrack_sweep/REPORT.md 对齐；ReID 参数先固定做对照。
+# 搜索空间。新检测模型(rfdetr-medium_20260629_d)误检跳变显著降低，
+# 因此较旧模型扩大三个轴的范围（与 sweep_bytetrack_mot.py 对齐）：
+#   - high/new 向下加 0.5(检测可信→可放更多高质量框)，向上加 0.8(更严格 stage-1)
+#   - match_thresh 向下加 0.6、向上加 0.95(更紧/更松两端都试)
+#   - track_buffer 向上加 30/60(检测更稳→可容忍更长真实遮挡)
+# ReID 三个阈值暂保持单点，避免组合数爆炸(7×6×5×K^3)；需扩时改这里。
 TRACK_LOW_THRESH = 0.4
-HIGH_NEW_PAIRS = ((0.6, 0.6), (0.6, 0.7), (0.7, 0.7))
-MATCH_THRESH = (0.7, 0.8, 0.85, 0.9)
-TRACK_BUFFER = (3, 6, 9, 15)
+HIGH_NEW_PAIRS = (
+    (0.5, 0.5),
+    (0.5, 0.6),
+    (0.6, 0.6),
+    (0.6, 0.7),
+    (0.7, 0.7),
+    (0.7, 0.8),
+    (0.8, 0.8),
+)
+MATCH_THRESH = (0.6, 0.7, 0.8, 0.85, 0.9, 0.95)
+TRACK_BUFFER = (3, 9, 15, 30, 60)
 APPEARANCE_THRESH = (0.25,)
 PROXIMITY_THRESH = (0.50,)
 REID_ALPHA = (0.90,)
@@ -72,6 +88,7 @@ FrameRecord = dict[str, Any]
 LOGGER = logging.getLogger("botsort_sweep")
 LOG_EVERY_MOT_FRAMES = 20
 LOG_EVERY_PROXY_SAMPLES = 20
+CACHE_VERSION = 2  # v2: 加入 cls 字段(原始检测类别 id，供 class_aware/voting 使用)
 
 
 def configure_logging(level: str) -> None:
@@ -82,6 +99,152 @@ def configure_logging(level: str) -> None:
         datefmt="%H:%M:%S",
         force=True,
     )
+
+
+def _path_signature(path: str | Path | None) -> dict[str, object] | None:
+    """Return a stable-ish signature for invalidating cache files."""
+    if path is None:
+        return None
+    p = Path(path)
+    try:
+        stat = p.stat()
+    except FileNotFoundError:
+        return {"path": str(p)}
+    return {
+        "path": str(p.resolve()),
+        "size": stat.st_size,
+        "mtime_ns": stat.st_mtime_ns,
+    }
+
+
+def _cache_key(payload: dict[str, object]) -> str:
+    raw = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
+    return hashlib.sha1(raw).hexdigest()[:16]
+
+
+def _safe_stem(value: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in value)[:80]
+
+
+def build_cache_identity(detector_model: str, reid_model: str | None, use_reid: bool) -> dict[str, object]:
+    """Build the shared cache identity for detection/ReID outputs."""
+    return {
+        "version": CACHE_VERSION,
+        "detector_model": _path_signature(detector_model),
+        "reid_model": _path_signature(reid_model) if use_reid else None,
+        "use_reid": use_reid,
+        "det_conf_floor": DET_CONF_FLOOR,
+        "keep_classes": list(KEEP_CLASSES),
+        "vru_class": VRU_CLASS,
+    }
+
+
+def _object_array(values: Sequence[object]) -> np.ndarray:
+    arr = np.empty(len(values), dtype=object)
+    for i, value in enumerate(values):
+        arr[i] = value
+    return arr
+
+
+def _save_npz_atomic(path: Path, **arrays: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.stem}.tmp{path.suffix}")
+    np.savez_compressed(tmp, **arrays)
+    tmp.replace(path)
+
+
+def _mot_cache_path(cache_dir: Path, name: str, meta: dict[str, object]) -> Path:
+    return cache_dir / "mot" / f"{_safe_stem(name)}_{_cache_key(meta)}.npz"
+
+
+def _proxy_cache_path(cache_dir: Path, video: Path, meta: dict[str, object]) -> Path:
+    return cache_dir / "proxy" / f"{_safe_stem(video.stem)}_{_cache_key(meta)}.npz"
+
+
+def _save_mot_cache(path: Path, seq: dict, meta: dict[str, object]) -> None:
+    frame_ids = sorted(seq["frames"])
+    records = [seq["frames"][frame_id] for frame_id in frame_ids]
+    image_paths = [str(seq["image_paths"][frame_id]) for frame_id in frame_ids]
+    _save_npz_atomic(
+        path,
+        meta_json=np.array(json.dumps(meta, sort_keys=True, ensure_ascii=False), dtype=object),
+        seq_len=np.array(seq["len"], dtype=np.int32),
+        frame_ids=np.array(frame_ids, dtype=np.int32),
+        xyxy=_object_array([record["xyxy"] for record in records]),
+        conf=_object_array([record["conf"] for record in records]),
+        cls=_object_array([record.get("cls") for record in records]),
+        features=_object_array([record.get("features") for record in records]),
+        image_paths=np.array(image_paths, dtype=object),
+    )
+
+
+def _load_mot_cache(path: Path, meta: dict[str, object]) -> dict | None:
+    try:
+        with np.load(path, allow_pickle=True) as data:
+            cached_meta = json.loads(str(data["meta_json"].item()))
+            if cached_meta != meta:
+                return None
+            frame_ids = data["frame_ids"].astype(int)
+            xyxy = data["xyxy"]
+            conf = data["conf"]
+            cls_arr = data["cls"] if "cls" in data.files else None
+            features = data["features"]
+            image_paths_raw = data["image_paths"]
+            frames: dict[int, FrameRecord] = {}
+            image_paths: dict[int, Path] = {}
+            for i, frame_id in enumerate(frame_ids):
+                feature = features[i]
+                cls = None if cls_arr is None or cls_arr[i] is None else np.asarray(cls_arr[i], dtype=int)
+                frames[int(frame_id)] = {
+                    "xyxy": np.asarray(xyxy[i], dtype=np.float32),
+                    "conf": np.asarray(conf[i], dtype=np.float32),
+                    "cls": cls,
+                    "features": None if feature is None else np.asarray(feature, dtype=np.float32),
+                }
+                image_paths[int(frame_id)] = Path(str(image_paths_raw[i]))
+            return {"len": int(data["seq_len"]), "frames": frames, "image_paths": image_paths}
+    except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        LOGGER.warning("[cache:MOT] ignore unreadable cache %s: %s", path, exc)
+        return None
+
+
+def _save_proxy_cache(path: Path, records: list[FrameRecord], meta: dict[str, object]) -> None:
+    _save_npz_atomic(
+        path,
+        meta_json=np.array(json.dumps(meta, sort_keys=True, ensure_ascii=False), dtype=object),
+        xyxy=_object_array([record["xyxy"] for record in records]),
+        conf=_object_array([record["conf"] for record in records]),
+        cls=_object_array([record.get("cls") for record in records]),
+        features=_object_array([record.get("features") for record in records]),
+    )
+
+
+def _load_proxy_cache(path: Path, meta: dict[str, object]) -> list[FrameRecord] | None:
+    try:
+        with np.load(path, allow_pickle=True) as data:
+            cached_meta = json.loads(str(data["meta_json"].item()))
+            if cached_meta != meta:
+                return None
+            xyxy = data["xyxy"]
+            conf = data["conf"]
+            cls_arr = data["cls"] if "cls" in data.files else None
+            features = data["features"]
+            records: list[FrameRecord] = []
+            for i in range(len(xyxy)):
+                feature = features[i]
+                cls = None if cls_arr is None or cls_arr[i] is None else np.asarray(cls_arr[i], dtype=int)
+                records.append(
+                    {
+                        "xyxy": np.asarray(xyxy[i], dtype=np.float32),
+                        "conf": np.asarray(conf[i], dtype=np.float32),
+                        "cls": cls,
+                        "features": None if feature is None else np.asarray(feature, dtype=np.float32),
+                    }
+                )
+            return records
+    except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        LOGGER.warning("[cache:proxy] ignore unreadable cache %s: %s", path, exc)
+        return None
 
 
 # ----------------------------------------------------------------------------
@@ -187,7 +350,12 @@ class ReIDOnnxEncoder:
 # 检测 + ReID 缓存
 # ----------------------------------------------------------------------------
 def detect_filtered(detector, image: np.ndarray, reid_encoder: ReIDOnnxEncoder | None) -> FrameRecord:
-    """跑检测，保留目标类并按需计算 ReID 特征。"""
+    """跑检测，保留目标类并按需计算 ReID 特征。
+
+    保留 detector 的原始类别 id(不再池化为 VRU)，让 class_aware 关联 +
+    ClassVotingTracker 在 sweep 中有效。评估时仍调用 ``classes=None`` 走类无关
+    HOTA，所以 GT 的类体系与预测无须对齐(预测里的类列只是占位)。
+    """
     r = detector(image)
     boxes = np.asarray(r.boxes, dtype=np.float32).reshape(-1, 4)
     scores = np.asarray(r.scores, dtype=np.float32).reshape(-1)
@@ -196,8 +364,9 @@ def detect_filtered(detector, image: np.ndarray, reid_encoder: ReIDOnnxEncoder |
     keep = np.isin(cls, KEEP_CLASSES) & (scores >= DET_CONF_FLOOR)
     boxes = boxes[keep]
     scores = scores[keep]
+    cls = cls[keep]
     features = reid_encoder(image, boxes) if reid_encoder is not None and len(boxes) else None
-    return {"xyxy": boxes, "conf": scores, "features": features}
+    return {"xyxy": boxes, "conf": scores, "cls": cls, "features": features}
 
 
 def make_dets(record: FrameRecord, use_reid: bool) -> sv.Detections:
@@ -211,12 +380,30 @@ def make_dets(record: FrameRecord, use_reid: bool) -> sv.Detections:
     if use_reid and features is not None:
         data["features"] = np.asarray(features, dtype=np.float32)
 
+    cls = record.get("cls")
+    if cls is None:
+        # 旧缓存(无 cls 字段)的兼容路径：回退到单一 VRU 类，class_aware/voting 退化为 no-op。
+        class_ids = np.full(len(xyxy), VRU_CLASS, dtype=int)
+    else:
+        class_ids = np.asarray(cls, dtype=int)
+
     return sv.Detections(
         xyxy=xyxy.astype(float),
         confidence=conf.astype(float),
-        class_id=np.full(len(xyxy), VRU_CLASS, dtype=int),
+        class_id=class_ids,
         data=data,
     )
+
+
+def make_tracker(params: dict, frame_rate: int, *, use_reid: bool, class_aware: bool, class_voting: bool):
+    """构建 BoT-SORT(+ ClassVotingTracker 包装)。"""
+    inner = create_tracker(
+        "botsort",
+        **tracker_kwargs(params, frame_rate, use_reid, class_aware=class_aware),
+    )
+    if class_voting:
+        return ClassVotingTracker(inner, decay=1.0)
+    return inner
 
 
 def read_seqmap(mot_root: Path) -> list[str]:
@@ -234,16 +421,32 @@ def cache_mot_detections(
     mot_root: Path,
     max_frames: int | None,
     reid_encoder: ReIDOnnxEncoder | None,
+    cache_dir: Path | None,
+    cache_identity: dict[str, object],
 ) -> dict[str, dict]:
     """``{seq: {"len": L, "frames": {frame: record}, "image_paths": {frame: path}}}``。"""
     cache: dict[str, dict] = {}
     for name in read_seqmap(mot_root):
-        ini = ConfigParser()
-        ini.read(mot_root / name / "seqinfo.ini")
-        n = int(ini["Sequence"]["seqLength"])
-        im_dir = mot_root / name / ini["Sequence"].get("imDir", "img1")
-        im_ext = ini["Sequence"].get("imExt", ".jpg")
+        info = parse_seqinfo(mot_root / name / "seqinfo.ini")
+        n = info.seq_length
+        im_dir = mot_root / name / info.im_dir
+        im_ext = info.im_ext
         limit = min(n, max_frames) if max_frames else n
+        cache_meta = {
+            **cache_identity,
+            "kind": "mot",
+            "mot_root": str(mot_root.resolve()),
+            "seq": name,
+            "seqinfo": _path_signature(mot_root / name / "seqinfo.ini"),
+            "limit": limit,
+        }
+        cache_path = _mot_cache_path(cache_dir, name, cache_meta) if cache_dir is not None else None
+        if cache_path is not None and cache_path.exists():
+            loaded = _load_mot_cache(cache_path, cache_meta)
+            if loaded is not None:
+                cache[name] = loaded
+                LOGGER.info("[cache:MOT] hit %s frames=%d path=%s", name, len(loaded["frames"]), cache_path)
+                continue
 
         LOGGER.info("[cache:MOT] start %s frames=%d reid=%s", name, limit, reid_encoder is not None)
         frames: dict[int, FrameRecord] = {}
@@ -259,6 +462,9 @@ def cache_mot_detections(
                 LOGGER.info("[cache:MOT] %s progress %d/%d cached=%d", name, f, limit, len(frames))
         cache[name] = {"len": limit, "frames": frames, "image_paths": image_paths}
         LOGGER.info("[cache:MOT] done %s cached=%d/%d", name, len(frames), limit)
+        if cache_path is not None:
+            _save_mot_cache(cache_path, cache[name], cache_meta)
+            LOGGER.info("[cache:MOT] saved %s", cache_path)
     return cache
 
 
@@ -271,6 +477,8 @@ def cache_proxy_detections(
     videos: list[Path],
     reid_encoder: ReIDOnnxEncoder | None,
     keep_frames: bool,
+    cache_dir: Path | None,
+    cache_identity: dict[str, object],
 ) -> dict[str, list[FrameRecord]]:
     """``{video_name: [record, ...]}``，按约 3Hz 采样。"""
     cache: dict[str, list[FrameRecord]] = {}
@@ -279,6 +487,23 @@ def cache_proxy_detections(
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         step = max(1, round(fps / PROXY_FPS))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        cache_meta = {
+            **cache_identity,
+            "kind": "proxy",
+            "video": _path_signature(v),
+            "proxy_fps": PROXY_FPS,
+            "source_fps": fps,
+            "step": step,
+            "keep_frames": keep_frames,
+        }
+        cache_path = _proxy_cache_path(cache_dir, v, cache_meta) if cache_dir is not None else None
+        if cache_path is not None and cache_path.exists() and not keep_frames:
+            loaded = _load_proxy_cache(cache_path, cache_meta)
+            if loaded is not None:
+                cache[v.name] = loaded
+                cap.release()
+                LOGGER.info("[cache:proxy] hit %s sampled=%d path=%s", v.name, len(loaded), cache_path)
+                continue
         LOGGER.info(
             "[cache:proxy] start %s fps=%.2f step=%d frames=%d reid=%s",
             v.name,
@@ -309,23 +534,33 @@ def cache_proxy_detections(
         cap.release()
         cache[v.name] = records
         LOGGER.info("[cache:proxy] done %s sampled=%d step=%d", v.name, len(records), step)
+        if cache_path is not None and not keep_frames:
+            _save_proxy_cache(cache_path, records, cache_meta)
+            LOGGER.info("[cache:proxy] saved %s", cache_path)
     return cache
 
 
-def resolve_detector_model(model: str) -> str:
-    """Resolve the detector model path, with a local fallback for the default model."""
+def resolve_detector_model(model: str, model_type: str) -> tuple[str, str]:
+    """Resolve the detector model path, with a local fallback for the default model.
+
+    Returns ``(path, model_type)`` — fallback may change model_type (e.g. rfdetr_unified → rtdetr).
+    """
     if Path(model).exists():
-        return model
+        return model, model_type
     if model == MODEL and Path(FALLBACK_MODEL).exists():
-        LOGGER.info("[model] 默认检测模型不存在，自动改用本机已有模型: %s", FALLBACK_MODEL)
-        return FALLBACK_MODEL
+        LOGGER.info(
+            "[model] 默认检测模型不存在，自动改用本机已有模型: %s (type=%s)",
+            FALLBACK_MODEL,
+            FALLBACK_MODEL_TYPE,
+        )
+        return FALLBACK_MODEL, FALLBACK_MODEL_TYPE
     raise FileNotFoundError(f"检测模型不存在: {model}")
 
 
 # ----------------------------------------------------------------------------
 # 在缓存上跑 tracker
 # ----------------------------------------------------------------------------
-def tracker_kwargs(params: dict, frame_rate: int, use_reid: bool) -> dict:
+def tracker_kwargs(params: dict, frame_rate: int, use_reid: bool, *, class_aware: bool = False) -> dict:
     return dict(
         track_high_thresh=params["track_high_thresh"],
         track_low_thresh=TRACK_LOW_THRESH,
@@ -333,7 +568,7 @@ def tracker_kwargs(params: dict, frame_rate: int, use_reid: bool) -> dict:
         match_thresh=params["match_thresh"],
         track_buffer=params["track_buffer"],
         frame_rate=frame_rate,
-        class_aware=False,
+        class_aware=class_aware,
         camera_motion=bool(params["camera_motion"]),
         with_reid=use_reid,
         feature_key="features",
@@ -349,11 +584,19 @@ def _tracker_frame(record: FrameRecord, camera_motion: bool) -> np.ndarray | Non
     return record.get("frame")
 
 
-def track_mot(mot_cache: dict, params: dict, use_reid: bool) -> dict[str, MOTSequence]:
-    """在缓存的 MOT 检测/ReID 特征上跑 BoT-SORT，产出 ``{seq: MOTSequence}``。"""
+def track_mot(
+    mot_cache: dict, params: dict, use_reid: bool, *, class_aware: bool, class_voting: bool
+) -> dict[str, MOTSequence]:
+    """在缓存的 MOT 检测/ReID 特征上跑 BoT-SORT(+ class_aware/voting)，产出 ``{seq: MOTSequence}``。"""
     preds: dict[str, MOTSequence] = {}
     for name, seq in mot_cache.items():
-        tracker = create_tracker("botsort", **tracker_kwargs(params, MOT_FRAME_RATE, use_reid))
+        tracker = make_tracker(
+            params,
+            MOT_FRAME_RATE,
+            use_reid=use_reid,
+            class_aware=class_aware,
+            class_voting=class_voting,
+        )
         frames_out: dict[int, np.ndarray] = {}
         for f in range(1, seq["len"] + 1):
             if f not in seq["frames"]:
@@ -382,14 +625,27 @@ def track_mot(mot_cache: dict, params: dict, use_reid: bool) -> dict[str, MOTSeq
     return preds
 
 
-def proxy_metrics(proxy_cache: dict[str, list[FrameRecord]], params: dict, use_reid: bool) -> dict:
+def proxy_metrics(
+    proxy_cache: dict[str, list[FrameRecord]],
+    params: dict,
+    use_reid: bool,
+    *,
+    class_aware: bool,
+    class_voting: bool,
+) -> dict:
     """3Hz 无监督代理指标，跨视频平均。"""
     if not proxy_cache:
         return {"proxy_num_ids": 0.0, "proxy_mean_life": 0.0, "proxy_short_id_ratio": 0.0}
 
     per_video = []
     for records in proxy_cache.values():
-        tracker = create_tracker("botsort", **tracker_kwargs(params, int(PROXY_FPS), use_reid))
+        tracker = make_tracker(
+            params,
+            int(PROXY_FPS),
+            use_reid=use_reid,
+            class_aware=class_aware,
+            class_voting=class_voting,
+        )
         id_frames: dict[int, int] = defaultdict(int)
         for record in records:
             tracked = tracker.update(make_dets(record, use_reid), _tracker_frame(record, params["camera_motion"]))
@@ -469,21 +725,28 @@ def render_seq(
     params: dict,
     out_path: Path,
     use_reid: bool,
+    *,
+    class_aware: bool,
+    class_voting: bool,
 ) -> None:
     """用给定参数重跑 tracker，并把带轨迹+ID 的标注写成 mp4。"""
-    ini = ConfigParser()
-    ini.read(mot_root / seq / "seqinfo.ini")
-    sec = ini["Sequence"]
-    w, h = int(sec["imWidth"]), int(sec["imHeight"])
-    im_dir = mot_root / seq / sec.get("imDir", "img1")
-    im_ext = sec.get("imExt", ".jpg")
+    info = parse_seqinfo(mot_root / seq / "seqinfo.ini")
+    w, h = info.im_width, info.im_height
+    im_dir = mot_root / seq / info.im_dir
+    im_ext = info.im_ext
     seqc = mot_cache[seq]
 
     box_a = sv.BoxAnnotator(thickness=2)
     label_a = sv.LabelAnnotator(text_scale=0.5, text_thickness=1)
     trace_a = sv.TraceAnnotator(trace_length=30, thickness=2)
 
-    tracker = create_tracker("botsort", **tracker_kwargs(params, MOT_FRAME_RATE, use_reid))
+    tracker = make_tracker(
+        params,
+        MOT_FRAME_RATE,
+        use_reid=use_reid,
+        class_aware=class_aware,
+        class_voting=class_voting,
+    )
     info = sv.VideoInfo(width=w, height=h, fps=MOT_FRAME_RATE)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with sv.VideoSink(str(out_path), info) as sink:
@@ -493,7 +756,7 @@ def render_seq(
                 continue
             record = seqc["frames"].get(f)
             if record is None:
-                record = {"xyxy": np.empty((0, 4)), "conf": np.empty((0,)), "features": None}
+                record = {"xyxy": np.empty((0, 4)), "conf": np.empty((0,)), "cls": None, "features": None}
             record = dict(record)
             if params["camera_motion"]:
                 record["frame"] = img
@@ -527,7 +790,11 @@ def write_report(out_dir: Path, top5: list[dict], gate: float, ctx: dict) -> Non
     lines = []
     lines.append("# BoT-SORT 超参数搜索报告\n")
     lines.append("## 1. 搜索设置\n")
-    lines.append(f"- 检测模型：`{ctx['model']}` (conf floor={DET_CONF_FLOOR})")
+    lines.append(f"- 检测模型：`{ctx['model']}` (type={ctx.get('model_type', '?')}, conf floor={DET_CONF_FLOOR})")
+    lines.append(
+        f"- Tracker 配置：class_aware={ctx.get('class_aware', '?')}, "
+        f"class_voting={ctx.get('class_voting', '?')} (投票含反向写回到 STrack.cls)"
+    )
     lines.append(f"- ReID：{'启用' if ctx['use_reid'] else '关闭'}")
     if ctx["use_reid"]:
         lines.append(f"- ReID 模型：`{ctx['reid_model']}`")
@@ -608,9 +875,12 @@ def write_report(out_dir: Path, top5: list[dict], gate: float, ctx: dict) -> Non
 def main() -> None:
     ap = argparse.ArgumentParser(description="BoT-SORT 超参搜索 (MOT + 3Hz 代理 + ReID)")
     ap.add_argument("--model", default=MODEL)
+    ap.add_argument("--model-type", default=MODEL_TYPE, choices=["rtdetr", "yolo", "rfdetr", "rfdetr_unified"])
     ap.add_argument("--mot-root", default=MOT_ROOT)
     ap.add_argument("--proxy-dir", default=PROXY_DIR)
     ap.add_argument("--out-dir", default="runs/botsort_sweep")
+    ap.add_argument("--cache-dir", default=None, help="检测/ReID 磁盘缓存目录；默认 <out-dir>/cache")
+    ap.add_argument("--no-disk-cache", action="store_true", help="关闭检测/ReID 磁盘缓存")
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--max-mot-frames", type=int, default=None, help="每序列最多检测帧数(调试用)")
     ap.add_argument("--max-proxy", type=int, default=None, help="最多用几个代理视频(调试用)")
@@ -627,6 +897,16 @@ def main() -> None:
     ap.add_argument("--camera-motion", action="store_true", help="所有组合都启用 CMC")
     ap.add_argument("--sweep-camera-motion", action="store_true", help="同时搜索 camera_motion=False/True")
     ap.add_argument(
+        "--no-class-aware", dest="class_aware", action="store_false", help="禁用 BoT-SORT 类别隔离匹配 (默认开启)"
+    )
+    ap.add_argument(
+        "--no-class-voting",
+        dest="class_voting",
+        action="store_false",
+        help="禁用 ClassVotingTracker 类别投票(含反向写回到 STrack.cls) (默认开启)",
+    )
+    ap.set_defaults(class_aware=True, class_voting=True)
+    ap.add_argument(
         "--log-level",
         default="INFO",
         choices=("DEBUG", "INFO", "WARNING", "ERROR"),
@@ -638,7 +918,8 @@ def main() -> None:
     mot_root = Path(args.mot_root)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    detector_model = resolve_detector_model(args.model)
+    cache_dir = None if args.no_disk_cache else Path(args.cache_dir or out_dir / "cache")
+    detector_model, detector_model_type = resolve_detector_model(args.model, args.model_type)
 
     use_reid = not args.disable_reid
     reid_encoder = None
@@ -655,23 +936,53 @@ def main() -> None:
         camera_motion_values = (False,)
     keep_proxy_frames = any(camera_motion_values)
     LOGGER.info(
-        "[config] model=%s resolved_model=%s mot_root=%s proxy_dir=%s out_dir=%s",
+        "[config] model=%s resolved_model=%s mot_root=%s proxy_dir=%s out_dir=%s cache_dir=%s",
         args.model,
         detector_model,
         args.mot_root,
         args.proxy_dir,
         args.out_dir,
+        cache_dir,
     )
     LOGGER.info("[config] use_reid=%s camera_motion_values=%s", use_reid, list(camera_motion_values))
+    LOGGER.info(
+        "[config] class_aware=%s class_voting=%s (投票含反向写回到 STrack.cls)",
+        args.class_aware,
+        args.class_voting,
+    )
+    LOGGER.info(
+        "[config] grid axes: (high,new)=%s, match=%s, buffer=%s, app=%s, prox=%s, alpha=%s",
+        list(HIGH_NEW_PAIRS),
+        list(MATCH_THRESH),
+        list(TRACK_BUFFER),
+        list(APPEARANCE_THRESH),
+        list(PROXIMITY_THRESH),
+        list(REID_ALPHA),
+    )
 
     LOGGER.info("=== 1/4 构建检测器并缓存检测/ReID ===")
-    detector = create_detector("rtdetr", detector_model, conf_thres=DET_CONF_FLOOR, iou_thres=0.5)
-    mot_cache = cache_mot_detections(detector, mot_root, args.max_mot_frames, reid_encoder)
+    detector = create_detector(detector_model_type, detector_model, conf_thres=DET_CONF_FLOOR, iou_thres=0.5)
+    cache_identity = build_cache_identity(detector_model, args.reid_model, use_reid)
+    mot_cache = cache_mot_detections(
+        detector,
+        mot_root,
+        args.max_mot_frames,
+        reid_encoder,
+        cache_dir,
+        cache_identity,
+    )
     proxy_videos = select_proxy_videos(Path(args.proxy_dir))
     if args.max_proxy is not None:
         proxy_videos = proxy_videos[: args.max_proxy]
     LOGGER.info("[cache:proxy] selected_videos=%d", len(proxy_videos))
-    proxy_cache = cache_proxy_detections(detector, proxy_videos, reid_encoder, keep_frames=keep_proxy_frames)
+    proxy_cache = cache_proxy_detections(
+        detector,
+        proxy_videos,
+        reid_encoder,
+        keep_frames=keep_proxy_frames,
+        cache_dir=cache_dir,
+        cache_identity=cache_identity,
+    )
 
     LOGGER.info("=== 2/4 扫参数网格 ===")
     grid = build_grid(camera_motion_values)
@@ -679,7 +990,13 @@ def main() -> None:
     evaluator = MOTEvaluator(mot_root)
     rows: list[dict] = []
     for i, p in enumerate(grid, 1):
-        mot_preds = track_mot(mot_cache, p, use_reid)
+        mot_preds = track_mot(
+            mot_cache,
+            p,
+            use_reid,
+            class_aware=args.class_aware,
+            class_voting=args.class_voting,
+        )
         res = evaluator.evaluate(
             mot_preds,
             iou_threshold=0.5,
@@ -691,7 +1008,15 @@ def main() -> None:
         row["MOTA"] = float(res.overall.get("MOTA", float("nan")))
         row["IDF1"] = float(res.overall.get("IDF1", float("nan")))
         row["per_sequence"] = {s: dict(m) for s, m in res.per_sequence.items()}
-        row.update(proxy_metrics(proxy_cache, p, use_reid))
+        row.update(
+            proxy_metrics(
+                proxy_cache,
+                p,
+                use_reid,
+                class_aware=args.class_aware,
+                class_voting=args.class_voting,
+            )
+        )
         rows.append(row)
         LOGGER.info(
             "[grid] %3d/%d h%s n%s m%s b%s app%s cmc%d -> HOTA=%.2f IDF1=%.2f short_id=%.3f",
@@ -713,11 +1038,14 @@ def main() -> None:
     top5 = ranked[: args.top_k]
     ctx = {
         "model": detector_model,
+        "model_type": detector_model_type,
         "mot_root": args.mot_root,
         "reid_model": args.reid_model,
         "reid_providers": reid_encoder.providers if reid_encoder else [],
         "use_reid": use_reid,
         "camera_motion_values": list(camera_motion_values),
+        "class_aware": args.class_aware,
+        "class_voting": args.class_voting,
         "n_seq": len(mot_cache),
         "n_proxy": len(proxy_cache),
         "n_grid": len(grid),
@@ -726,7 +1054,9 @@ def main() -> None:
     result = {
         "config": {
             "model": args.model,
+            "model_type": args.model_type,
             "resolved_model": detector_model,
+            "resolved_model_type": detector_model_type,
             "reid_model": args.reid_model if use_reid else None,
             "reid_providers": reid_encoder.providers if reid_encoder else [],
             "use_reid": use_reid,
@@ -736,6 +1066,8 @@ def main() -> None:
             "proxy_fps": PROXY_FPS,
             "gate_short_id": gate,
             "gate_numid_mult": GATE_NUMID_MULT,
+            "class_aware": args.class_aware,
+            "class_voting": args.class_voting,
             **{k: v for k, v in ctx.items() if k.startswith("n_")},
         },
         "top5": [{k: v for k, v in r.items() if k != "per_sequence"} for r in top5],
@@ -769,7 +1101,16 @@ def main() -> None:
     for r in top5:
         for seq in mot_cache:
             out_path = viz_dir / seq / f"rank{r['rank']}_{param_tag(r)}.mp4"
-            render_seq(mot_root, mot_cache, seq, r, out_path, use_reid)
+            render_seq(
+                mot_root,
+                mot_cache,
+                seq,
+                r,
+                out_path,
+                use_reid,
+                class_aware=args.class_aware,
+                class_voting=args.class_voting,
+            )
             LOGGER.info("  %s", out_path)
     LOGGER.info("完成。共 %d 个可视化 mp4 于 %s", len(top5) * len(mot_cache), viz_dir)
 

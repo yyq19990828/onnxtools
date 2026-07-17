@@ -110,6 +110,29 @@ class ClassVotingTracker(BaseTracker):
             # mildly more stable than argmax over equal weights.
             voted[i] = max(table.items(), key=lambda kv: kv[1])[0]
         out.class_id = voted
+
+        # 5. Write voted class back into the inner tracker's STrack state so
+        # that next frame's class_aware association uses the voted (stable)
+        # class instead of the detector's per-frame raw class. Without this
+        # writeback class_aware compares detector_class(track) vs
+        # detector_class(det), so a detector flicker on one frame can let
+        # the wrong class steal the track. With it, the comparison is
+        # voted_class(track) vs detector_class(det), so a single bad frame
+        # cannot break the association.
+        #
+        # Inner trackers that don't expose STrack lists (e.g. the
+        # supervision wrapper) just skip — the output-side rewrite above
+        # still gives label-stable visualisation.
+        for attr in ("tracked_stracks", "lost_stracks"):
+            tracks = getattr(self.inner, attr, None)
+            if not tracks:
+                continue
+            for t in tracks:
+                tid = getattr(t, "track_id", None)
+                if tid is None or tid not in self._votes:
+                    continue
+                table = self._votes[tid]
+                t.class_id = max(table.items(), key=lambda kv: kv[1])[0]
         return out
 
     def reset(self) -> None:
