@@ -1029,10 +1029,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-bytetrack" class="md-nav__link">
+  <a href="#1-bytetrack-cmc-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 定位:站在 ByteTrack 肩膀上的"三连补丁"
+        1. 定位:ByteTrack + CMC + ReID
       
     </span>
   </a>
@@ -1040,10 +1040,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-1" class="md-nav__link">
+  <a href="#2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 补丁①:更好的卡尔曼状态向量
+        2. 快速使用
       
     </span>
   </a>
@@ -1051,10 +1051,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-2-cmc" class="md-nav__link">
+  <a href="#3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 补丁②:相机运动补偿 (CMC) —— 核心贡献
+        3. 相机运动补偿
       
     </span>
   </a>
@@ -1062,10 +1062,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-3iou-reid-bot-sort-reid" class="md-nav__link">
+  <a href="#4-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 补丁③:IoU 与 ReID 的融合代价(BoT-SORT-ReID)
+        4. ReID 融合逻辑
       
     </span>
   </a>
@@ -1073,10 +1073,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
+  <a href="#5-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. 完整流程
+        5. ReID 模型选型
       
     </span>
   </a>
@@ -1087,7 +1087,18 @@
   <a href="#6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 性能与局限
+        6. 超参数搜索脚本
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 参数建议
       
     </span>
   </a>
@@ -2103,10 +2114,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-bytetrack" class="md-nav__link">
+  <a href="#1-bytetrack-cmc-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 定位:站在 ByteTrack 肩膀上的"三连补丁"
+        1. 定位:ByteTrack + CMC + ReID
       
     </span>
   </a>
@@ -2114,10 +2125,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-1" class="md-nav__link">
+  <a href="#2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 补丁①:更好的卡尔曼状态向量
+        2. 快速使用
       
     </span>
   </a>
@@ -2125,10 +2136,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-2-cmc" class="md-nav__link">
+  <a href="#3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 补丁②:相机运动补偿 (CMC) —— 核心贡献
+        3. 相机运动补偿
       
     </span>
   </a>
@@ -2136,10 +2147,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-3iou-reid-bot-sort-reid" class="md-nav__link">
+  <a href="#4-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 补丁③:IoU 与 ReID 的融合代价(BoT-SORT-ReID)
+        4. ReID 融合逻辑
       
     </span>
   </a>
@@ -2147,10 +2158,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5" class="md-nav__link">
+  <a href="#5-reid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. 完整流程
+        5. ReID 模型选型
       
     </span>
   </a>
@@ -2161,7 +2172,18 @@
   <a href="#6" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 性能与局限
+        6. 超参数搜索脚本
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 参数建议
       
     </span>
   </a>
@@ -2201,62 +2223,179 @@
 
 <h1 id="bot-sort-reid">BoT-SORT:相机运动补偿 + ReID 融合<a class="headerlink" href="#bot-sort-reid" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p>Aharon et al. <em>BoT-SORT: Robust Associations Multi-Pedestrian Tracking</em>. 2022. arXiv:<a href="https://arxiv.org/abs/2206.14651">2206.14651</a> · 代码 <a href="https://github.com/NirAharon/BoT-SORT">NirAharon/BoT-SORT</a></p>
-<p>📚 本方法仓库未实现,属进阶方向。可基于本仓库 <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/bytetrack.py"><code>bytetrack.py</code></a> 扩展。</p>
+<p>Aharon et al. <em>BoT-SORT: Robust Associations Multi-Pedestrian Tracking</em>. 2022. arXiv:<a href="https://arxiv.org/abs/2206.14651">2206.14651</a> · 代码:<a href="https://github.com/NirAharon/BoT-SORT">NirAharon/BoT-SORT</a></p>
+<p>✅ <strong>本仓库原生实现</strong>:<a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/botsort.py"><code>onnxtools/tracking/botsort.py</code></a> 的 <code>BoTSORT</code> + <code>BOTrack</code> + <code>CameraMotionCompensator</code>。</p>
 </blockquote>
-<h2 id="1-bytetrack">1. 定位:站在 ByteTrack 肩膀上的"三连补丁"<a class="headerlink" href="#1-bytetrack" title="Permanent link">&para;</a></h2>
-<p>BoT-SORT 以 ByteTrack 为基线,针对它的三个短板各打一个补丁,发布时同时登顶 MOT17 与 MOT20 榜首:</p>
+<h2 id="1-bytetrack-cmc-reid">1. 定位:ByteTrack + CMC + ReID<a class="headerlink" href="#1-bytetrack-cmc-reid" title="Permanent link">&para;</a></h2>
+<p>BoT-SORT 以 ByteTrack 的高/低分两级关联为基线,针对移动相机和长遮挡加了两个工程上很实用的分支:</p>
 <div class="mermaid">graph TD
     BT["ByteTrack 基线&lt;br/&gt;(高低分两级关联)"]
-    BT --&gt; P1["补丁① 修正卡尔曼状态&lt;br/&gt;直接跟踪 w,h(而非纵横比+面积)"]
-    BT --&gt; P2["补丁② 相机运动补偿 CMC&lt;br/&gt;(应对移动相机)"]
-    BT --&gt; P3["补丁③ IoU + ReID 融合代价&lt;br/&gt;(BoT-SORT-ReID)"]
+    BT --&gt; P1["XYWH Kalman&lt;br/&gt;直接跟踪 w,h"]
+    BT --&gt; P2["相机运动补偿 CMC&lt;br/&gt;全局仿射 warp 轨迹"]
+    BT --&gt; P3["IoU + ReID 融合&lt;br/&gt;外观特征只在几何接近时采信"]
     P1 --&gt; OUT["BoT-SORT"]
     P2 --&gt; OUT
     P3 --&gt; OUT
-    style P2 fill:#fb8c00,color:#fff</div>
-<h2 id="2-1">2. 补丁①:更好的卡尔曼状态向量<a class="headerlink" href="#2-1" title="Permanent link">&para;</a></h2>
-<p>SORT/ByteTrack 的状态用纵横比 <span class="arithmatex">\(a\)</span> + 高 <span class="arithmatex">\(h\)</span>,纵横比变化会被错误建模。BoT-SORT 改为<strong>直接跟踪宽 <span class="arithmatex">\(w\)</span> 和高 <span class="arithmatex">\(h\)</span></strong>:</p>
-<div class="arithmatex">\[x = [c_x, c_y, w, h, \dot c_x, \dot c_y, \dot w, \dot h]^\top\]</div>
-<p>实测能更准确地估计框尺寸变化,降低定位误差。</p>
-<h2 id="3-2-cmc">3. 补丁②:相机运动补偿 (CMC) —— 核心贡献<a class="headerlink" href="#3-2-cmc" title="Permanent link">&para;</a></h2>
-<p>ByteTrack/OC-SORT 默认相机静止。但手持、车载、无人机视角下,<strong>整幅画面都在动</strong>,卡尔曼基于"上一帧框位置"的预测会系统性偏移。CMC 先估计<strong>全局相机运动</strong>,把上一帧的轨迹框"搬"到当前帧坐标系,再做关联。</p>
-<div class="mermaid">flowchart LR
-    F1["上一帧"] --&gt; KLT["金字塔 Lucas-Kanade 光流&lt;br/&gt;跟踪稀疏特征点"]
-    F2["当前帧"] --&gt; KLT
-    KLT --&gt; RANSAC["RANSAC 估计全局仿射变换 A"]
-    RANSAC --&gt; WARP["用 A 校正所有轨迹的预测框&lt;br/&gt;(及卡尔曼状态)"]
-    WARP --&gt; ASSOC["再做 IoU/ReID 关联"]
-    style RANSAC fill:#29b6f6</div>
-<p>具体:用金字塔 Lucas-Kanade 光流跟踪背景特征点,RANSAC 拟合全局仿射矩阵,作用到每条轨迹的预测均值与协方差上。这一步对车载/无人机场景几乎是必需的。</p>
-<h2 id="4-3iou-reid-bot-sort-reid">4. 补丁③:IoU 与 ReID 的融合代价(BoT-SORT-ReID)<a class="headerlink" href="#4-3iou-reid-bot-sort-reid" title="Permanent link">&para;</a></h2>
-<p>DeepSORT 把外观和运动<strong>简单加权</strong>;BoT-SORT-ReID 提出更稳健的融合:取 IoU 代价与余弦外观代价的<strong>逐元素最小值</strong>思路,并对外观距离做阈值门控(只在外观足够近时才采信),避免相似外观误导。</p>
-<div class="mermaid">graph TD
-    M["运动代价 d_IoU = 1−IoU"] --&gt; FUSE
-    A["外观代价 d_cos = 1−cos(f_t, f_d)&lt;br/&gt;(经过外观阈值门控)"] --&gt; FUSE
-    FUSE["融合代价 C = min/加权(d_IoU, d_cos)&lt;br/&gt;仅几何合理时采信外观"] --&gt; HUNG["匈牙利匹配"]</div>
-<h2 id="5">5. 完整流程<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
-<div class="mermaid">flowchart TD
-    DET["YOLOX 检测"] --&gt; SPLIT["高/低分切分(继承 ByteTrack)"]
-    PREV["轨迹池"] --&gt; CMC["CMC 相机运动补偿"]
-    CMC --&gt; PRED["卡尔曼预测(w,h 状态)"]
-    SPLIT --&gt; S1["一阶段: 高分 × 轨迹&lt;br/&gt;融合 IoU + ReID 代价"]
-    PRED --&gt; S1
-    S1 --&gt; S2["二阶段: 低分 × 剩余轨迹(IoU)"]
-    S2 --&gt; LIFE["生命周期管理 + 输出"]</div>
-<h2 id="6">6. 性能与局限<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+    style OUT fill:#66bb6a,color:#fff</div>
+<p>本仓库实现保留了检测器/跟踪器解耦:tracker 仍只吃 <code>supervision.Detections</code>。ReID 模型不内置,只接收外部 embedding,这样纯 tracking 安装不会强依赖 PyTorch、FastReID 或 ONNX Runtime。</p>
+<h2 id="2">2. 快速使用<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<p>纯运动版,不启用 CMC/ReID:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;botsort&quot;</span><span class="p">,</span> <span class="n">track_buffer</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">frame_rate</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">for</span> <span class="n">frame</span><span class="p">,</span> <span class="n">detections</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+</span></code></pre></div>
+<p>启用相机运动补偿:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[tracking-cmc]&quot;</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;botsort&quot;</span><span class="p">,</span> <span class="n">camera_motion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cmc_method</span><span class="o">=</span><span class="s2">&quot;orb&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>启用 ReID:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;botsort&quot;</span><span class="p">,</span> <span class="n">with_reid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># 每个检测一条 L2 可归一化的 embedding, shape=[N, D]</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">detections</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reid_features</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+</span></code></pre></div>
+<p>也可以直接传编码器:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;botsort&quot;</span><span class="p">,</span> <span class="n">with_reid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reid_encoder</span><span class="o">=</span><span class="n">my_encoder</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>my_encoder(frame, xyxy)</code> 需要返回 <code>[N, D]</code> float embedding。本仓库会做 L2 normalize 和 track 级 EMA 平滑。</p>
+<h2 id="3">3. 相机运动补偿<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<p><code>camera_motion=True</code> 时,<code>CameraMotionCompensator</code> 会用 OpenCV ORB 特征匹配 + RANSAC 估计上一帧到当前帧的全局仿射变换,并在一阶段关联前 warp 所有已预测轨迹框。第一帧、空特征或匹配不足时退化为 identity,不会影响静态相机场景。</p>
+<p>适用:</p>
 <ul>
-<li><strong>指标(MOT17 test)</strong>:MOTA 80.5 / IDF1 80.2 / HOTA 65.0,发布时 MOT17、MOT20 双榜第一。</li>
-<li><strong>局限</strong>:CMC 的光流估计带来额外开销;ReID 在 DanceTrack 这类<strong>外观相同</strong>场景仍难奏效;整体面向行人调参。</li>
+<li>车载、手持、无人机、云台抖动。</li>
+<li>摄像头轻微晃动导致所有目标一起偏移。</li>
 </ul>
-<div class="admonition tip">
-<p class="admonition-title">若要在本仓库复现 CMC</p>
-<p>可在 <code>ByteTrackNative.update</code> 的 <code>STrack.multi_predict</code> 之后,插入一个仿射矩阵 warp 步骤作用到 <code>mean[:4]</code>,即可获得 BoT-SORT 的相机补偿能力,而无需改动关联主体。</p>
-</div>
+<p>不适用:</p>
+<ul>
+<li>前景目标占满画面,背景特征很少。</li>
+<li>滚动快门/强透视变化;这类最好在视频稳像或标定坐标系里解决。</li>
+</ul>
+<h2 id="4-reid">4. ReID 融合逻辑<a class="headerlink" href="#4-reid" title="Permanent link">&para;</a></h2>
+<p>BoT-SORT-ReID 的一阶段代价是 IoU/fuse-score 与外观余弦距离的融合。本仓库采用保守门控:</p>
+<ul>
+<li><code>proximity_thresh</code>:只有 IoU 足够近时才允许外观覆盖几何。</li>
+<li><code>appearance_thresh</code>:余弦相似度过低时不采信外观。</li>
+<li><code>class_aware=True</code>:行人/骑行者等类别不同则屏蔽匹配。</li>
+</ul>
+<p>这避免了 ReID 在外观相似、检测框很远时强行拉错 ID。对你关注的行人、骑行者场景,建议先用 <code>botsort(camera_motion=True)</code> 跑一版,再叠加 ReID 对比 IDF1 / ID switches。</p>
+<h2 id="5-reid">5. ReID 模型选型<a class="headerlink" href="#5-reid" title="Permanent link">&para;</a></h2>
+<p>你的目标主要是<strong>行人、骑行者</strong>。优先级建议如下:</p>
+<table>
+<thead>
+<tr>
+<th>选择</th>
+<th>推荐模型</th>
+<th>适合场景</th>
+<th>取舍</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>首选工程基线</td>
+<td>Torchreid <code>osnet_ain_x1_0</code> 多源预训练</td>
+<td>行人/骑行者通用起步,跨摄像头泛化更稳</td>
+<td>轻量、易导出；骑行者含自行车时仍建议微调</td>
+</tr>
+<tr>
+<td>轻量边缘版</td>
+<td>Torchreid <code>osnet_x0_25</code> / <code>osnet_x0_5</code></td>
+<td>CPU/Jetson 预算紧,只想降低 ID 碎片</td>
+<td>精度低于 x1.0,但延迟和显存友好</td>
+</tr>
+<tr>
+<td>BoT-SORT 同源版</td>
+<td>FastReID / BoT-SORT <code>MOT17-SBS-S50</code> 或 <code>MOT20-SBS-S50</code></td>
+<td>行人 MOT17/MOT20 风格数据,想贴近论文配置</td>
+<td>依赖 FastReID/PyTorch 配置链,部署比 OSNet 重</td>
+</tr>
+<tr>
+<td>精度优先</td>
+<td>FastReID <code>SBS(S50)</code> / <code>SBS(R50-ibn)</code></td>
+<td>服务器侧、多人密集、可接受较重模型</td>
+<td>特征质量强,但不是最轻部署路线</td>
+</tr>
+<tr>
+<td>研究/高精度备选</td>
+<td>TransReID ViT-S/ViT-B</td>
+<td>遮挡、跨视角、追求榜单精度</td>
+<td>ViT 延迟和显存明显更高,边缘端不优先</td>
+</tr>
+</tbody>
+</table>
+<p>资料入口:</p>
+<ul>
+<li>BoT-SORT 原仓库提供 MOT17/MOT20 的 SBS-S50 ReID 权重和训练入口:<a href="https://github.com/NirAharon/BoT-SORT#model-zoo">NirAharon/BoT-SORT</a>。</li>
+<li>FastReID model zoo 提供 BoT/AGW/SBS 等 person ReID baseline 与下载链接:<a href="https://github.com/JDAI-CV/fast-reid/blob/master/MODEL_ZOO.md">JDAI-CV/fast-reid MODEL_ZOO</a>。</li>
+<li>Torchreid OSNet model zoo 提供多源域泛化模型和小模型:<a href="https://github.com/KaiyangZhou/deep-person-reid/blob/master/docs/MODEL_ZOO.md">deep-person-reid MODEL_ZOO</a>。</li>
+<li>TransReID 提供 person/vehicle ReID 训练配置和 ViT 系列路线:<a href="https://github.com/damo-cv/TransReID">damo-cv/TransReID</a>。</li>
+</ul>
+<p>工程建议:</p>
+<ol>
+<li>先用 <code>osnet_ain_x1_0</code> 多源预训练做基线,输入 crop resize 到 <code>256x128</code>,输出 embedding 后写入 <code>detections.data["features"]</code>。</li>
+<li>如果部署端吃不住,降到 <code>osnet_x0_25</code> 或 <code>osnet_x0_5</code>。</li>
+<li>如果视频主要是 MOT17/MOT20 式固定监控行人,试 <code>MOT17-SBS-S50</code>。</li>
+<li>如果“骑行者”检测框包含人+车,纯 person ReID 可能不稳定;收集本项目 crop 做少量微调通常比继续换大模型更有效。</li>
+</ol>
+<h2 id="6">6. 超参数搜索脚本<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<p>仓库提供了 BoT-SORT 的 MOT + 3Hz 代理视频搜索脚本:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>.venv/bin/python<span class="w"> </span>tools/tracking/sweep_botsort_mot.py<span class="w"> </span>--skip-viz
+</span></code></pre></div>
+<p>默认行为:</p>
+<ul>
+<li>检测模型沿用 RT-DETR 车辆/VRU 检测链路；如果默认 <code>vehicle_det_detr_batch4.onnx</code> 不在本机,会回退到 <code>vehicle_det_detr_batch1.onnx</code>。</li>
+<li>ReID 默认启用,使用小型 person OSNet ONNX: <code>models/reid/person/osnet/msmt17/osnet_x0_25_msmt17_combineall_256x128_amsgrad_ep150_stp60_lr0_Nx3x256x128.onnx</code>。</li>
+<li>搜索 <code>track_high_thresh/new_track_thresh/match_thresh/track_buffer/appearance_thresh</code>，输出 <code>runs/botsort_sweep/result.json</code> 和 <code>REPORT.md</code>。</li>
+<li>默认启用磁盘缓存,目录是 <code>runs/botsort_sweep/cache</code>；缓存内容是每帧检测框、置信度、ReID embedding 和图片路径,不保存原图。中途崩溃后重跑会复用已完成序列/视频的缓存。</li>
+<li><code>--disable-reid</code> 可关闭 ReID 做运动版对照；<code>--camera-motion</code> 或 <code>--sweep-camera-motion</code> 可打开/搜索 CMC。</li>
+</ul>
+<p>缓存控制:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>.venv/bin/python<span class="w"> </span>tools/tracking/sweep_botsort_mot.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--cache-dir<span class="w"> </span>runs/botsort_sweep/cache
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>.venv/bin/python<span class="w"> </span>tools/tracking/sweep_botsort_mot.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--no-disk-cache
+</span></code></pre></div>
+<p>快速调试:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>.venv/bin/python<span class="w"> </span>tools/tracking/sweep_botsort_mot.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--skip-viz<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--max-mot-frames<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--max-proxy<span class="w"> </span><span class="m">2</span>
+</span></code></pre></div>
+<h2 id="7">7. 参数建议<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="s2">&quot;botsort&quot;</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">track_high_thresh</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">track_low_thresh</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">new_track_thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">match_thresh</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">track_buffer</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">frame_rate</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">camera_motion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">with_reid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">appearance_thresh</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">proximity_thresh</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">class_aware</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>调参顺序:</p>
+<ol>
+<li>检测置信度稳定后再调 tracker。</li>
+<li>移动相机先开 <code>camera_motion=True</code>。</li>
+<li>遮挡/交叉多时再加 ReID。</li>
+<li>ID 断裂多:增大 <code>track_buffer</code>,适当放宽 <code>match_thresh</code>。</li>
+<li>ID 交换多:收紧 <code>match_thresh</code> / 提高 <code>appearance_thresh</code> / 打开 <code>class_aware</code>。</li>
+</ol>
 <h2 id="_1">参考文献<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Aharon et al. <em>BoT-SORT: Robust Associations Multi-Pedestrian Tracking</em>. arXiv:<a href="https://arxiv.org/abs/2206.14651">2206.14651</a> · <a href="https://github.com/NirAharon/BoT-SORT">代码</a></li>
-<li>(基线)Zhang et al. <em>ByteTrack</em>. arXiv:<a href="https://arxiv.org/abs/2110.06864">2110.06864</a></li>
+<li>Zhang et al. <em>ByteTrack</em>. arXiv:<a href="https://arxiv.org/abs/2110.06864">2110.06864</a></li>
+<li>Zhou et al. <em>Omni-Scale Feature Learning for Person Re-Identification</em>. ICCV 2019 · <a href="https://github.com/KaiyangZhou/deep-person-reid">Torchreid</a></li>
 </ul>
 <p>→ 上一篇:<a href="../ocsort/">OC-SORT</a> · 下一篇:<a href="../strongsort/">StrongSORT:让 DeepSORT 再次伟大</a></p>
 

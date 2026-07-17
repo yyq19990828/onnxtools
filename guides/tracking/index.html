@@ -2255,7 +2255,7 @@
 <tr>
 <td><a href="botsort/">BoT-SORT</a></td>
 <td>相机运动补偿 + ReID 融合</td>
-<td>进阶方向</td>
+<td>✅ <a href="https://github.com/yyq19990828/onnxtools/blob/main/onnxtools/tracking/botsort.py"><code>botsort.py</code></a> 原生实现</td>
 </tr>
 <tr>
 <td><a href="strongsort/">StrongSORT</a></td>
@@ -2386,9 +2386,10 @@
     E2E --&gt; T3["前沿 2024-25&lt;br/&gt;MATR / PuTR ..."]
 
     style M2 fill:#66bb6a,color:#fff
-    style M3 fill:#66bb6a,color:#fff</div>
+    style M3 fill:#66bb6a,color:#fff
+    style A1 fill:#66bb6a,color:#fff</div>
 <blockquote>
-<p>🟢 绿色为本仓库已原生实现的两个方法(ByteTrack、OC-SORT)。</p>
+<p>🟢 绿色为本仓库已原生实现的方法(ByteTrack、OC-SORT、BoT-SORT)。</p>
 </blockquote>
 <h3 id="tracking-by-detection">范式一:Tracking-by-Detection(检测后关联)<a class="headerlink" href="#tracking-by-detection" title="Permanent link">&para;</a></h3>
 <p>最主流、最实用的范式。流程严格分两步:<strong>(1) 用一个独立检测器逐帧出框 → (2) 用一个关联器把当前帧的框接到已有轨迹上</strong>。本仓库 <code>bytetrack</code> / <code>ocsort</code> 即属此类——它们只吃 <code>supervision.Detections</code>,完全不关心检测器是 YOLO 还是 RT-DETR。</p>
@@ -2400,7 +2401,7 @@
     TRK --&gt; OUT["带 tracker_id 的 Detections"]
     OUT -.更新.-&gt; PREV
     style TRK fill:#29b6f6</div>
-<p>优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 <code>InferencePipeline</code> 正是这种解耦设计(<code>enable_tracking=True</code>)。</p>
+<p>优点:检测与跟踪解耦,检测器可随意升级;跟踪器轻量(纯 numpy 即可 100+ FPS)。本仓库整条 <code>InferencePipeline</code> 正是这种解耦设计(<code>enable_tracking=True</code>)；<code>botsort</code> 的 ReID 也遵循同一原则,只接收外部 embedding,不绑定具体模型框架。</p>
 <h3 id="joint-detection-embedding-jde">范式二:Joint Detection &amp; Embedding(一阶段 / JDE)<a class="headerlink" href="#joint-detection-embedding-jde" title="Permanent link">&para;</a></h3>
 <p>把"出框"和"出外观特征"塞进<strong>同一个网络</strong>一次前向完成(JDE、FairMOT)。省掉独立 ReID 模型的延迟,但检测与 ReID 两个任务会在共享网络里"打架"。详见 <a href="jde-family/">JDE 派文档</a>。</p>
 <h3 id="transformerquery">范式三:端到端 Transformer(query 派)<a class="headerlink" href="#transformerquery" title="Permanent link">&para;</a></h3>
@@ -2632,16 +2633,17 @@
 </div>
 <hr />
 <h2 id="7">7. 在本仓库里跑起来<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
-<p>三种后端共用同一工厂,可即插即用到 <code>InferencePipeline</code>:</p>
+<p>四种后端共用同一工厂,可即插即用到 <code>InferencePipeline</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">onnxtools.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tracker</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;bytetrack&quot;</span><span class="p">)</span>          <span class="c1"># supervision 封装(默认,零依赖)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;bytetrack_native&quot;</span><span class="p">)</span>   <span class="c1"># 原生向量化 ByteTrack(本系列重点)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;ocsort&quot;</span><span class="p">)</span>             <span class="c1"># 原生 OC-SORT(本系列重点)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">for</span> <span class="n">frame</span><span class="p">,</span> <span class="n">raw_dets</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">raw_dets</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>  <span class="c1"># tracked.tracker_id 已就位</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">tracker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>                                <span class="c1"># 换视频时重置,ID 从 1 重新发号</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">create_tracker</span><span class="p">(</span><span class="s2">&quot;botsort&quot;</span><span class="p">)</span>            <span class="c1"># 原生 BoT-SORT(CMC/ReID 可选)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">for</span> <span class="n">frame</span><span class="p">,</span> <span class="n">raw_dets</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">tracked</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">raw_dets</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>  <span class="c1"># tracked.tracker_id 已就位</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">tracker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>                                <span class="c1"># 换视频时重置,ID 从 1 重新发号</span>
 </span></code></pre></div>
 <div class="mermaid">graph LR
     A[图像] --&gt; B[BaseORT.__call__]
